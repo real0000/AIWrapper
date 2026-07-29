@@ -27,7 +27,7 @@ See [Tools & Approval](tools.md).
 | Setting | Default | Meaning |
 |---|---|---|
 | `aiwrapper.toolApproval.mode` | `ask` | Default mode: `ask`, `auto`, `deny` |
-| `aiwrapper.toolApproval.perTool` | `run_terminal`, `write_file`, `build_project` → `ask` | Per-tool overrides |
+| `aiwrapper.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides. `write_file` and `apply_patch` are absent on purpose: they only write to the staging area, so they run automatically and are reviewed together at the flush |
 | `aiwrapper.toolApproval.timeoutSeconds` | 30 | Wait before a request lapses. `0` waits forever |
 
 ## Tool execution

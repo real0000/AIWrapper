@@ -28,6 +28,7 @@ described below. This one is a [Send To AI](#send-to-ai) node.*
 | [Variable](#variable) | Reads and writes graph-level state |
 | [Compose](#compose) | Builds a string from a template |
 | [Dispatch](#dispatch) | Splits work into tasks and runs a subgraph per task |
+| [Ask User](#ask-user) | Asks you a question — but only when the answer is genuinely yours |
 | [Return](#return) | Ends one branch deliberately |
 | [End](#end) | Ends the run and returns the result |
 
@@ -227,6 +228,53 @@ least prompt + that number.
 | Splitter Max Tokens | 4096 | Output cap for the plan. `0` removes the cap |
 | Parallel | off | Run the tasks inside one `-` group concurrently |
 | Max Parallel | 4 | How many at once when parallel is on |
+
+---
+
+## Ask User
+
+Pauses the run to ask you something, before work is done on a wrong assumption.
+
+The node does not simply ask. It first runs a model to decide whether a question
+is warranted at all, and **most tasks need none** — that is the normal, correct
+outcome. Questions are reserved for things that are genuinely yours to decide:
+
+- the requirement is ambiguous and the readings lead to materially different work
+- a constraint that changes the design is missing — target platform, data source,
+  compatibility, scale
+- a trade-off you should own, because it is a product, UX or policy preference
+
+It deliberately does *not* ask about anything answerable from the code, the
+request or ordinary convention; about implementation detail with an obvious
+default; or for permission to run a tool, which has its own approval gate.
+
+Each question is self-contained and comes with two to four concrete options when
+the plausible answers can be enumerated. You pick one, or type your own if free
+text is allowed. Answers arrive merged on `Answers`, ready to feed into a
+prompt; `Asked` tells the graph whether anything was asked at all, so a
+downstream [If](#if) can branch on it.
+
+If nothing needed asking, or the wait timed out, `Answers` is empty and `Asked`
+is `false` — the run continues either way.
+
+| Pin | Type | Direction | Meaning |
+|---|---|---|---|
+| `Exec` | exec | in / out | |
+| `Input` | string | in | The task being considered, used to judge what is unclear |
+| `Answers` | string | out | The questions and your answers, merged. Empty if nothing was asked |
+| `Asked` | string | out | `"true"` or `"false"` |
+
+| Setting | Default | Meaning |
+|---|---|---|
+| AI Config | — | The model that decides whether to ask. Judgement, not prose — it runs at a low fixed temperature so the same input does not flip between asking and not asking |
+| What counts as the user's call | — | Extra guidance specific to this flow, added to the built-in criteria |
+| Max Questions | 3 | Upper bound, 1–10. It usually asks fewer |
+| Offer "Other…" | on | Adds a free-text choice to every question |
+| Answer Timeout | 600 | Seconds to wait per question, 30–3600 |
+
+Put it after [Start](#start) and before the expensive work — the value is in not
+building the wrong thing. Putting one in the middle of a long run interrupts you
+for an answer you may no longer have context for.
 
 ---
 

@@ -92,7 +92,7 @@ more than you meant to.
 | Setting | Default | Meaning |
 |---|---|---|
 | `aiwrapper.toolApproval.mode` | `ask` | Default for every tool |
-| `aiwrapper.toolApproval.perTool` | `run_terminal`, `write_file`, `build_project` → `ask` | Per-tool overrides |
+| `aiwrapper.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides |
 | `aiwrapper.toolApproval.timeoutSeconds` | 30 | How long a request waits before lapsing. `0` waits forever |
 
 `auto` for everything means a model can run arbitrary commands on your machine
