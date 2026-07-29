@@ -13,10 +13,13 @@ Start with the server — the extension needs one to connect to.
 
 | Document | Contents |
 |---|---|
+| [server/](server/README.md) | The server guide: the three processes — node agent, inference server, control plane — and what each one owns |
 | [client/](client/README.md) | The client guide: both windows, every panel, and what each setting does |
 
-The client guide is split by page, and goes into detail on the logic graph — the
-node types, the configurations they reference, and the parameters inside them.
+The server guide is organised by process, because which process owns a thing
+decides how you change it. The client guide is split by page, and goes into
+detail on the logic graph — the node types, the configurations they reference,
+and the parameters inside them.
 
 ---
 

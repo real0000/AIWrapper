@@ -230,3 +230,6 @@ sudo rm -rf /opt/aiwrapper
 ---
 
 Next: [extension-install.md](extension-install.md) — install the VSCode client and connect it.
+
+For how the three server-side processes fit together and how to run them day to
+day, see the **[Server Guide](server/README.md)**.
