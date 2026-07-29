@@ -125,6 +125,7 @@ several machines.
 |---|---|
 | [doc/server-install.md](doc/server-install.md) | Server requirements, install, configuration, first start, TLS, troubleshooting |
 | [doc/extension-install.md](doc/extension-install.md) | Installing the `.vsix`, connecting to a server, logging in, first use |
+| [doc/client/](doc/client/README.md) | Client guide — both windows panel by panel, every node type, every configuration parameter, RAG, tools and staging, all settings |
 
 ## License
 

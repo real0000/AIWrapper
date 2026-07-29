@@ -130,4 +130,7 @@ code --uninstall-extension aiwrapper.aiwrapper
 
 ---
 
+Next: the **[Client Guide](client/README.md)** — every panel and setting, and
+the logic graph in detail.
+
 Back to [server-install.md](server-install.md) · [Documentation index](README.md)
