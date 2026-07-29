@@ -181,6 +181,9 @@ Leave `<mysql>` pointing at nothing reachable and the server logs:
 [info] [auth] auth DISABLED (dev-open) (users=0, masterKey=no)
 ```
 
+The control plane says the same thing in its Accounts tab — see
+[Accounts](server/control/accounts.md).
+
 It then serves every request without authentication. That is fine for a local
 single-user trial and **not** appropriate for anything reachable from another
 machine.
@@ -213,7 +216,7 @@ localhost.
 | Symptom | Cause |
 |---|---|
 | `Fatal error: config.xml: cannot open file` | Started from a directory without `config.xml`. Use `CONFIG_FILE=…` or `cd` to the install directory first |
-| `Model '…' scan failed: 路徑不存在` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
+| `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
 | Server starts but no GPU is listed | Driver or CUDA 12 runtime missing; check `nvidia-smi` and `ldconfig -p | grep libcudart` |
 | Port already in use | Another instance is running, or `<port>` collides with `<agent_port>` |

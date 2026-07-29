@@ -7,6 +7,12 @@ database; the control plane is where they are managed.
 
 ## Two kinds
 
+![The control plane accounts tab](../../images/control-accounts.png)
+
+*The Accounts tab with no database reachable — account management is disabled
+and sign-in falls back to the password in `control.xml`, exactly as described
+below.*
+
 | Kind | Used for | Stored |
 |---|---|---|
 | Admin | Signing in to the control plane web UI | `admin_users` |

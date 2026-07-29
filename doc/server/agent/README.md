@@ -62,6 +62,11 @@ agent is started from.
 **Binding the agent to a public address without setting `node_token` exposes
 start/stop/restart and model management to anyone who can reach the port.**
 
+![Models marked live or pending restart](../../images/control-models.png)
+
+*The same rule seen from the web UI: the banner and the per-entry state come
+from comparing `config.xml` against what the running server actually loaded.*
+
 ## Restart to apply
 
 The agent edits `config.xml`. The server is running whatever it read at

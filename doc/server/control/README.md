@@ -10,6 +10,11 @@ aiw-launcher --control --control-config /opt/aiwrapper/control.xml
 
 Installed as the `aiw-control` service. Open `http://<host>:8088/`.
 
+![The control plane server tab](../../images/control-server.png)
+
+*The Server tab: process state, uptime, health, and which models the running
+server has loaded — start, stop and restart from here.*
+
 ---
 
 ## Contents
@@ -20,6 +25,12 @@ Installed as the `aiw-control` service. Open `http://<host>:8088/`.
 | [Multiple nodes](nodes.md) | Adding machines, tokens, what is shared between them and what is not |
 
 ## What it can do
+
+![The control plane models tab](../../images/control-models.png)
+
+*The Models tab. Each entry is `live` (loaded by the running server) or pending
+a restart — the banner appears whenever the config and the running server have
+diverged.*
 
 | Area | Actions |
 |---|---|
