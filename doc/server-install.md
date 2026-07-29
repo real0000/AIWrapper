@@ -1,0 +1,232 @@
+# Server Installation
+
+Installing the AIWrapper Server from the binary distribution on Linux x86-64.
+
+Package: [`dist/aiwrapper-server-0.1.0-linux-x64.tar.gz`](../dist/)
+
+---
+
+## 1. Requirements
+
+| | Required | Notes |
+|---|---|---|
+| OS | Linux x86-64, glibc 2.35+ | Built and tested on Ubuntu-family systems |
+| GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU |
+| RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
+| MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §7 |
+| Python | 3.10+, optional | Needed for the `unsloth` backend and the multimodal workers |
+
+Check the CUDA runtime:
+
+```bash
+nvidia-smi                       # driver + GPUs
+ldconfig -p | grep libcudart     # CUDA 12 runtime
+```
+
+## 2. Unpack
+
+```bash
+tar -xzf aiwrapper-server-0.1.0-linux-x64.tar.gz
+cd aiwrapper-server-0.1.0-linux-x64
+```
+
+Contents:
+
+```
+bin/aiwrapper-server    the inference server
+bin/aiw-launcher        node agent + control plane (web UI)
+bin/aiw-model-dl        Hugging Face model downloader
+python/                 workers for the unsloth backend and the multimodal families
+sql/schema.sql          database schema
+config.example.xml      server configuration template
+control.example.xml     control-plane configuration template
+install.sh              installer
+```
+
+## 3. Install
+
+```bash
+./install.sh                       # to /opt/aiwrapper, with systemd services
+```
+
+| Option | Meaning |
+|---|---|
+| `--prefix DIR` | Install directory (default `/opt/aiwrapper`) |
+| `--user NAME` | Account the services run as (default: invoking user) |
+| `--no-service` | Copy files only, skip systemd |
+| `--force` | Overwrite an existing `config.xml` / `control.xml` |
+
+The installer checks the CUDA runtime and that every shared library the server
+needs resolves, copies the files, creates `config.xml` and `control.xml` from
+the templates (mode 600 — they hold database credentials), and creates
+`data/`, `models/` and `/tmp/aiwrapper`.
+
+`sudo` is used only when the target directory is not writable. To install
+without root:
+
+```bash
+./install.sh --prefix ~/aiwrapper --no-service
+```
+
+Two systemd units are installed unless `--no-service` is given:
+
+| Unit | Command | Role |
+|---|---|---|
+| `aiw-agent` | `aiw-launcher --agent` | Resident. Supervises `aiwrapper-server`, edits the model list, downloads models |
+| `aiw-control` | `aiw-launcher --control` | Web UI, admin accounts, multi-node management |
+
+The server is **not** a service of its own — the agent starts and stops it.
+The units are enabled but not started, because `config.xml` still needs editing.
+
+## 4. Configure
+
+Edit `config.xml` in the install directory. The three fields that matter for a
+first run:
+
+```xml
+<mysql>
+  <host>127.0.0.1</host>
+  <port>3306</port>
+  <user>aiwrapper</user>
+  <password>your-password</password>
+  <database>aiwrapper</database>
+</mysql>
+
+<ai>
+  <unsloth>
+    <!-- Interpreter of the environment that has llama-cpp-python installed -->
+    <python_exe>/opt/aiwrapper/venv/bin/python</python_exe>
+  </unsloth>
+</ai>
+
+<models>
+  <model alias="my-coder" backend="unsloth">
+    <!-- A DIRECTORY, not a file. Every *.gguf inside it becomes a
+         selectable quantization; safetensors directories are quantized at
+         load time. -->
+    <path>/path/to/models/Qwen3-Coder-Next</path>
+  </model>
+</models>
+```
+
+The file is read from the working directory. Point at another copy with
+`CONFIG_FILE`:
+
+```bash
+CONFIG_FILE=/opt/aiwrapper/config.xml ./bin/aiwrapper-server
+```
+
+All relative paths inside `config.xml` resolve against the directory the file
+lives in, not the process working directory.
+
+Models are normally added through the control-plane web UI or `aiw-model-dl`,
+both of which rewrite the `<models>` section for you:
+
+```bash
+./bin/aiw-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
+```
+
+## 5. Database (optional)
+
+```bash
+mysql -u root -p < /opt/aiwrapper/sql/schema.sql
+```
+
+`<mysql>` in `config.xml` and in `control.xml` must point at the **same**
+database — the server and the control plane share the `users` / `api_keys` /
+`sessions` tables. If they differ, accounts created in the web UI will not be
+visible to the server and clients cannot log in.
+
+## 6. Start
+
+With systemd:
+
+```bash
+sudo systemctl start aiw-agent aiw-control
+journalctl -u aiw-agent -f
+```
+
+In the foreground (agent + control + server in one process, Ctrl+C stops all):
+
+```bash
+cd /opt/aiwrapper && ./bin/aiw-launcher --all
+```
+
+Verify:
+
+```bash
+$ curl -s http://127.0.0.1:15963/health
+{"status":"ok"}
+
+$ curl -s http://127.0.0.1:15963/api/models
+{"models":[{"id":"my-coder","name":"my-coder","kind":"llm","type":"chat",
+"ctx_size":8192,"backend":"unsloth", ...}]}
+```
+
+The web UI is at `http://<host>:8088/`.
+
+| Port | Set in | Purpose |
+|---|---|---|
+| 15963 | `config.xml` `<port>` | AI API — HTTP + WebSocket. This is what clients connect to |
+| 15972 | `config.xml` `<node><agent_port>` | Node agent API, called by the control plane |
+| 8088 | `control.xml` `<web_port>` | Control-plane web UI |
+
+## 7. Running without a database
+
+Leave `<mysql>` pointing at nothing reachable and the server logs:
+
+```
+[warning] MySQL connect failed (Connection refused) — DB features disabled;
+          admin login falls back to the config password
+[info] [auth] auth DISABLED (dev-open) (users=0, masterKey=no)
+```
+
+It then serves every request without authentication. That is fine for a local
+single-user trial and **not** appropriate for anything reachable from another
+machine.
+
+## 8. TLS
+
+Set both fields in `config.xml` to serve https/wss on the same port:
+
+```xml
+<tls_cert>/opt/aiwrapper/server.crt</tls_cert>
+<tls_key>/opt/aiwrapper/server.key</tls_key>
+```
+
+Self-signed certificate for LAN use:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+  -keyout server.key -out server.crt -subj "/CN=aiwrapper" \
+  -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:<your-lan-ip>"
+```
+
+A self-signed certificate is not trusted by the system, so the client has to be
+told to accept it — see [extension-install.md](extension-install.md) §4.
+
+Bearer tokens are sent on every request, so plaintext is only appropriate on
+localhost.
+
+## 9. Troubleshooting
+
+| Symptom | Cause |
+|---|---|
+| `Fatal error: config.xml: cannot open file` | Started from a directory without `config.xml`. Use `CONFIG_FILE=…` or `cd` to the install directory first |
+| `Model '…' scan failed: 路徑不存在` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
+| `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
+| Server starts but no GPU is listed | Driver or CUDA 12 runtime missing; check `nvidia-smi` and `ldconfig -p | grep libcudart` |
+| Port already in use | Another instance is running, or `<port>` collides with `<agent_port>` |
+
+## 10. Uninstall
+
+```bash
+sudo systemctl disable --now aiw-agent aiw-control
+sudo rm /etc/systemd/system/aiw-agent.service /etc/systemd/system/aiw-control.service
+sudo systemctl daemon-reload
+sudo rm -rf /opt/aiwrapper
+```
+
+---
+
+Next: [extension-install.md](extension-install.md) — install the VSCode client and connect it.
