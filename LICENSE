@@ -1,0 +1,64 @@
+AIWrapper — Proprietary Software License
+Copyright (c) 2026 real0000. All Rights Reserved.
+
+This software, including all binaries, installers, documentation, models,
+configuration files, and any accompanying materials (collectively, the
+"Software"), is proprietary and confidential to real0000 (the "Licensor").
+The Software is licensed, not sold.
+
+1. GRANT OF LICENSE
+   Subject to the terms below, the Licensor grants you a personal,
+   non-exclusive, non-transferable, non-sublicensable, revocable license to
+   download, install, and run the Software solely for internal evaluation and
+   testing purposes.
+
+2. RESTRICTIONS
+   You may not, in whole or in part:
+   a. redistribute, publish, sell, rent, lease, lend, host, or otherwise make
+      the Software available to any third party;
+   b. use the Software for production, commercial, or revenue-generating
+      purposes without a separate written commercial agreement with the
+      Licensor;
+   c. reverse engineer, decompile, disassemble, or otherwise attempt to derive
+      the source code, algorithms, or internal structure of the Software,
+      except to the extent such restriction is expressly prohibited by
+      applicable law;
+   d. modify, adapt, translate, or create derivative works of the Software;
+   e. remove, obscure, or alter any copyright, trademark, or other proprietary
+      notices contained in the Software.
+
+3. OWNERSHIP
+   The Software is protected by copyright and other intellectual property
+   laws and treaties. The Licensor retains all right, title, and interest in
+   and to the Software, including all intellectual property rights therein.
+   No rights are granted except as expressly set forth in this License.
+
+4. TERM AND TERMINATION
+   This License is effective until terminated. It terminates automatically
+   and without notice if you breach any of its terms. The Licensor may also
+   terminate this License at any time at its sole discretion. Upon
+   termination, you must cease all use of the Software and destroy all copies
+   in your possession or control.
+
+5. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. YOU ASSUME
+   THE ENTIRE RISK ARISING OUT OF THE USE OR PERFORMANCE OF THE SOFTWARE.
+
+6. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+   FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE, INCLUDING ANY LOSS OF DATA, PROFITS, OR BUSINESS
+   INTERRUPTION.
+
+7. THIRD-PARTY COMPONENTS
+   The Software may include third-party components distributed under their
+   own license terms. Those terms govern the use of the corresponding
+   components and are unaffected by this License.
+
+8. COMMERCIAL LICENSING
+   Commercial use, source code access, and transfer of intellectual property
+   or commercial rights are available only under a separate written agreement
+   with the Licensor. Inquiries: https://github.com/real0000
