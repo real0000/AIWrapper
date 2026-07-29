@@ -42,6 +42,11 @@ The server owns everything expensive: model loading and placement, the agent
 loop, retrieval, and the multimodal pipelines. The client is a thin editor
 front end that renders the conversation and executes tool calls locally.
 
+![The AIWrapper chat panel in VSCode](doc/images/chat-panel.png)
+
+*The chat panel runs inside VSCode. The selector at the bottom picks which
+logic graph drives the conversation.*
+
 ## Features
 
 ### Local inference, multiple backends
@@ -70,6 +75,12 @@ VSCode: prompt nodes, format checks, dispatch, loops with re-entry, and
 user-decision nodes that pause the run to ask you a question. Each node can
 choose its own model, quantization, GPU set and sampling parameters — so a
 cheap fast model can plan and a large model can write the code, in one run.
+
+![The Logic Editor](doc/images/logic-editor.png)
+
+*A coding workflow in the Logic Editor. Left: the node palette, the AI configs
+the graph's nodes bind to, and its variables. Each config names its own model
+and parameters.*
 
 ### Tools run in your editor
 
