@@ -1,0 +1,85 @@
+# AIWrapper — single-machine deployment.
+#
+#   cp aiwrapper-server-0.1.0-linux-x64.tar.gz .
+#   cp .env.example .env      # then edit it: passwords and MODELS_DIR
+#   docker compose up -d --build
+#
+# Nothing is pulled from a private registry. The image is built here; mysql is
+# the official public one.
+#
+# Everything that matters is a host folder, so it survives the container:
+#   ./data/mysql   the database
+#   ./data/server  logic graphs, workflows, retrieval vectors
+#   ./config       config.xml and control.xml
+#   ./venvs        the Python worker environments
+#   ${MODELS_DIR}  your models, mounted read-only
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aiwrapper}
+      MYSQL_USER: ${MYSQL_USER:-aiwrapper}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    # Not published by default — only the aiwrapper container needs it.
+    # Uncomment to inspect the database from the host.
+    # ports:
+    #   - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  aiwrapper:
+    build:
+      context: .
+      args:
+        PACKAGE: ${PACKAGE:-aiwrapper-server-0.1.0-linux-x64.tar.gz}
+    image: aiwrapper:${VERSION:-0.1.0}
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aiwrapper}
+      MYSQL_USER: ${MYSQL_USER:-aiwrapper}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      NODE_TOKEN: ${NODE_TOKEN:-}
+      UNSLOTH_PYTHON: /venvs/llm/bin/python
+    ports:
+      # AI API — this is what the VSCode extension connects to.
+      - "${API_PORT:-15963}:15963"
+      # Control-plane web UI. Bound to localhost by default; drop the
+      # 127.0.0.1 prefix only behind a TLS proxy.
+      - "127.0.0.1:${WEB_PORT:-8088}:8088"
+      # Node agent API. Only needed if a control plane on another machine
+      # manages this node.
+      # - "${AGENT_PORT:-15972}:15972"
+    volumes:
+      - ./config:/config
+      - ./data/server:/data
+      - ./venvs:/venvs
+      - ${MODELS_DIR:?set MODELS_DIR in .env}:/models:ro
+      # Generated images, audio and meshes are written here.
+      - ./data/output:/tmp/aiwrapper
+    # Models are memory-mapped and workers use shared memory; the 64 MB default
+    # is far too small and shows up as an unexplained worker crash.
+    shm_size: ${SHM_SIZE:-8gb}
+    # Needs nvidia-container-toolkit on the host.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

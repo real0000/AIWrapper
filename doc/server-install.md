@@ -4,13 +4,17 @@ Installing the AIWrapper Server from the binary distribution on Linux x86-64.
 
 Package: [`dist/aiwrapper-server-0.1.0-linux-x64.tar.gz`](../dist/)
 
+Prefer containers? See [Docker](server/docker.md) — same package, but the
+database, models and config live in host folders and nothing is installed on the
+host itself.
+
 ---
 
 ## 1. Requirements
 
 | | Required | Notes |
 |---|---|---|
-| OS | Linux x86-64, glibc 2.35+ | Built and tested on Ubuntu-family systems |
+| OS | Linux x86-64, glibc 2.38+ | Ubuntu 24.04 or newer. The binary needs `GLIBC_2.38`, so Ubuntu 22.04 (2.35) will not run it |
 | GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
 | MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §8 |

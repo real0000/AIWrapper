@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Container config.xml. Seeded into /config on first start, with the values
+  filled in from the environment. Edited afterwards it is left alone — /config is a
+  volume, so your changes survive image rebuilds.
+
+  Paths here are absolute on purpose. Relative paths in this file resolve
+  against the directory the file lives in (/config), which is not where the
+  install lives.
+-->
+<config>
+  <port>15963</port>
+
+  <!-- TLS terminates at your reverse proxy in most container setups. To do it
+       here instead, mount the certificate and key into /config and point at
+       them. Bearer tokens go out on every request, so anything beyond localhost
+       needs one or the other. -->
+  <tls_cert></tls_cert>
+  <tls_key></tls_key>
+
+  <node>
+    <server_binary>/opt/aiwrapper/bin/aiwrapper-server</server_binary>
+    <working_dir>/opt/aiwrapper</working_dir>
+    <autostart>true</autostart>
+    <!-- 0.0.0.0 so the control plane can reach the agent from another
+         container. The port is not published by default. -->
+    <bind>0.0.0.0</bind>
+    <agent_port>15972</agent_port>
+    <node_token>@NODE_TOKEN@</node_token>
+    <download_dir>/models</download_dir>
+    <log_file>/data/server.log</log_file>
+  </node>
+
+  <mysql>
+    <host>@MYSQL_HOST@</host>
+    <port>@MYSQL_PORT@</port>
+    <user>@MYSQL_USER@</user>
+    <password>@MYSQL_PASSWORD@</password>
+    <database>@MYSQL_DATABASE@</database>
+    <pool_size>4</pool_size>
+  </mysql>
+
+  <ai>
+    <default_backend>unsloth</default_backend>
+    <default_model></default_model>
+    <default_vision_model></default_vision_model>
+
+    <llama>
+      <ctx_size>8192</ctx_size>
+      <n_gpu_layers>-1</n_gpu_layers>
+      <threads>0</threads>
+      <n_parallel>4</n_parallel>
+      <flash_attn>true</flash_attn>
+      <mmap>true</mmap>
+      <vram_headroom>0.1</vram_headroom>
+    </llama>
+
+    <unsloth>
+      <!-- Built by setup-workers.sh into the /venvs volume; see doc/server/docker.md
+           for the exact command. -->
+      <python_exe>@UNSLOTH_PYTHON@</python_exe>
+      <script_dir>/opt/aiwrapper/python</script_dir>
+      <ready_timeout_sec>300</ready_timeout_sec>
+      <timeout_sec>300</timeout_sec>
+      <env>
+        <PYTORCH_CUDA_ALLOC_CONF>expandable_segments:True</PYTORCH_CUDA_ALLOC_CONF>
+      </env>
+      <extra>
+        <n_ctx>8192</n_ctx>
+        <n_gpu_layers>-1</n_gpu_layers>
+        <flash_attn>true</flash_attn>
+      </extra>
+    </unsloth>
+
+    <budget>
+      <ram_mb>0</ram_mb>
+      <vram_mb>0</vram_mb>
+      <ram_ratio>0.8</ram_ratio>
+      <vram_ratio>0.9</vram_ratio>
+      <eviction>lru</eviction>
+    </budget>
+  </ai>
+
+  <!--
+    One entry per model. <path> is a directory under /models — mount your model
+    folders there and point at them:
+
+      <model alias="my-coder" backend="unsloth">
+        <path>/models/Qwen3-Coder-Next</path>
+      </model>
+
+    Adding models through the control-plane web UI rewrites this section for you.
+    Either way the server has to restart before a new entry loads.
+  -->
+  <models>
+  </models>
+
+  <modalities python_exe="python3" script_dir="/opt/aiwrapper/python"
+              cuda_visible_devices="">
+  </modalities>
+
+  <api_key></api_key>
+</config>

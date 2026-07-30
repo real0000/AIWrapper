@@ -5,6 +5,7 @@
 | Document | Contents |
 |---|---|
 | [server-install.md](server-install.md) | Server requirements, unpacking, `install.sh`, `config.xml`, database, first start, TLS, troubleshooting, uninstall |
+| [server/docker.md](server/docker.md) | Running the server side in containers instead — Dockerfile and compose, with volumes for models, database and config |
 | [extension-install.md](extension-install.md) | Installing the `.vsix`, connecting to a server, self-signed certificates, login, first use |
 
 Start with the server — the extension needs one to connect to.

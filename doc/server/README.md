@@ -24,6 +24,9 @@ Installation is covered separately in
                                                           the actual inference
 ```
 
+Prefer containers? **[Docker](docker.md)** runs all three from a Dockerfile you
+build yourself, with your models, database and config as host folders.
+
 | Process | Binary | One per | Job |
 |---|---|---|---|
 | [Node agent](agent/README.md) | `aiw-launcher --agent` | machine | Starts, stops and restarts the local server; edits its config; downloads models |

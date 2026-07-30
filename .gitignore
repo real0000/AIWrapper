@@ -6,3 +6,11 @@
 #
 # The .vsix is small enough to live in the repository and is committed.
 dist/aiwrapper-server-*.tar.gz
+
+# Docker: the user's own secrets, their copy of the package, and the folders
+# compose creates for the database, server data and worker environments.
+docker/.env
+docker/*.tar.gz
+docker/config/
+docker/data/
+docker/venvs/

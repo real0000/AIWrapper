@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Container control.xml. Seeded into /config on first start from the environment.
+
+  <mysql> here MUST match <mysql> in config.xml — the server and the control
+  plane share the users / api_keys / sessions tables. Different databases and
+  accounts created in the web UI are invisible to the server, so clients cannot
+  log in. The entrypoint fills both from the same variables to keep them in step.
+-->
+<control>
+  <web_port>8088</web_port>
+  <!-- The container's own interface. Restrict exposure by binding the published
+       port on the host side instead: "127.0.0.1:8088:8088". -->
+  <bind>0.0.0.0</bind>
+
+  <mysql>
+    <host>@MYSQL_HOST@</host>
+    <port>@MYSQL_PORT@</port>
+    <user>@MYSQL_USER@</user>
+    <password>@MYSQL_PASSWORD@</password>
+    <database>@MYSQL_DATABASE@</database>
+    <pool_size>2</pool_size>
+  </mysql>
+
+  <!-- Bootstrap account: created when admin_users is empty, and used as a
+       fallback single account when the database is unreachable. An empty
+       password disables authentication entirely. -->
+  <admin>
+    <username>@ADMIN_USER@</username>
+    <password>@ADMIN_PASSWORD@</password>
+  </admin>
+
+  <nodes>
+    <!-- Single-container deployment: the agent is in this same container. -->
+    <node id="local" name="local" url="http://127.0.0.1:15972" token="@NODE_TOKEN@"/>
+  </nodes>
+</control>
