@@ -145,7 +145,12 @@ GPUs' compute capabilities, and prints the `config.xml` lines to paste.
 Prerequisites it checks first: an interpreter that can create virtualenvs
 (**Debian/Ubuntu need `apt install python3.x-venv` — the stock `python3` cannot,
 and this is the most common first-run failure**), `nvcc` for GPU builds, and
-`git` for the 3D families.
+`git` for the 3D families. The `music` family additionally needs the FFmpeg
+development headers, and `tts` needs the `ffmpeg` binary at runtime.
+
+Eight of the nine families install unattended; `mesh-trellis` needs one
+interactive upstream step afterwards. Sizes, results and every failure mode are
+in [Python workers](server/server/workers.md).
 
 Full detail, including why each family gets its own environment and what to do
 when a worker will not start: **[Python workers](server/server/workers.md)**.
