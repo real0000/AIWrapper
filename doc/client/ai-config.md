@@ -93,6 +93,12 @@ This is where a model that "does not fit" usually becomes one that does.
 | CPU MoE Layers | 0 | For mixture-of-experts models, keep expert weights on the CPU: `0` off, `N` for the first N layers, `-1` for all. Non-MoE models ignore it |
 | GPU Visibility | inherit | Which GPUs this model may use — indices (`0,1`) or UUIDs. Empty inherits the server default |
 
+**`-1` can silently mean CPU.** It is an estimate from free VRAM, and on a host
+where that reading fails it resolves to 0 — the model loads entirely on the CPU
+with no error, just an order of magnitude less speed. The server log shows the
+resolved value (`n_gpu_layers=-1->0`). Prefer Auto Fit, or set the count
+explicitly.
+
 **Auto Fit** is the recommended starting point. It measures what the model
 actually needs with a dry run, reads the machine's NVLink topology, and picks
 the split mode, layer count, tensor split and MoE offload itself. You choose

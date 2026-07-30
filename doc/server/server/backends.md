@@ -29,7 +29,9 @@ list when the server starts, so a model cannot be pinned to particular cards
 there. The cost is a subprocess and a Python environment.
 
 `<ai><unsloth><python_exe>` must point at an interpreter that has
-`llama-cpp-python` installed. Getting that wrong is the most common reason a
+`llama-cpp-python` installed — built for your GPUs, which is a compile step, not
+a plain `pip install`. The package ships `setup-workers.sh` to do it; see
+[Python workers](workers.md). Getting this wrong is the most common reason a
 model never loads.
 
 ## Lazy loading

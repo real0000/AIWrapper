@@ -58,6 +58,7 @@ The process that actually loads models and answers clients.
 | Page | Contents |
 |---|---|
 | [Overview](server/README.md) | Ports, startup sequence, working directory, logs |
+| [Python workers](server/workers.md) | Worker environments: what a fresh machine needs, and the script that builds them |
 | [Models](server/models.md) | Model directories, quantization discovery, vision models, licence metadata |
 | [Backends](server/backends.md) | In-process llama.cpp vs Python workers, the RAM/VRAM budget, eviction |
 | [Modalities](server/modalities.md) | Image, speech, audio, music and 3D workers |

@@ -13,7 +13,7 @@ Package: [`dist/aiwrapper-server-0.1.0-linux-x64.tar.gz`](../dist/)
 | OS | Linux x86-64, glibc 2.35+ | Built and tested on Ubuntu-family systems |
 | GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
-| MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §7 |
+| MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §8 |
 | Python | 3.10+, optional | Needed for the `unsloth` backend and the multimodal workers |
 
 Check the CUDA runtime:
@@ -41,6 +41,7 @@ sql/schema.sql          database schema
 config.example.xml      server configuration template
 control.example.xml     control-plane configuration template
 install.sh              installer
+setup-workers.sh        builds the Python worker environments
 ```
 
 ## 3. Install
@@ -126,7 +127,30 @@ both of which rewrite the `<models>` section for you:
 ./bin/aiw-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
 ```
 
-## 5. Database (optional)
+## 5. Python worker environments
+
+Needed if you use the `unsloth` backend (the usual choice) or any modality. A
+text-only deployment on the in-process `llama` backend can skip this.
+
+```bash
+cd /opt/aiwrapper
+./setup-workers.sh --list          # the families and what each needs
+./setup-workers.sh                 # llm only — the text/code path
+./setup-workers.sh --families all  # everything, tens of GB
+```
+
+It creates one virtualenv per family, builds `llama-cpp-python` against your
+GPUs' compute capabilities, and prints the `config.xml` lines to paste.
+
+Prerequisites it checks first: an interpreter that can create virtualenvs
+(**Debian/Ubuntu need `apt install python3.x-venv` — the stock `python3` cannot,
+and this is the most common first-run failure**), `nvcc` for GPU builds, and
+`git` for the 3D families.
+
+Full detail, including why each family gets its own environment and what to do
+when a worker will not start: **[Python workers](server/server/workers.md)**.
+
+## 6. Database (optional)
 
 ```bash
 mysql -u root -p < /opt/aiwrapper/sql/schema.sql
@@ -137,7 +161,7 @@ database — the server and the control plane share the `users` / `api_keys` /
 `sessions` tables. If they differ, accounts created in the web UI will not be
 visible to the server and clients cannot log in.
 
-## 6. Start
+## 7. Start
 
 With systemd:
 
@@ -171,7 +195,7 @@ The web UI is at `http://<host>:8088/`.
 | 15972 | `config.xml` `<node><agent_port>` | Node agent API, called by the control plane |
 | 8088 | `control.xml` `<web_port>` | Control-plane web UI |
 
-## 7. Running without a database
+## 8. Running without a database
 
 Leave `<mysql>` pointing at nothing reachable and the server logs:
 
@@ -188,7 +212,7 @@ It then serves every request without authentication. That is fine for a local
 single-user trial and **not** appropriate for anything reachable from another
 machine.
 
-## 8. TLS
+## 9. TLS
 
 Set both fields in `config.xml` to serve https/wss on the same port:
 
@@ -211,7 +235,7 @@ told to accept it — see [extension-install.md](extension-install.md) §4.
 Bearer tokens are sent on every request, so plaintext is only appropriate on
 localhost.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Cause |
 |---|---|
@@ -219,9 +243,10 @@ localhost.
 | `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
 | Server starts but no GPU is listed | Driver or CUDA 12 runtime missing; check `nvidia-smi` and `ldconfig -p | grep libcudart` |
+| A model never loads, worker fails immediately | `<python_exe>` is not a venv built by `setup-workers.sh` — see [Python workers](server/server/workers.md) |
 | Port already in use | Another instance is running, or `<port>` collides with `<agent_port>` |
 
-## 10. Uninstall
+## 11. Uninstall
 
 ```bash
 sudo systemctl disable --now aiw-agent aiw-control

@@ -50,6 +50,9 @@ spawned.
 
 ## One environment per worker
 
+Set these up with `setup-workers.sh` — see [Python workers](workers.md), which
+covers what each family needs and how the three mesh families differ.
+
 The `python_exe` attribute on `<modalities>` is the default; each entry usually
 overrides it.
 

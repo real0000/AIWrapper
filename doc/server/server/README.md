@@ -15,6 +15,7 @@ its own.
 |---|---|
 | [Models](models.md) | Model directories, how quantizations are discovered, vision models, licence metadata |
 | [Backends](backends.md) | In-process llama.cpp vs Python workers, the RAM/VRAM budget and eviction |
+| [Python workers](workers.md) | Setting up the worker environments — the part a fresh machine actually needs |
 | [Modalities](modalities.md) | Image, speech, audio, music and 3D generation workers |
 | [Retrieval](rag.md) | Chunking, embedding, the vector store |
 | [API](api.md) | HTTP endpoints and WebSocket messages |
