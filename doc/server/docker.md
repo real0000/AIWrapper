@@ -6,12 +6,11 @@ outside image is the official `mysql`.
 
 Files are in [`docker/`](../../docker/).
 
-> **Not yet verified.** The Dockerfile, compose file and entrypoint were written
-> against the packaged binaries and validated as far as possible without Docker
-> installed — shell and YAML parse, the config templates produce valid XML, every
-> placeholder the entrypoint substitutes exists. They have **not been built or
-> run**. Treat the first `docker compose up` as the real test, and see
-> [If something does not come up](#if-something-does-not-come-up).
+> **Verified.** Built and run on Docker 29.6 with Compose v5.3 and the NVIDIA
+> Container Toolkit: the stack comes up, MySQL-backed accounts work, all five
+> GPUs are visible inside the container, and a 7.5 GB Q8_0 GGUF loads and
+> generates in 2.9 s through the containerised server. Details in
+> [What was tested](#what-was-tested).
 
 ---
 
@@ -29,6 +28,7 @@ Three things must be set in `.env`:
 | Variable | Meaning |
 |---|---|
 | `MODELS_DIR` | Host directory holding your models — mounted read-only at `/models` |
+| `STATE_DIR` | Where the database, config, data and worker environments live. **Must be on ext4/xfs — a bind mount onto exFAT or NTFS fails**, so it is kept separate from wherever you unpacked this |
 | `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` | Any non-empty values; only these two containers use them |
 | `ADMIN_PASSWORD` | Control-plane web UI login. Empty disables authentication |
 
@@ -42,6 +42,10 @@ curl http://127.0.0.1:15963/health     # {"status":"ok"}
 The web UI is at `http://127.0.0.1:8088/`. Point the VSCode extension at
 `localhost` port `15963`.
 
+Set `PUID`/`PGID` to your own `id -u` / `id -g` as well, unless you like editing
+root-owned files: the container runs as root and everything it creates in those
+folders would otherwise belong to root.
+
 ## Requirements
 
 | | |
@@ -49,7 +53,7 @@ The web UI is at `http://127.0.0.1:8088/`. Point the VSCode extension at
 | Docker | With Compose v2 (`docker compose`, not `docker-compose`) |
 | NVIDIA Container Toolkit | For GPU access. Without it, drop the `deploy.resources` block and everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
-| Disk | ~8 GB image, plus the worker environments and your models |
+| Disk | 13.1 GB image, plus the worker environments (1.9 GB for `llm`) and your models |
 
 The base image is `nvidia/cuda:12.6.3-devel-ubuntu24.04`, and both halves of that
 matter:
@@ -69,12 +73,18 @@ Everything that matters is a host folder, so containers stay disposable.
 
 | Host | Container | Holds |
 |---|---|---|
-| `./config` | `/config` | `config.xml`, `control.xml` — seeded on first start, then yours |
-| `./data/server` | `/data` | Logic graphs, workflows, retrieval vectors, the server log |
-| `./data/mysql` | `/var/lib/mysql` | The database |
-| `./data/output` | `/tmp/aiwrapper` | Generated images, audio, meshes |
-| `./venvs` | `/venvs` | Python worker environments |
+| `${STATE_DIR}/config` | `/config` | `config.xml`, `control.xml` — seeded on first start, then yours |
+| `${STATE_DIR}/server` | `/opt/aiwrapper/data` | Logic graphs, workflows, retrieval vectors, the server log |
+| `${STATE_DIR}/mysql` | `/var/lib/mysql` | The database |
+| `${STATE_DIR}/output` | `/tmp/aiwrapper` | Generated images, audio, meshes |
+| `${STATE_DIR}/venvs` | `/venvs` | Python worker environments |
 | `${MODELS_DIR}` | `/models` (read-only) | Your models |
+
+**The server data mount is `/opt/aiwrapper/data`, not `/data`.** The server
+resolves `data/logic_graphs`, `data/workflows` and `data/vectors` against its
+working directory, so a volume anywhere else is silently ignored and the graphs
+disappear the next time the container is recreated. This cost one round of
+testing to find.
 
 **`/venvs` is a volume for a reason.** Building every worker family is about
 46 GB and recompiles CUDA extensions; keeping it outside the image means a
@@ -128,7 +138,7 @@ Mount the host directory holding them and refer to it as `/models`:
 </model>
 ```
 
-Edit `./config/config.xml` and restart, or add it through the web UI. Either way
+Edit `${STATE_DIR}/config/config.xml` and restart, or add it through the web UI. Either way
 the server must restart before a new entry loads — see
 [Restart to apply](agent/README.md#restart-to-apply).
 
@@ -141,6 +151,31 @@ Leave `MYSQL_PASSWORD` empty and remove the `mysql` service and the `depends_on`
 block. The server then runs in open mode: no accounts, no per-user sessions, and
 no authentication on the API. Reasonable for a single-user trial on a machine
 only you can reach; not otherwise. See [Accounts](control/accounts.md).
+
+## What was tested
+
+| Step | Result |
+|---|---|
+| GPU passthrough | All 5 GPUs visible via `--gpus all`, correct compute capabilities |
+| Image build | 13.1 GB, from the CUDA 12.6.3 devel base |
+| Stack start | MySQL healthy, then the server; bootstrap admin seeded, `auth ENABLED` |
+| Model scan | GGUF found through the read-only `/models` mount |
+| Web UI | Serves on 8088 |
+| Worker build in-container | `setup-workers.sh --prefix /venvs` built `llm` against nvcc 12.6 |
+| Inference | 7.5 GB Q8_0 loaded on one V100, generated in **2.9 s** |
+| Persistence | After `down` + `up`: config, vectors and the worker venv all survived — no CUDA recompile |
+
+Three things broke while testing, and are fixed in these files:
+
+| What broke | Why, and what changed |
+|---|---|
+| `chown ...: operation not permitted` on startup | The checkout was on exFAT, which has no Unix ownership, and Docker chowns bind-mount sources. State now lives at `STATE_DIR`, separate from the checkout |
+| Logic graphs and vectors written to a throwaway path | The server resolves `data/…` against its working directory, so a volume at `/data` was simply ignored. It is now mounted at `/opt/aiwrapper/data`, which is where the server actually writes |
+| `config.xml` not editable from the host | The container runs as root, so the seeded config was root-owned and mode 600 while the docs told you to edit it. `PUID`/`PGID` now hand the bind mounts to your user |
+
+The last two are the kind that look fine until the day you need them: the first
+loses your graphs on a container recreate, the second only bites when you try to
+change a setting.
 
 ## Everyday commands
 
@@ -171,10 +206,11 @@ The entrypoint prints a warning for each of the common mistakes before starting
 | Worker dies with no error while loading | Raise `SHM_SIZE`; the 64 MB Docker default is far too small |
 | Clients cannot log in | `<mysql>` differs between `config.xml` and `control.xml`. The entrypoint fills both from the same variables, so this only happens after hand-editing |
 | Web UI unreachable from another machine | It is bound to `127.0.0.1` on purpose |
+| `operation not permitted` mounting a folder | `STATE_DIR` is on exFAT/NTFS. Point it at an ext4/xfs path |
+| Cannot edit `config.xml` from the host | Set `PUID`/`PGID` in `.env` to your `id -u` / `id -g` |
 
-Because this path is unverified, a failure here is as likely to be a bug in
-these files as a mistake in your setup. The [manual install](../server-install.md)
-is the tested route if you need something working now.
+If none of that fits, the [manual install](../server-install.md) is the other
+tested route.
 
 ---
 

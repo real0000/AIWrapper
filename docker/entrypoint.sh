@@ -11,7 +11,7 @@ TEMPLATES=/opt/aiwrapper/templates
 
 log() { printf '[entrypoint] %s\n' "$*"; }
 
-mkdir -p "${CFG_DIR}" /data /venvs /tmp/aiwrapper/modality
+mkdir -p "${CFG_DIR}" /opt/aiwrapper/data /venvs /tmp/aiwrapper/modality
 
 # ── First run: seed configs ─────────────────────────────────────────────────
 # Substituted from the environment so a compose file can set the database
@@ -34,6 +34,17 @@ seed() {
 }
 seed "${TEMPLATES}/config.xml.template"  "${CONFIG_FILE}"
 seed "${TEMPLATES}/control.xml.template" "${CONTROL_CONFIG}"
+
+# ── Ownership of the bind-mounted folders ───────────────────────────────────
+# The container runs as root, so everything it creates on a bind mount is
+# root-owned and mode 600 — which leaves you unable to edit config.xml from the
+# host without sudo, even though the docs tell you to. Set PUID/PGID to your own
+# ids (id -u / id -g) and the folders become yours.
+if [[ -n "${PUID:-}" && -n "${PGID:-}" ]]; then
+    log "chown ${PUID}:${PGID} on /config, /opt/aiwrapper/data, /venvs, /tmp/aiwrapper"
+    chown -R "${PUID}:${PGID}" "${CFG_DIR}" /opt/aiwrapper/data /venvs /tmp/aiwrapper 2>/dev/null || \
+        log "chown failed (continuing)"
+fi
 
 # ── Warnings that are cheap here and confusing later ────────────────────────
 if [[ -z "${MYSQL_PASSWORD:-}" ]]; then

@@ -58,13 +58,14 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 755 /usr/local/bin/entrypoint.sh
 
 # ── Mount points ────────────────────────────────────────────────────────────
-#   /config   config.xml + control.xml            (persist: holds credentials)
-#   /models   model files, mount read-only        (huge; never in the image)
-#   /data     logic graphs, workflows, vectors    (persist: your work)
-#   /venvs    Python worker environments          (persist: ~46 GB if you build
-#                                                  every family, and rebuilding
-#                                                  them recompiles CUDA)
-VOLUME ["/config", "/data", "/venvs"]
+#   /config              config.xml + control.xml     (holds credentials)
+#   /models              model files, mount read-only (huge; never in the image)
+#   /opt/aiwrapper/data  logic graphs, workflows, vectors — the server resolves
+#                        these relative to its working directory, so this exact
+#                        path is what has to be persisted
+#   /venvs               Python worker environments  (~46 GB for every family,
+#                        and rebuilding them recompiles CUDA)
+VOLUME ["/config", "/opt/aiwrapper/data", "/venvs"]
 
 #   15963  AI API — HTTP + WebSocket, what the editor connects to
 #   15972  node agent API

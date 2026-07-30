@@ -28,7 +28,7 @@
     <agent_port>15972</agent_port>
     <node_token>@NODE_TOKEN@</node_token>
     <download_dir>/models</download_dir>
-    <log_file>/data/server.log</log_file>
+    <log_file>/opt/aiwrapper/data/server.log</log_file>
   </node>
 
   <mysql>

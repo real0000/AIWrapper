@@ -7,12 +7,18 @@
 # Nothing is pulled from a private registry. The image is built here; mysql is
 # the official public one.
 #
-# Everything that matters is a host folder, so it survives the container:
-#   ./data/mysql   the database
-#   ./data/server  logic graphs, workflows, retrieval vectors
-#   ./config       config.xml and control.xml
-#   ./venvs        the Python worker environments
-#   ${MODELS_DIR}  your models, mounted read-only
+# Everything that matters is a host folder, so it survives the container. Where
+# those folders live is up to you (STATE_DIR in .env), because they must sit on a
+# filesystem with Unix ownership — ext4, xfs and friends. A bind mount onto
+# exFAT or NTFS fails at startup with
+#   error while creating mount source path ...: chown ...: operation not permitted
+# which is why STATE_DIR is separate from wherever you unpacked this.
+#
+#   ${STATE_DIR}/mysql    the database
+#   ${STATE_DIR}/server   logic graphs, workflows, retrieval vectors
+#   ${STATE_DIR}/config   config.xml and control.xml
+#   ${STATE_DIR}/venvs    the Python worker environments
+#   ${MODELS_DIR}         your models, mounted read-only
 
 services:
   mysql:
@@ -24,7 +30,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-aiwrapper}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
     volumes:
-      - ./data/mysql:/var/lib/mysql
+      - ${STATE_DIR:-./data}/mysql:/var/lib/mysql
     # Not published by default — only the aiwrapper container needs it.
     # Uncomment to inspect the database from the host.
     # ports:
@@ -55,6 +61,10 @@ services:
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
       NODE_TOKEN: ${NODE_TOKEN:-}
+      # Take ownership of the bind mounts so you can edit config.xml from the
+      # host; see .env.example.
+      PUID: ${PUID:-}
+      PGID: ${PGID:-}
       UNSLOTH_PYTHON: /venvs/llm/bin/python
     ports:
       # AI API — this is what the VSCode extension connects to.
@@ -66,12 +76,16 @@ services:
       # manages this node.
       # - "${AGENT_PORT:-15972}:15972"
     volumes:
-      - ./config:/config
-      - ./data/server:/data
-      - ./venvs:/venvs
+      - ${STATE_DIR:-./data}/config:/config
+      # Mounted at the server's own data directory, not /data: the server
+      # resolves data/logic_graphs, data/workflows and data/vectors relative
+      # to its working directory, so anything mounted elsewhere is ignored
+      # and the graphs are lost when the container is recreated.
+      - ${STATE_DIR:-./data}/server:/opt/aiwrapper/data
+      - ${STATE_DIR:-./data}/venvs:/venvs
       - ${MODELS_DIR:?set MODELS_DIR in .env}:/models:ro
       # Generated images, audio and meshes are written here.
-      - ./data/output:/tmp/aiwrapper
+      - ${STATE_DIR:-./data}/output:/tmp/aiwrapper
     # Models are memory-mapped and workers use shared memory; the 64 MB default
     # is far too small and shows up as an unexplained worker crash.
     shm_size: ${SHM_SIZE:-8gb}
