@@ -53,6 +53,7 @@ folders would otherwise belong to root.
 | Docker | With Compose v2 (`docker compose`, not `docker-compose`) |
 | NVIDIA Container Toolkit | For GPU access. Without it, drop the `deploy.resources` block and everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
+| GPU | Compute capability 7.0 or newer — see [supported GPUs](../server-install.md#supported-gpus) |
 | Disk | 13.1 GB image, plus the worker environments (1.9 GB for `llm`) and your models |
 
 The base image is `nvidia/cuda:12.6.3-devel-ubuntu24.04`, and both halves of that

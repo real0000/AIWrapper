@@ -19,7 +19,7 @@ Acquisition of the complete source code, intellectual property, and commercial r
 
 | Package | Platform | Contents | Where |
 |---|---|---|---|
-| `aiwrapper-server-0.1.0-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) (113 MB) |
+| `aiwrapper-server-0.1.0-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) (194 MB) |
 | [`aiwrapper-0.1.0.vsix`](dist/aiwrapper-0.1.0.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
 
 Installation: **[doc/server-install.md](doc/server-install.md)** — Docker or
@@ -116,7 +116,7 @@ several machines.
 
 | | |
 |---|---|
-| Server, either way | Linux x86-64; NVIDIA driver + CUDA 12 for GPU inference (CPU-only works, slowly) |
+| Server, either way | Linux x86-64; NVIDIA driver + CUDA 12. GPUs from compute capability 7.0 (V100, RTX 20xx) through 9.0+ (H100, RTX 50xx) — see [supported GPUs](doc/server-install.md#supported-gpus). CPU-only works, slowly |
 | …via Docker | Docker with Compose v2, and the NVIDIA Container Toolkit for GPU access. Nothing else on the host |
 | …natively | glibc 2.38+ (Ubuntu 24.04 or newer), plus MySQL for accounts and Python 3.10+ for the workers |
 | Client | VSCode 1.85+ |

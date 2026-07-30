@@ -6,6 +6,13 @@ line — logic graphs, tools, retrieval — is identical either way.
 
 ---
 
+The server binary carries compiled CUDA kernels for compute capability 7.0
+through 8.9, plus PTX for anything newer — see
+[supported GPUs](../../server-install.md#supported-gpus). The Python worker
+backend is separate: `setup-workers.sh` builds `llama-cpp-python` for **your**
+GPUs only, which is why it has to be rebuilt if you move the install to
+different hardware.
+
 ## The two
 
 | | `llama` | `unsloth` |

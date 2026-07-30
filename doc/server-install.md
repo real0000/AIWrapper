@@ -57,7 +57,7 @@ From here on this page is the **native** install. For containers see
 | | Required | Notes |
 |---|---|---|
 | OS | Linux x86-64, glibc 2.38+ | Ubuntu 24.04 or newer. The binary needs `GLIBC_2.38`, so Ubuntu 22.04 (2.35) will not run it |
-| GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU |
+| GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU. See [supported GPUs](#supported-gpus) |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
 | MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §8 |
 | Python | 3.10+, optional | Needed for the `unsloth` backend and the multimodal workers |
@@ -67,6 +67,32 @@ Check the CUDA runtime:
 ```bash
 nvidia-smi                       # driver + GPUs
 ldconfig -p | grep libcudart     # CUDA 12 runtime
+```
+
+### Supported GPUs
+
+The build carries compiled kernels for every architecture from Volta to Hopper,
+plus PTX so anything newer still works:
+
+| Compute capability | Examples | How |
+|---|---|---|
+| 7.0 | V100, Titan V | Compiled kernels |
+| 7.5 | RTX 20xx, T4, Quadro RTX | Compiled kernels |
+| 8.0 | A100, A30 | Compiled kernels |
+| 8.6 | RTX 30xx, A40, A10 | Compiled kernels |
+| 8.9 | RTX 40xx, L40, L4 | Compiled kernels |
+| 9.0 and newer | H100, H200, RTX 50xx | PTX, compiled by the driver on first load — expect a delay the first time a model loads, then it is cached |
+| 6.x and older | GTX 10xx, P100 | **Not supported** |
+
+This is why the package is 194 MB: those kernels are 91% of the binary. A build
+for one architecture is about a third of the size, so if you are deploying to a
+fleet of identical machines and care, building for just your own is a real
+saving — see `CUDA_ARCHS` in `dev.sh`.
+
+Check what you have:
+
+```bash
+nvidia-smi --query-gpu=name,compute_cap --format=csv
 ```
 
 ## 2. Unpack
