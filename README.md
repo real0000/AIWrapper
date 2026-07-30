@@ -22,8 +22,9 @@ Acquisition of the complete source code, intellectual property, and commercial r
 | `aiwrapper-server-0.1.0-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) (113 MB) |
 | [`aiwrapper-0.1.0.vsix`](dist/aiwrapper-0.1.0.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
 
-Installation: **[doc/server-install.md](doc/server-install.md)** →
-**[doc/extension-install.md](doc/extension-install.md)**
+Installation: **[doc/server-install.md](doc/server-install.md)** — Docker or
+native — then **[doc/extension-install.md](doc/extension-install.md)** for the
+editor client.
 
 ---
 
@@ -115,17 +116,18 @@ several machines.
 
 | | |
 |---|---|
-| Server | Linux x86-64; NVIDIA driver + CUDA 12 runtime for GPU inference (CPU-only works, slowly) |
+| Server, either way | Linux x86-64; NVIDIA driver + CUDA 12 for GPU inference (CPU-only works, slowly) |
+| …via Docker | Docker with Compose v2, and the NVIDIA Container Toolkit for GPU access. Nothing else on the host |
+| …natively | glibc 2.38+ (Ubuntu 24.04 or newer), plus MySQL for accounts and Python 3.10+ for the workers |
 | Client | VSCode 1.85+ |
-| Optional | MySQL for accounts and sessions; Python 3.10+ for the unsloth backend and multimodal workers |
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [doc/server-install.md](doc/server-install.md) | Server requirements, install, configuration, first start, TLS, troubleshooting |
+| [doc/server-install.md](doc/server-install.md) | **Start here** — Docker or native, then the native path in full: configuration, workers, database, TLS, troubleshooting |
+| [doc/server/docker.md](doc/server/docker.md) | The Docker path — one `docker compose up`, with models, database and config as host folders |
 | [doc/extension-install.md](doc/extension-install.md) | Installing the `.vsix`, connecting to a server, logging in, first use |
-| [doc/server/docker.md](doc/server/docker.md) | Running the server side in containers — Dockerfile + compose, models/database/config as host folders |
 | [doc/server/](doc/server/README.md) | Server guide — node agent, inference server, control plane: what each owns, models, backends, modalities, retrieval, accounts, multi-node |
 | [doc/client/](doc/client/README.md) | Client guide — both windows panel by panel, every node type, every configuration parameter, RAG, tools and staging, all settings |
 

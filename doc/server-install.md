@@ -1,16 +1,58 @@
 # Server Installation
 
-Installing the AIWrapper Server from the binary distribution on Linux x86-64.
+Two ways to install, both from the same package on Linux x86-64:
+[`dist/aiwrapper-server-0.1.0-linux-x64.tar.gz`](../dist/).
 
-Package: [`dist/aiwrapper-server-0.1.0-linux-x64.tar.gz`](../dist/)
+---
 
-Prefer containers? See [Docker](server/docker.md) — same package, but the
-database, models and config live in host folders and nothing is installed on the
-host itself.
+## Which one
+
+| | **Docker** | **Native** |
+|---|---|---|
+| Installs on the host | Nothing but Docker | The binaries, and a MySQL server if you want accounts |
+| Database | Comes with it, as a container | You install and configure MySQL yourself |
+| Python worker environments | Built inside the container; the image already carries every system dependency | Built on the host; some families need `apt` packages and root |
+| The `music` family | Works | Needs FFmpeg development headers installed as root |
+| Upgrading | Replace the package, rebuild, restart | Re-run the installer |
+| Uninstalling | `docker compose down` and delete a folder | Remove the service units and the install directory |
+| Disk | 13 GB image on top of the rest | Just the package and the worker environments |
+| Runs as | root inside the container | A user account you choose |
+
+**Take Docker unless you have a reason not to.** It exists because the awkward
+part of this product is not the server — that is one static binary — but the
+Python worker environments and their system dependencies. The image has those
+solved.
+
+Reasons to go native: you already run MySQL, you want the server under systemd
+alongside other services, you need it to run as a specific user, or Docker is not
+an option on the machine.
+
+Both paths are tested, and both were used to load a 7.5 GB model and generate
+through the server.
+
+### → [Docker](server/docker.md)
+
+```bash
+cd release/docker
+cp ../dist/aiwrapper-server-0.1.0-linux-x64.tar.gz .
+cp .env.example .env      # models directory, state directory, passwords
+docker compose up -d --build
+```
+
+Everything stateful — database, config, logic graphs, worker environments — is a
+host folder you choose, and the ports are yours to map. The full page covers
+what is mounted where, GPU requirements and the traps.
+
+### → Native
+
+The rest of this page.
 
 ---
 
 ## 1. Requirements
+
+From here on this page is the **native** install. For containers see
+[Docker](server/docker.md).
 
 | | Required | Notes |
 |---|---|---|
@@ -266,7 +308,8 @@ sudo rm -rf /opt/aiwrapper
 
 ---
 
-Next: [extension-install.md](extension-install.md) — install the VSCode client and connect it.
+Next: [extension-install.md](extension-install.md) — install the VSCode client
+and connect it. The client does not care which way the server was installed.
 
 For how the three server-side processes fit together and how to run them day to
 day, see the **[Server Guide](server/README.md)**.

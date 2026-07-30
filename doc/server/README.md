@@ -24,8 +24,9 @@ Installation is covered separately in
                                                           the actual inference
 ```
 
-Prefer containers? **[Docker](docker.md)** runs all three from a Dockerfile you
-build yourself, with your models, database and config as host folders.
+Running in containers? **[Docker](docker.md)** runs all three from one image,
+with your models, database and config as host folders. The install page
+[compares the two paths](../server-install.md#which-one).
 
 | Process | Binary | One per | Job |
 |---|---|---|---|
