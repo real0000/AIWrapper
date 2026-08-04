@@ -47,12 +47,12 @@ Config loaded from: /opt/aiwrapper/config.xml
 Hardware topology: GPU0=…, GPU1=…; 6 NVLink pair(s); RAM 995 GiB
 AIWrapper Server starting on port 15963 (threads: 112)
 TLS disabled — traffic (including bearer tokens) is plaintext.
-Model registered: my-coder (backend=unsloth, format=gguf, quants=3, …)
+Model registered: my-coder (backend=llama, format=gguf, quants=3, …)
 MySQL pool: 127.0.0.1:3306/aiwrapper (pool=4)
 [auth] auth DISABLED (dev-open) (users=0, masterKey=no)
 [BackendBudget] RAM cap=815483 MB, VRAM cap=129018 MB, eviction=lru
 LlamaWorkerPool ready (lazy)
-UnslothWorkerPool ready (lazy)
+VllmWorkerPool ready (lazy, python_exe=…)
 RAG VectorStore persist dir: data/vectors
 Listening on port 15963
 ```

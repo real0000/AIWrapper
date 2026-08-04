@@ -16,11 +16,28 @@ palette.
 |---|---|
 | Message list | The conversation. Answers stream in token by token |
 | Input box | Your message. Enter sends, Shift+Enter adds a line |
+| 📎 Attach | Picks files to send with this message — see [below](#attaching-files) |
 | Graph selector | Which logic graph answers you — see [below](#the-two-selectors) |
 | Start selector | Which entry point in that graph the run begins at |
 | Settings | Opens the extension's settings — see [Settings](settings.md) |
 | Session buttons (top right) | History panel, and new session |
 | Status chip (status bar) | `AIWrapper: Idle` / `Connecting…` / `Generating` / an error |
+
+## Attaching files
+
+📎 beside the input box picks one or more files. They upload immediately and
+appear as chips above the input; ✕ on a chip drops it. The chips clear when you
+send — attachments belong to a single message, not to the session.
+
+What reaches the model depends on the graph. The files arrive on the Start
+node's `ASSET` output, so they only reach the nodes you wired that output to.
+A [Send To AI](nodes.md#send-to-ai) node with an asset input running a
+vision-capable model sees the images themselves; one running a text-only model
+gets the file list instead, and a modality node uses the file as its source
+image. A graph whose `ASSET` pin goes nowhere ignores attachments entirely —
+that is the wiring, not a failure.
+
+You can send an attachment with no text at all.
 
 ## The two selectors
 

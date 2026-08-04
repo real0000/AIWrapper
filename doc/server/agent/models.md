@@ -26,7 +26,7 @@ Three ways, all ending in the same place — a `<model>` entry in the local
 | `--rev` | Branch or revision (default `main`) |
 | `--config` | The `config.xml` to update |
 | `--alias` | Name the model will have in configs. Derived from the repo name if omitted |
-| `--backend` | `unsloth` or `llama`; otherwise the configured default |
+| `--backend` | `llama` (GGUF) or `vllm` (safetensors); otherwise the configured default |
 | `--list` | List the downloadable groups and exit |
 | `-y` | Skip the confirmation, still asks which group |
 

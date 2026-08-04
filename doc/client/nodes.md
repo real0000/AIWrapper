@@ -50,6 +50,11 @@ and file tools see current files.
 |---|---|---|---|
 | `Exec` | exec | out | Fires once, at the beginning |
 | `PROMPT` | string | out | The user's message |
+| `ASSET` | asset | out | Files attached to the message with 📎 (empty when there are none) |
+
+`ASSET` is a separate wire on purpose: attachments only go to the nodes you
+actually connect them to, so a vision model can look at the image while the rest
+of the graph keeps working in plain text.
 
 | Setting | Meaning |
 |---|---|
@@ -70,11 +75,26 @@ instead of an [AI Config](ai-config.md), the node generates an image, speech,
 audio, music or a 3D mesh instead of text. In that mode tool calls, retrieval
 and structured output are all bypassed, and `ALL` carries file paths.
 
+Files arrive on **asset** pins, not text pins. What the node does with them
+depends on the model it is running:
+
+- a vision-capable model gets the images as real image content alongside the
+  prompt;
+- a text-only model gets a short list of what was attached and where each file
+  is, so a node with file tools can still open them;
+- under a modality config, an asset pin becomes a source-file parameter — that
+  is how image-to-image and image-to-mesh get their input picture.
+
+An asset pin referenced as `{{pin}}` in the template expands to that same short
+list, never to the raw reference.
+
 | Pin | Type | Direction | Meaning |
 |---|---|---|---|
 | `Exec` | exec | in / out | |
-| *user-defined* | string | in | Values for `{{placeholders}}` in the template |
+| `Asset` | asset | in | Files for this call — from Start's `ASSET`, or another node's output |
+| *user-defined* | string / asset | in | Values for `{{placeholders}}` in the template, or more files |
 | `ALL` | string | out | The whole answer. Becomes an image/audio/mesh path list under a modality config |
+| `Asset` | asset | out | Under a modality config, the generated files — wire straight into another node's asset input |
 | *user-defined* | string | out | With a `json_keys` format, one pin per key — the answer arrives already split |
 
 | Setting | Default | Meaning |

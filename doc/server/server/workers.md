@@ -3,13 +3,19 @@
 The server binary is self-contained. The Python workers are not — and on a fresh
 machine they are the part that actually needs setting up.
 
-Two things use them:
+They serve the **modalities** — image, speech, audio, music, 3D. See
+[Modalities](modalities.md).
 
-- the **unsloth backend**, which is how most models are run — see [Backends](backends.md)
-- every **modality** (image, speech, audio, music, 3D) — see [Modalities](modalities.md)
+Language models do not use them any more. GGUF runs in-process on the `llama`
+backend, and safetensors runs on **vLLM**, which is installed separately and
+never through `setup-workers.sh` — it pins its own torch and will fight with
+these environments. See [vLLM](vllm.md).
 
-A text-only deployment using the in-process `llama` backend needs none of this.
-Anything else needs at least the `llm` family below.
+> The `llm` and `llm-hf` families below belonged to the removed `unsloth`
+> backend. They are documented here only for older installs; a current
+> deployment does not build them.
+
+A text-only deployment needs none of this.
 
 ---
 

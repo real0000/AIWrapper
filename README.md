@@ -35,7 +35,7 @@ editor client.
                       ├── WebSocket + HTTP ──► AIWrapper Server ──► local models / GPUs
    native client    ──┘                              │
                                                      ├── llama.cpp (in-process)
-                                                     ├── Python workers (unsloth)
+                                                     ├── Python workers (multimodal)
                                                      └── multimodal workers
 ```
 
@@ -52,11 +52,12 @@ logic graph drives the conversation.*
 
 ### Local inference, multiple backends
 
-Models run through one adapter with two backends: in-process **llama.cpp** for
-GGUF, and lazily spawned **Python workers** for safetensors and GGUF under an
-unsloth chat template. A model's worker only starts on the first request that
-targets it, and a RAM/VRAM budget evicts the least recently used worker when a
-new model does not fit.
+Models run through one adapter with three backends: in-process **llama.cpp**
+for GGUF (vision included, via an `mmproj` projector), a lazily spawned
+**vLLM** subprocess for safetensors, and **remote** cloud endpoints (OpenAI,
+Anthropic, Gemini). Nothing loads until the first request that targets it, and
+a RAM/VRAM budget evicts the least recently used model when a new one does not
+fit.
 
 A model's `<path>` is a *directory*: every `*.gguf` inside it becomes a
 selectable quantization, and safetensors directories can be quantized at load

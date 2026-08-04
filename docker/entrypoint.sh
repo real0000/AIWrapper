@@ -28,7 +28,7 @@ seed() {
         -e "s|@ADMIN_USER@|${ADMIN_USER:-admin}|g" \
         -e "s|@ADMIN_PASSWORD@|${ADMIN_PASSWORD:-}|g" \
         -e "s|@NODE_TOKEN@|${NODE_TOKEN:-}|g" \
-        -e "s|@UNSLOTH_PYTHON@|${UNSLOTH_PYTHON:-/venvs/llm/bin/python}|g" \
+        -e "s|@VLLM_PYTHON@|${VLLM_PYTHON:-}|g" \
         "${template}" > "${target}"
     chmod 600 "${target}"
 }
@@ -54,10 +54,14 @@ fi
 if [[ -z "${ADMIN_PASSWORD:-}" ]]; then
     log "WARNING: no ADMIN_PASSWORD — the control plane web UI is unauthenticated"
 fi
-if [[ ! -x "${UNSLOTH_PYTHON:-/venvs/llm/bin/python}" ]]; then
-    log "NOTE: no worker environment at ${UNSLOTH_PYTHON:-/venvs/llm/bin/python}"
-    log "      models using the unsloth backend cannot load until you build one:"
-    log "        docker compose exec aiwrapper ./setup-workers.sh --prefix /venvs"
+# vLLM is only needed for safetensors models; a GGUF-only deployment runs the
+# in-process llama backend and needs nothing installed. Only warn if the
+# variable is set but wrong — an empty one is a deliberate "not using it".
+if [[ -n "${VLLM_PYTHON:-}" ]] && [[ ! -x "${VLLM_PYTHON}" ]]; then
+    log "WARNING: VLLM_PYTHON=${VLLM_PYTHON} is not executable"
+    log "         safetensors (backend=\"vllm\") models will not load. Build it with:"
+    log "           docker compose exec aiwrapper python3 -m venv /venvs/vllm"
+    log "           docker compose exec aiwrapper /venvs/vllm/bin/pip install vllm"
 fi
 if [[ ! -d /models ]] || [[ -z "$(ls -A /models 2>/dev/null)" ]]; then
     log "NOTE: /models is empty — mount your model directories there"

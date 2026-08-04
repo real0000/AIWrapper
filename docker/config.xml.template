@@ -41,7 +41,7 @@
   </mysql>
 
   <ai>
-    <default_backend>unsloth</default_backend>
+    <default_backend>llama</default_backend>
     <default_model></default_model>
     <default_vision_model></default_vision_model>
 
@@ -55,22 +55,24 @@
       <vram_headroom>0.1</vram_headroom>
     </llama>
 
-    <unsloth>
-      <!-- Built by setup-workers.sh into the /venvs volume; see doc/server/docker.md
-           for the exact command. -->
-      <python_exe>@UNSLOTH_PYTHON@</python_exe>
-      <script_dir>/opt/aiwrapper/python</script_dir>
-      <ready_timeout_sec>300</ready_timeout_sec>
-      <timeout_sec>300</timeout_sec>
+    <!-- safetensors models only. The image does not ship vLLM — build it into
+         the /venvs volume and set VLLM_PYTHON; see doc/server/server/vllm.md.
+         Empty python_exe = backend disabled, which is fine for a GGUF-only
+         deployment. -->
+    <vllm>
+      <python_exe>@VLLM_PYTHON@</python_exe>
+      <port_base>18000</port_base>
+      <ready_timeout_sec>900</ready_timeout_sec>
+      <request_timeout_sec>600</request_timeout_sec>
       <env>
         <PYTORCH_CUDA_ALLOC_CONF>expandable_segments:True</PYTORCH_CUDA_ALLOC_CONF>
       </env>
       <extra>
-        <n_ctx>8192</n_ctx>
-        <n_gpu_layers>-1</n_gpu_layers>
-        <flash_attn>true</flash_attn>
+        <!-- <tensor-parallel-size>2</tensor-parallel-size> -->
+        <!-- Volta (V100) has no bfloat16 in hardware — force half there:
+        <dtype>float16</dtype> -->
       </extra>
-    </unsloth>
+    </vllm>
 
     <budget>
       <ram_mb>0</ram_mb>
@@ -85,8 +87,11 @@
     One entry per model. <path> is a directory under /models — mount your model
     folders there and point at them:
 
-      <model alias="my-coder" backend="unsloth">
+      <model alias="my-coder" backend="llama">          <!-- GGUF -->
         <path>/models/Qwen3-Coder-Next</path>
+      </model>
+      <model alias="my-hf-model" backend="vllm">        <!-- safetensors -->
+        <path>/models/Some-HF-Model</path>
       </model>
 
     Adding models through the control-plane web UI rewrites this section for you.

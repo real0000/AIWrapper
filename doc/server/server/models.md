@@ -8,7 +8,7 @@ into something it can load.
 ## An entry
 
 ```xml
-<model alias="my-coder" backend="unsloth">
+<model alias="my-coder" backend="llama">
   <path>/mnt/models/Qwen3-Coder-Next</path>
   <quant>MXFP4_MOE</quant>
   <license name="Apache-2.0" commercial="free"
@@ -19,7 +19,7 @@ into something it can load.
 | Element | Meaning |
 |---|---|
 | `alias` | The name everywhere else — in AI configs, in the API, in logs |
-| `backend` | `llama` (in-process) or `unsloth` (Python worker). See [Backends](backends.md) |
+| `backend` | `llama` (GGUF, in-process), `vllm` (safetensors, subprocess) or `remote` (cloud API). See [Backends](backends.md) |
 | `<path>` | A **directory**. See below |
 | `<quant>` | Default quantization for this alias. Optional |
 | `<mmproj>` | Vision projector, for vision models |
@@ -69,7 +69,7 @@ that is not mounted.
 Two extra elements:
 
 ```xml
-<model alias="my-vision" backend="unsloth">
+<model alias="my-vision" backend="llama">
   <path>/mnt/models/llava-llama-3-8b-v1_1</path>
   <mmproj>/mnt/models/llava-llama-3-8b-v1_1/mmproj-f16.gguf</mmproj>
   <vision handler="llava"/>

@@ -50,6 +50,10 @@ Connections carry two different things, and the editor keeps them apart:
   begins. Exec only connects to exec.
 - **Data pins** (circles) carry values. A data pin connects to another data pin
   of the same type, or to/from `string`, which is the untyped channel.
+- **Asset pins** (teal circles) carry files rather than text — chat attachments
+  and generated images/audio/meshes. They connect to each other, to any modality
+  content type, and to/from `string`. Any pin you add can be switched between
+  text and asset in the inspector.
 
 A connection may rename as it crosses: the output pin's name is the key on the
 sending side, the input pin's name is the key on the receiving side. That is how

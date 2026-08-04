@@ -60,7 +60,7 @@ From here on this page is the **native** install. For containers see
 | GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU. See [supported GPUs](#supported-gpus) |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
 | MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §8 |
-| Python | 3.10+, optional | Needed for the `unsloth` backend and the multimodal workers |
+| Python | 3.10+, optional | Needed for the multimodal workers, and for vLLM if you run safetensors models. A GGUF-only text deployment needs none |
 
 Check the CUDA runtime:
 
@@ -108,7 +108,7 @@ Contents:
 bin/aiwrapper-server    the inference server
 bin/aiw-launcher        node agent + control plane (web UI)
 bin/aiw-model-dl        Hugging Face model downloader
-python/                 workers for the unsloth backend and the multimodal families
+python/                 workers for the multimodal families
 sql/schema.sql          database schema
 config.example.xml      server configuration template
 control.example.xml     control-plane configuration template
@@ -166,17 +166,17 @@ first run:
 </mysql>
 
 <ai>
-  <unsloth>
-    <!-- Interpreter of the environment that has llama-cpp-python installed -->
-    <python_exe>/opt/aiwrapper/venv/bin/python</python_exe>
-  </unsloth>
+  <!-- Only needed for safetensors models. Leave empty for GGUF-only. -->
+  <vllm>
+    <python_exe></python_exe>
+  </vllm>
 </ai>
 
 <models>
-  <model alias="my-coder" backend="unsloth">
+  <model alias="my-coder" backend="llama">
     <!-- A DIRECTORY, not a file. Every *.gguf inside it becomes a
-         selectable quantization; safetensors directories are quantized at
-         load time. -->
+         selectable quantization. A safetensors directory needs
+         backend="vllm" instead, and is quantized at load time. -->
     <path>/path/to/models/Qwen3-Coder-Next</path>
   </model>
 </models>
@@ -199,10 +199,17 @@ both of which rewrite the `<models>` section for you:
 ./bin/aiw-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
 ```
 
-## 5. Python worker environments
+## 5. Python environments
 
-Needed if you use the `unsloth` backend (the usual choice) or any modality. A
-text-only deployment on the in-process `llama` backend can skip this.
+Two separate things, both optional:
+
+- **Multimodal workers** (image, audio, 3D) — `setup-workers.sh`, below.
+- **vLLM**, only for safetensors models — a plain `pip install vllm` in its own
+  environment. See [vLLM](server/server/vllm.md); do not put it in a
+  `setup-workers.sh` venv, it pins its own torch.
+
+A GGUF-only text deployment needs neither: the `llama` backend runs inside the
+server process.
 
 ```bash
 cd /opt/aiwrapper
@@ -211,8 +218,8 @@ cd /opt/aiwrapper
 ./setup-workers.sh --families all  # everything, tens of GB
 ```
 
-It creates one virtualenv per family, builds `llama-cpp-python` against your
-GPUs' compute capabilities, and prints the `config.xml` lines to paste.
+It creates one virtualenv per family and prints the `config.xml` lines to
+paste.
 
 Prerequisites it checks first: an interpreter that can create virtualenvs
 (**Debian/Ubuntu need `apt install python3.x-venv` — the stock `python3` cannot,
@@ -261,7 +268,7 @@ $ curl -s http://127.0.0.1:15963/health
 
 $ curl -s http://127.0.0.1:15963/api/models
 {"models":[{"id":"my-coder","name":"my-coder","kind":"llm","type":"chat",
-"ctx_size":8192,"backend":"unsloth", ...}]}
+"ctx_size":8192,"backend":"llama", ...}]}
 ```
 
 The web UI is at `http://<host>:8088/`.
@@ -320,7 +327,8 @@ localhost.
 | `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
 | Server starts but no GPU is listed | Driver or CUDA 12 runtime missing; check `nvidia-smi` and `ldconfig -p | grep libcudart` |
-| A model never loads, worker fails immediately | `<python_exe>` is not a venv built by `setup-workers.sh` — see [Python workers](server/server/workers.md) |
+| A safetensors model never loads | `<ai><vllm><python_exe>` is unset or has no `vllm` — see [vLLM](server/server/vllm.md) |
+| A modality worker fails immediately | Its `<python_exe>` is not a venv built by `setup-workers.sh` — see [Python workers](server/server/workers.md) |
 | Port already in use | Another instance is running, or `<port>` collides with `<agent_port>` |
 
 ## 11. Uninstall

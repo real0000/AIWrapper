@@ -78,7 +78,7 @@ Everything that matters is a host folder, so containers stay disposable.
 | `${STATE_DIR}/server` | `/opt/aiwrapper/data` | Logic graphs, workflows, retrieval vectors, the server log |
 | `${STATE_DIR}/mysql` | `/var/lib/mysql` | The database |
 | `${STATE_DIR}/output` | `/tmp/aiwrapper` | Generated images, audio, meshes |
-| `${STATE_DIR}/venvs` | `/venvs` | Python worker environments |
+| `${STATE_DIR}/venvs` | `/venvs` | Python environments: multimodal workers, and vLLM if you use it |
 | `${MODELS_DIR}` | `/models` (read-only) | Your models |
 
 **The server data mount is `/opt/aiwrapper/data`, not `/data`.** The server
@@ -107,6 +107,38 @@ TLS-terminating proxy.
 Change any of them in `.env` (`API_PORT`, `WEB_PORT`, `AGENT_PORT`) — those are
 host-side, so the container's own ports stay as the config expects.
 
+## vLLM, for safetensors models
+
+The image does not ship vLLM: several GB of wheels on top of a pinned torch
+build, needed only if you run unquantized Hugging Face weights. GGUF models use
+the in-process backend and need nothing installed.
+
+Build it into the `/venvs` volume so it survives image upgrades:
+
+```bash
+docker compose exec aiwrapper python3 -m venv /venvs/vllm
+docker compose exec aiwrapper /venvs/vllm/bin/pip install vllm
+```
+
+Then set it in `.env` and restart:
+
+```
+VLLM_PYTHON=/venvs/vllm/bin/python
+```
+
+The entrypoint substitutes that into `config.xml` — but **only when generating
+it for the first time**. If `${STATE_DIR}/config.xml` already exists, edit
+`<ai><vllm><python_exe>` in it directly.
+
+Two container specifics: the **`-devel`** image variant is required (some
+dependencies compile against `nvcc`), and `/venvs` must be on **ext4/xfs** like
+the rest of `STATE_DIR` — pip installs fail on symlinks over exFAT or NTFS.
+`shm_size` is already set in the bundled compose file; tensor-parallel setups
+need it.
+
+Full details, including the Volta bfloat16 trap, are in
+[vLLM](server/vllm.md).
+
 ## Building the worker environments
 
 The image has no worker environments; they are too large and too
@@ -134,7 +166,7 @@ extra steps.
 Mount the host directory holding them and refer to it as `/models`:
 
 ```xml
-<model alias="my-coder" backend="unsloth">
+<model alias="my-coder" backend="llama">
   <path>/models/Qwen3-Coder-Next</path>
 </model>
 ```
@@ -203,7 +235,8 @@ The entrypoint prints a warning for each of the common mistakes before starting
 | Container exits immediately | Check `docker compose logs aiwrapper`. A GLIBC error means the base image was changed to 22.04 |
 | `could not select device driver` at start | NVIDIA Container Toolkit is not installed, or the daemon was not restarted after installing it |
 | Server starts, no GPU in the log | Same, or the `deploy.resources` block was removed |
-| Models never load | No worker environment yet — build one as above |
+| GGUF models never load | Check the model path is under a mounted directory; `backend` should be `llama` |
+| safetensors models never load | `VLLM_PYTHON` unset or wrong — see [vLLM](server/vllm.md) |
 | Worker dies with no error while loading | Raise `SHM_SIZE`; the 64 MB Docker default is far too small |
 | Clients cannot log in | `<mysql>` differs between `config.xml` and `control.xml`. The entrypoint fills both from the same variables, so this only happens after hand-editing |
 | Web UI unreachable from another machine | It is bound to `127.0.0.1` on purpose |

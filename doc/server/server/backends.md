@@ -1,61 +1,84 @@
 # Backends
 
-Every model runs through one adapter interface with two implementations behind
-it. Which one a model uses is an attribute on its entry; everything above that
-line — logic graphs, tools, retrieval — is identical either way.
+Every model runs through one adapter interface. Which implementation a model
+uses is an attribute on its entry; everything above that line — logic graphs,
+tools, retrieval — is identical either way.
 
 ---
 
 The server binary carries compiled CUDA kernels for compute capability 7.0
 through 8.9, plus PTX for anything newer — see
-[supported GPUs](../../server-install.md#supported-gpus). The Python worker
-backend is separate: `setup-workers.sh` builds `llama-cpp-python` for **your**
-GPUs only, which is why it has to be rebuilt if you move the install to
-different hardware.
+[supported GPUs](../../server-install.md#supported-gpus).
 
-## The two
+## The three
 
-| | `llama` | `unsloth` |
-|---|---|---|
-| What | llama.cpp, in the server process | A Python worker process |
-| Formats | GGUF | GGUF and safetensors |
-| Started | With the server | Lazily, on first use |
-| GPU visibility | Fixed at server start | Per model |
-| Needs | Nothing extra | A Python environment with `llama-cpp-python` |
+| | `llama` | `vllm` | `remote` |
+|---|---|---|---|
+| What | llama.cpp, in the server process | vLLM in a subprocess | Somebody else's endpoint |
+| Formats | GGUF | safetensors (HF directory) | n/a |
+| Multimodal | Yes, via `<mmproj>` | Model-dependent | Provider-dependent |
+| GPU visibility | Fixed at server start | Per model | n/a |
+| Needs | Nothing extra | A Python environment with `vllm` | Network + an API key |
 
 ```xml
 <model alias="a" backend="llama">…</model>
-<model alias="b" backend="unsloth">…</model>
+<model alias="b" backend="vllm">…</model>
+<model alias="c" backend="remote">…</model>
 ```
 
 `<ai><default_backend>` sets the default for entries that do not say.
 
-**Use `unsloth` unless you have a reason not to.** It handles both formats, and
-GPU visibility can be set per model — the in-process backend fixes its device
-list when the server starts, so a model cannot be pinned to particular cards
-there. The cost is a subprocess and a Python environment.
+**Pick by format, not preference.** GGUF goes to `llama`, which needs nothing
+installed and runs inside the server process. Unquantized Hugging Face weights
+cannot be loaded by llama.cpp at all, so they go to `vllm` — see
+[vLLM](vllm.md) for the install and its caveats.
 
-`<ai><unsloth><python_exe>` must point at an interpreter that has
-`llama-cpp-python` installed — built for your GPUs, which is a compile step, not
-a plain `pip install`. The package ships `setup-workers.sh` to do it; see
-[Python workers](workers.md). Getting this wrong is the most common reason a
-model never loads.
+Vision is on the `llama` side: a model with an `<mmproj>` projector loads it
+alongside the weights, and requests carrying images are tokenized and evaluated
+through it. No separate vision service.
+
+> **Upgrading from an older release:** the `unsloth` backend is gone. Entries
+> that said `backend="unsloth"` with a `.gguf` directory become `backend="llama"`;
+> ones pointing at a safetensors directory become `backend="vllm"`. The
+> `<ai><unsloth>` block and its Python worker environment are no longer read.
+
+## Remote
+
+`backend="remote"` targets a cloud chat API. Nothing loads locally and every
+load-time parameter is ignored.
+
+```xml
+<model alias="c" backend="remote">
+  <remote_family>anthropic</remote_family>   <!-- openai | anthropic | gemini -->
+  <remote_url>https://api.anthropic.com</remote_url>
+  <remote_model>claude-sonnet-4-5</remote_model>
+  <remote_api_key></remote_api_key>          <!-- empty = supply it in the AI config -->
+</model>
+```
+
+The three families differ in more than a URL — message shape, tool-call
+encoding and streaming events are all different — but that is handled inside
+the server. Leave `<remote_api_key>` empty and set the key in the AI config
+instead if you would rather not have it in a file under version control.
+
+An AI config can also point at an endpoint directly without any `config.xml`
+entry, which is the usual way to reach a locally-hosted OpenAI-compatible
+server.
 
 ## Lazy loading
 
-No model is loaded at startup, whichever backend it uses. A worker starts on
-the first request that targets its model.
+No model is loaded at startup, whichever backend it uses. Loading starts on the
+first request that targets that model.
 
 The first request against a large model therefore takes as long as loading
-takes — minutes for a very large one. The worker heartbeats while loading, so
-the timeout does not fire; `ready_timeout_sec` is an **idle** timeout that only
-triggers after that many seconds of complete silence, meaning a hung worker.
+takes — minutes for a very large one. `remote` models have no load step at all.
 
-Once loaded, a worker stays resident until it is evicted.
+Once loaded, a model stays resident until it is evicted.
 
 ## The budget
 
-One ledger across both backends caps how much can be resident at once.
+One ledger across the local backends caps how much can be resident at once.
+`remote` models are not in it — they consume nothing here.
 
 ```xml
 <budget>
@@ -98,13 +121,6 @@ console warns when it sees that combination.
 If you need two context sizes for one model, expect to pay for the switch, or
 give one of them a different model.
 
-## Remote models
-
-An AI config can point at an OpenAI-compatible endpoint instead. The server
-loads nothing locally, ignores every load-time parameter, and forwards to
-`/v1/chat/completions`. Nothing in `config.xml` is involved — remote endpoints
-are configured per AI config, in the graph.
-
 ---
 
-[← Inference Server](README.md) · [Models](models.md) · [Server Guide](../README.md)
+[← Inference Server](README.md) · [Models](models.md) · [vLLM](vllm.md) · [Server Guide](../README.md)

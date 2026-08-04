@@ -17,7 +17,7 @@
 #   ${STATE_DIR}/mysql    the database
 #   ${STATE_DIR}/server   logic graphs, workflows, retrieval vectors
 #   ${STATE_DIR}/config   config.xml and control.xml
-#   ${STATE_DIR}/venvs    the Python worker environments
+#   ${STATE_DIR}/venvs    Python environments (multimodal workers, optional vLLM)
 #   ${MODELS_DIR}         your models, mounted read-only
 
 services:
@@ -65,7 +65,9 @@ services:
       # host; see .env.example.
       PUID: ${PUID:-}
       PGID: ${PGID:-}
-      UNSLOTH_PYTHON: /venvs/llm/bin/python
+      # safetensors models only; empty = vLLM backend disabled.
+      # See doc/server/server/vllm.md for how to build it into /venvs.
+      VLLM_PYTHON: ${VLLM_PYTHON:-}
     ports:
       # AI API — this is what the VSCode extension connects to.
       - "${API_PORT:-15963}:15963"
