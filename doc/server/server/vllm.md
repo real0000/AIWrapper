@@ -52,8 +52,16 @@ a V100 box.
 | Your GPUs | Install | Notes |
 |---|---|---|
 | Ampere or newer (A100, RTX 30/40/50, L4, H100…) | `pip install vllm` | Latest is fine |
-| Volta (V100) | `pip install "vllm==0.9.2"` | Last line with the V0 engine. Also set `VLLM_USE_V1=0` |
-| Turing (T4, RTX 20) | `pip install "vllm==0.9.2"` | Same constraint |
+| Volta (V100) | `pip install "vllm==0.9.2" "transformers==4.53.2"` | Last line with the V0 engine. Also set `VLLM_USE_V1=0` |
+| Turing (T4, RTX 20) | `pip install "vllm==0.9.2" "transformers==4.53.2"` | Same constraint |
+
+**Pin `transformers` too.** vLLM 0.9.2 does not constrain it tightly enough, so a
+plain install pulls the latest, which fails at startup with
+`ValueError: 'aimv2' is already used by a Transformers config` — both libraries
+try to register the same model name. 4.53.2 is known good.
+
+This combination is verified working: Qwen3-0.6B safetensors on a V100,
+streaming through the full graph path.
 
 For Volta, three settings are not optional:
 
