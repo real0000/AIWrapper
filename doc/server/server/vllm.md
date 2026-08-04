@@ -42,16 +42,61 @@ this fails the server will fail identically:
 /opt/aiwrapper/venvs/vllm/bin/python -c "import vllm; print(vllm.__version__)"
 ```
 
-### GPU requirements
+### GPU requirements — read this before picking a version
 
-vLLM needs compute capability 7.0 or newer. Two things bite on older cards:
+**The current vLLM release does not run on Volta (V100, sm_70).** Its V1 engine
+requires compute capability 8.0; the V0 engine that supported Volta was removed.
+Installing `vllm` with no version pin gets you something that will not start on
+a V100 box.
 
-- **Volta (V100, sm_70) has no bfloat16 in hardware.** A model whose config
-  says `bfloat16` will fail or fall back badly. Force half precision — either
-  pick the `fp16` quantization in the AI config, or set a default:
-  `<vllm><extra><dtype>float16</dtype></extra></vllm>`.
-- **FlashAttention needs Ampere or newer.** vLLM falls back automatically on
-  older cards; you lose throughput, not correctness.
+| Your GPUs | Install | Notes |
+|---|---|---|
+| Ampere or newer (A100, RTX 30/40/50, L4, H100…) | `pip install vllm` | Latest is fine |
+| Volta (V100) | `pip install "vllm==0.9.2"` | Last line with the V0 engine. Also set `VLLM_USE_V1=0` |
+| Turing (T4, RTX 20) | `pip install "vllm==0.9.2"` | Same constraint |
+
+For Volta, three settings are not optional:
+
+```xml
+<vllm>
+  <python_exe>/opt/aiwrapper/venvs/vllm-v100/bin/python</python_exe>
+  <env>
+    <!-- V1 engine requires sm_80; Volta needs the V0 path. -->
+    <VLLM_USE_V1>0</VLLM_USE_V1>
+  </env>
+  <extra>
+    <!-- Volta has no bfloat16 in hardware. A model whose config says
+         bfloat16 will fail or degrade badly. -->
+    <dtype>float16</dtype>
+  </extra>
+</vllm>
+```
+
+FlashAttention also needs Ampere or newer; vLLM falls back to another backend
+automatically on older cards. You lose throughput, not correctness.
+
+**Mixed-GPU machines** (say four V100s and one RTX 4070) are the awkward case:
+one vLLM version cannot serve both. `<python_exe>` is a single global setting,
+so pick the environment that matches the cards you actually intend vLLM to use,
+and pin models to those cards with the AI config's GPU visibility field — that
+field does work for this backend, because it is a subprocess.
+
+### Runtime dependencies people miss
+
+vLLM JIT-compiles some kernels on first use, which means it shells out to
+`ninja` **and** needs a CUDA toolkit that matches the torch build it pulled in.
+Two failure modes, both of which surface only after the model has finished
+loading:
+
+- `No such file or directory: 'ninja'` — the package is installed but its
+  executable is not on `PATH`. CAGE prepends the interpreter's directory to the
+  child `PATH` for exactly this reason, so this should not happen; if it does,
+  `pip install ninja` into that environment.
+- `ninja: build stopped: subcommand failed` — the JIT compile itself failed,
+  almost always a CUDA toolkit / torch version mismatch. Check that the CUDA
+  version torch was built against (`python -c "import torch; print(torch.version.cuda)"`)
+  is one your system toolkit can compile for, or install a torch build matching
+  your toolkit.
 
 ---
 
