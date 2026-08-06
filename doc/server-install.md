@@ -60,7 +60,7 @@ From here on this page is the **native** install. For containers see
 | GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU. See [supported GPUs](#supported-gpus) |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
 | MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §8 |
-| Python | 3.10+, optional | Needed for the multimodal workers, and for vLLM if you run safetensors models. A GGUF-only text deployment needs none |
+| Python | 3.10+, optional | Needed for the multimodal workers, and — if you run safetensors models — for either vLLM or the GGUF conversion fallback. A GGUF-only text deployment needs none |
 
 Check the CUDA runtime:
 
@@ -166,10 +166,15 @@ first run:
 </mysql>
 
 <ai>
-  <!-- Only needed for safetensors models. Leave empty for GGUF-only. -->
+  <!-- Both are only for safetensors models, and both are optional: vLLM runs
+       them as-is, <convert> turns them into GGUF for the built-in backend.
+       Leave both empty for a GGUF-only deployment. -->
   <vllm>
     <python_exe></python_exe>
   </vllm>
+  <convert>
+    <python_exe></python_exe>
+  </convert>
 </ai>
 
 <models>
@@ -204,9 +209,11 @@ both of which rewrite the `<models>` section for you:
 Two separate things, both optional:
 
 - **Multimodal workers** (image, audio, 3D) — `setup-workers.sh`, below.
-- **vLLM**, only for safetensors models — a plain `pip install vllm` in its own
-  environment. See [vLLM](server/server/vllm.md); do not put it in a
-  `setup-workers.sh` venv, it pins its own torch.
+- **Safetensors models** need one of two environments, and you pick whichever
+  suits the machine: `pip install vllm` for the vLLM backend, or a CPU `torch`
+  environment that converts those models to GGUF on first use. See
+  [Safetensors models](server/server/vllm.md). Give either its own venv — do
+  not put them in a `setup-workers.sh` venv, they pin their own torch.
 
 A GGUF-only text deployment needs neither: the `llama` backend runs inside the
 server process.
@@ -327,7 +334,7 @@ localhost.
 | `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
 | Server starts but no GPU is listed | Driver or CUDA 12 runtime missing; check `nvidia-smi` and `ldconfig -p | grep libcudart` |
-| A safetensors model never loads | `<ai><vllm><python_exe>` is unset or has no `vllm` — see [vLLM](server/server/vllm.md) |
+| A safetensors model never loads | Neither `<ai><vllm><python_exe>` nor `<ai><convert><python_exe>` is usable; the error names both reasons — see [Safetensors models](server/server/vllm.md) |
 | A modality worker fails immediately | Its `<python_exe>` is not a venv built by `setup-workers.sh` — see [Python workers](server/server/workers.md) |
 | Port already in use | Another instance is running, or `<port>` collides with `<agent_port>` |
 

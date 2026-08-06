@@ -18,7 +18,7 @@ through 8.9, plus PTX for anything newer — see
 | Formats | GGUF | safetensors (HF directory) | n/a |
 | Multimodal | Yes, via `<mmproj>` | Model-dependent | Provider-dependent |
 | GPU visibility | Fixed at server start | Per model | n/a |
-| Needs | Nothing extra | A Python environment with `vllm` | Network + an API key |
+| Needs | Nothing extra | A Python environment with `vllm` — **or** one with `torch`, and the model is converted to GGUF instead | Network + an API key |
 
 ```xml
 <model alias="a" backend="llama">…</model>
@@ -30,8 +30,14 @@ through 8.9, plus PTX for anything newer — see
 
 **Pick by format, not preference.** GGUF goes to `llama`, which needs nothing
 installed and runs inside the server process. Unquantized Hugging Face weights
-cannot be loaded by llama.cpp at all, so they go to `vllm` — see
-[vLLM](vllm.md) for the install and its caveats.
+cannot be loaded by llama.cpp at all, so they go to `vllm`.
+
+`backend="vllm"` names the *format*, not a hard dependency on vLLM. Both engines
+for that format are optional and you install whichever suits the machine: vLLM
+itself, or a `torch` environment, in which case the weights are converted to
+GGUF in memory on first use and run on the `llama` backend. The server picks —
+vLLM when its environment works, conversion otherwise. See
+[Safetensors models](vllm.md).
 
 Vision is on the `llama` side: a model with an `<mmproj>` projector loads it
 alongside the weights, and requests carrying images are tokenized and evaluated

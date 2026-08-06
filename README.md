@@ -54,8 +54,10 @@ logic graph drives the conversation.*
 
 Models run through one adapter with three backends: in-process **llama.cpp**
 for GGUF (vision included, via an `mmproj` projector), a lazily spawned
-**vLLM** subprocess for safetensors, and **remote** cloud endpoints (OpenAI,
-Anthropic, Gemini). Nothing loads until the first request that targets it, and
+**vLLM** subprocess for safetensors — or, where vLLM is not installed, an
+automatic in-memory **conversion to GGUF** so those weights still run — and
+**remote** cloud endpoints (OpenAI, Anthropic, Gemini). Nothing loads until the
+first request that targets it, and
 a RAM/VRAM budget evicts the least recently used model when a new one does not
 fit.
 

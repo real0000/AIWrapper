@@ -19,7 +19,7 @@ into something it can load.
 | Element | Meaning |
 |---|---|
 | `alias` | The name everywhere else — in AI configs, in the API, in logs |
-| `backend` | `llama` (GGUF, in-process), `vllm` (safetensors, subprocess) or `remote` (cloud API). See [Backends](backends.md) |
+| `backend` | `llama` (GGUF, in-process), `vllm` (safetensors — served by vLLM, or converted to GGUF when vLLM is not installed) or `remote` (cloud API). See [Backends](backends.md) |
 | `<path>` | A **directory**. See below |
 | `<quant>` | Default quantization for this alias. Optional |
 | `<mmproj>` | Vision projector, for vision models |

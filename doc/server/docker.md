@@ -107,37 +107,52 @@ TLS-terminating proxy.
 Change any of them in `.env` (`API_PORT`, `WEB_PORT`, `AGENT_PORT`) — those are
 host-side, so the container's own ports stay as the config expects.
 
-## vLLM, for safetensors models
+## Safetensors models
 
-The image does not ship vLLM: several GB of wheels on top of a pinned torch
-build, needed only if you run unquantized Hugging Face weights. GGUF models use
-the in-process backend and need nothing installed.
+The image ships neither engine for unquantized Hugging Face weights. GGUF
+models use the in-process backend and need nothing installed; safetensors need
+one of two environments, built into the `/venvs` volume so they survive image
+upgrades.
 
-Build it into the `/venvs` volume so it survives image upgrades:
+**vLLM** — several GB of wheels on top of a pinned torch build:
 
 ```bash
 docker compose exec aiwrapper python3 -m venv /venvs/vllm
 docker compose exec aiwrapper /venvs/vllm/bin/pip install vllm
 ```
 
-Then set it in `.env` and restart:
-
 ```
 VLLM_PYTHON=/venvs/vllm/bin/python
 ```
 
-The entrypoint substitutes that into `config.xml` — but **only when generating
-it for the first time**. If `${STATE_DIR}/config.xml` already exists, edit
-`<ai><vllm><python_exe>` in it directly.
+**Or the conversion fallback** — a CPU torch wheel, no CUDA matching. The model
+is converted to GGUF in memory on first use and served by the in-process
+backend:
 
-Two container specifics: the **`-devel`** image variant is required (some
-dependencies compile against `nvcc`), and `/venvs` must be on **ext4/xfs** like
-the rest of `STATE_DIR` — pip installs fail on symlinks over exFAT or NTFS.
-`shm_size` is already set in the bundled compose file; tensor-parallel setups
-need it.
+```bash
+docker compose exec aiwrapper python3 -m venv /venvs/convert
+docker compose exec aiwrapper /venvs/convert/bin/pip install torch \
+    --index-url https://download.pytorch.org/whl/cpu
+docker compose exec aiwrapper /venvs/convert/bin/pip install numpy \
+    transformers sentencepiece protobuf
+```
 
-Full details, including the Volta bfloat16 trap, are in
-[vLLM](server/vllm.md).
+Set `<ai><convert><python_exe>` to `/venvs/convert/bin/python`. If both are
+configured, vLLM is tried first and conversion is the fallback.
+
+The entrypoint substitutes `VLLM_PYTHON` into `config.xml` — but **only when
+generating it for the first time**. If `${STATE_DIR}/config.xml` already exists,
+edit `<ai><vllm><python_exe>` (or `<ai><convert><python_exe>`) in it directly.
+
+Container specifics: the **`-devel`** image variant is required if you build
+vLLM (some dependencies compile against `nvcc`; the conversion environment does
+not need it), and `/venvs` must be on **ext4/xfs** like the rest of `STATE_DIR`
+— pip installs fail on symlinks over exFAT or NTFS. `shm_size` is already set in
+the bundled compose file: tensor-parallel vLLM needs it, and conversion writes
+its GGUF to `/dev/shm`.
+
+Full details, including the Volta bfloat16 trap and what conversion costs, are
+in [Safetensors models](server/vllm.md).
 
 ## Building the worker environments
 
@@ -236,7 +251,7 @@ The entrypoint prints a warning for each of the common mistakes before starting
 | `could not select device driver` at start | NVIDIA Container Toolkit is not installed, or the daemon was not restarted after installing it |
 | Server starts, no GPU in the log | Same, or the `deploy.resources` block was removed |
 | GGUF models never load | Check the model path is under a mounted directory; `backend` should be `llama` |
-| safetensors models never load | `VLLM_PYTHON` unset or wrong — see [vLLM](server/vllm.md) |
+| safetensors models never load | Neither `VLLM_PYTHON` nor `<ai><convert><python_exe>` is usable — see [Safetensors models](server/vllm.md) |
 | Worker dies with no error while loading | Raise `SHM_SIZE`; the 64 MB Docker default is far too small |
 | Clients cannot log in | `<mysql>` differs between `config.xml` and `control.xml`. The entrypoint fills both from the same variables, so this only happens after hand-editing |
 | Web UI unreachable from another machine | It is bound to `127.0.0.1` on purpose |

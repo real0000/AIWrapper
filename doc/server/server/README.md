@@ -53,6 +53,7 @@ MySQL pool: 127.0.0.1:3306/aiwrapper (pool=4)
 [BackendBudget] RAM cap=815483 MB, VRAM cap=129018 MB, eviction=lru
 LlamaWorkerPool ready (lazy)
 VllmWorkerPool ready (lazy, python_exe=…)
+SafetensorsConverter ready (lazy, python_exe=…, tmp_dir=/dev/shm/cage-convert)
 RAG VectorStore persist dir: data/vectors
 Listening on port 15963
 ```

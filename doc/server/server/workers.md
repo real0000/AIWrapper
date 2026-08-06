@@ -7,9 +7,10 @@ They serve the **modalities** — image, speech, audio, music, 3D. See
 [Modalities](modalities.md).
 
 Language models do not use them any more. GGUF runs in-process on the `llama`
-backend, and safetensors runs on **vLLM**, which is installed separately and
-never through `setup-workers.sh` — it pins its own torch and will fight with
-these environments. See [vLLM](vllm.md).
+backend, and safetensors runs either on **vLLM** or through **GGUF conversion**
+— both optional, both installed separately and never through
+`setup-workers.sh`: they pin their own torch and will fight with these
+environments. See [Safetensors models](vllm.md).
 
 > The `llm` and `llm-hf` families below belonged to the removed `unsloth`
 > backend. They are documented here only for older installs; a current
