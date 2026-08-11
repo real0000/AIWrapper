@@ -57,7 +57,7 @@ working for one and broken for another. The script keeps them apart, and
 | `image` | `sd3_worker.py` | `stable-diffusion-cpp-python`, `diffusers`, `torch` |
 | `tts` | `f5_tts_worker.py` | `f5-tts` |
 | `audio` | `audioldm2_worker.py` | `diffusers`, `transformers`, `torch`, `scipy` |
-| `music` | `musicgen_worker.py` | `audiocraft`, `torch`, `torchaudio` |
+| `music` | `musicgen_worker.py` | `diffusers`, `transformers`, `torch`, `soundfile` |
 | `mesh-instantmesh` | `instantmesh_worker.py` | The InstantMesh repository and its requirements |
 | `mesh-trellis` | `trellis_worker.py` | The TRELLIS repository and its own setup script |
 | `mesh-hy3d` | `hy3d_worker.py` | The Hunyuan3D-2 repository (`hy3dgen`) |
@@ -102,7 +102,7 @@ CUDA 12.0 and Python 3.11, then checked by importing what its worker imports.
 | `image` | Installs; `stable_diffusion_cpp` and `diffusers` import |
 | `tts` | Installs; `f5_tts.api` imports. **Needs `ffmpeg` at runtime** |
 | `audio` | Installs; `AudioLDM2Pipeline` and `scipy` import |
-| `music` | **Blocked without system packages** — see below |
+| `music` | Installs; `StableAudioPipeline` imports. Weights need a licence decision — see below |
 | `mesh-instantmesh` | Installs; `nvdiffrast` compiles and the repo's `src` imports |
 | `mesh-hy3d` | Installs; `hy3dgen` imports from the clone |
 | `mesh-trellis` | Venv and clone ready, **but not usable until upstream's `setup.sh` runs** — `import trellis` fails before that |
@@ -119,20 +119,36 @@ a fresh machine runs into:
 | `rembg` | Imports `onnxruntime`, which InstantMesh's requirements do not list |
 | `pytorch-lightning` | Calls `pkg_resources`, removed in setuptools 81 — pinned below that |
 
-### music needs FFmpeg development headers
+### music runs Stable Audio Open, not MusicGen
 
-`audiocraft` 1.3.0 pins `av==11.0.0`, and that version publishes **no wheel for
-any current Python**, so pip compiles it — which needs the FFmpeg headers, not
-just the `ffmpeg` binary:
+This family used to run Meta's MusicGen through `audiocraft`. It was replaced
+for licensing reasons, and the swap fixed an installation problem as a side
+effect.
 
-```bash
-sudo apt install pkg-config ffmpeg libavformat-dev libavcodec-dev \
-                 libavdevice-dev libavutil-dev libavfilter-dev \
-                 libswscale-dev libswresample-dev
-```
+**The licence problem.** `audiocraft` depends on `encodec`, which is
+**CC-BY-NC-4.0** — a flat prohibition on commercial use. That is not a
+source-disclosure clause, so no process boundary or packaging arrangement
+avoids it. Every `facebook/musicgen-*` checkpoint is CC-BY-NC-4.0 as well, so
+replacing only the code would not have helped either.
 
-The script checks for these before it builds anything and stops in a second with
-that command, rather than after a long compile.
+Stable Audio Open runs through `diffusers` (Apache-2.0). **Its weights are
+under the Stability AI Community License, which permits commercial use below a
+revenue threshold** — read it and check your own position before shipping
+anything built on it:
+
+<https://huggingface.co/stabilityai/stable-audio-open-1.0>
+
+**The installation problem it also fixed.** `audiocraft` 1.3.0 pinned
+`av==11.0.0`, which publishes no wheel for any current Python, so pip compiled
+it — and that needed the FFmpeg development headers and root. `music` was the
+only family that could not install unattended. It is now an ordinary pip
+install.
+
+**For callers.** The request contract is unchanged for `prompt`,
+`negative_prompt`, `duration`, `cfg_scale` and `seed`. `steps` replaces the
+sampler knobs: `top_k`, `top_p` and `temperature` belonged to MusicGen's
+autoregressive decoder and have no meaning for a diffusion model. The worker
+accepts them and logs that it is ignoring them, rather than pretending.
 
 ### mesh-trellis is deliberately incomplete
 
@@ -145,6 +161,23 @@ cd venvs/repos/TRELLIS && source ../../mesh-trellis/bin/activate
 ./setup.sh --basic --xformers --flash-attn
 venvs/mesh-trellis/bin/python -c 'import trellis'   # should now succeed
 ```
+
+**mesh-trellis pulls in AGPL and GPL dependencies.** TRELLIS's requirements
+include `pymeshfix` (**AGPL-3.0**), `igraph` and `plyfile` (GPL), and
+`easydict` (LGPL-3.0). `mesh-instantmesh` also pulls `plyfile`.
+
+These are installed into your own virtualenv by `setup-workers.sh`; CAGE does
+not redistribute them, and they run in a separate worker process that talks to
+the server over a pipe rather than being linked into any CAGE binary. On the
+usual reading that keeps them separate works, so they place no obligation on
+CAGE's own source.
+
+The sharp edge is **AGPL-3.0 §13**, which is triggered by users interacting
+with the program *over a network* — and offering mesh generation as a network
+service is exactly what this is for. The obligation attaches to `pymeshfix`
+itself (unmodified, so pointing at upstream satisfies it), not to your code.
+If you intend to commercialise the mesh features, this is the one dependency
+worth putting in front of a lawyer, or replacing.
 
 ### Sizes, measured
 

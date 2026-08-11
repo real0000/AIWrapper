@@ -138,3 +138,10 @@ several machines.
 
 Proprietary — Copyright (c) 2026 real0000. All Rights Reserved.
 See [LICENSE](LICENSE) for the full terms.
+
+CAGE incorporates open-source components, all under permissive licences; they
+are listed with their copyright notices in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Model weights and the Python
+worker environments are **not** covered by either document — those are chosen
+and installed by the operator, and several carry commercial restrictions. See
+[model licences](doc/server/server/models.md#model-licences-are-yours-to-check).

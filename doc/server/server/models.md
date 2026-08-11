@@ -84,6 +84,43 @@ Name one in `<ai><default_vision_model>` and it becomes the delegate: when a
 text-only model is working and an image is produced, the vision model describes
 it and the description is fed back into the conversation.
 
+## Model licences are yours to check
+
+**CAGE ships no model weights.** `config.example.xml` contains placeholder
+paths only, and nothing is downloaded until you ask for it. Every weight on the
+machine got there because an operator chose it, so the licence for it is the
+operator's to read and comply with — CAGE's own licence says nothing about the
+models you point it at, in either direction.
+
+This matters more than it sounds. Model licences are not software licences and
+several of the most popular weights carry restrictions that would surprise
+anyone assuming "open weights" means "do what you like":
+
+| Restriction pattern | Seen on | What it means in practice |
+|---|---|---|
+| **Non-commercial** | MusicGen, several TTS and audio checkpoints | Cannot be used in a commercial product at all, regardless of how it is deployed |
+| **Revenue threshold** | Stable Diffusion 3.5, Stable Audio Open (Stability AI Community License) | Free commercially below a stated annual revenue; above it, an enterprise licence is required |
+| **User-count threshold** | Llama 3/4 Community Licence | Free commercially until a monthly-active-user count, then a separate grant from Meta |
+| **Territorial exclusion** | Hunyuan3D-2 (Tencent Community Licence) | Excludes the European Union, the United Kingdom and South Korea — *including the outputs*, not only the model |
+| **Output restrictions** | Various | Limits on training other models on the outputs, or on the use of the outputs themselves |
+
+The territorial one is the least expected and the easiest to breach without
+noticing: it is not enough to avoid distributing the model in those regions,
+because the licence also withholds permission to use its outputs there.
+
+Two things follow for anyone running this commercially:
+
+1. **Check each model before it goes into a workflow**, not after. A graph that
+   quietly routes one node to a non-commercial model taints whatever that
+   pipeline produces.
+2. **Record what you found** using the `<license>` element below. It is the only
+   place that knowledge survives; the alternative is rediscovering it during
+   diligence.
+
+The same reasoning applies to the third-party Python workers, some of which
+carry copyleft or non-commercial terms of their own — see
+[Python workers](workers.md).
+
 ## Licence metadata
 
 ```xml
