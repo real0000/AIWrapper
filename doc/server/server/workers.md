@@ -58,7 +58,7 @@ working for one and broken for another. The script keeps them apart, and
 | `tts` | `f5_tts_worker.py` | `f5-tts` |
 | `audio` | `audioldm2_worker.py` | `diffusers`, `transformers`, `torch`, `scipy` |
 | `music` | `musicgen_worker.py` | `diffusers`, `transformers`, `torch`, `soundfile` |
-| `mesh-instantmesh` | `instantmesh_worker.py` | The InstantMesh repository and its requirements |
+| ~~`mesh-instantmesh`~~ | `instantmesh_worker.py` | **Disabled** — its multi-view model has no licence (below) |
 | `mesh-trellis` | `trellis_worker.py` | The TRELLIS repository and its own setup script |
 | `mesh-hy3d` | `hy3d_worker.py` | The Hunyuan3D-2 repository (`hy3dgen`) |
 
@@ -103,7 +103,7 @@ CUDA 12.0 and Python 3.11, then checked by importing what its worker imports.
 | `tts` | Installs; `f5_tts.api` imports. **Needs `ffmpeg` at runtime** |
 | `audio` | Installs; `AudioLDM2Pipeline` and `scipy` import |
 | `music` | Installs; `StableAudioPipeline` imports. Weights need a licence decision — see below |
-| `mesh-instantmesh` | Installs; `nvdiffrast` compiles and the repo's `src` imports |
+| ~~`mesh-instantmesh`~~ | **Disabled on licensing grounds** — installed cleanly before that, so this is not a build failure |
 | `mesh-hy3d` | Installs; `hy3dgen` imports from the clone |
 | `mesh-trellis` | Venv and clone ready, **but not usable until upstream's `setup.sh` runs** — `import trellis` fails before that |
 
@@ -197,10 +197,34 @@ triggers on users interacting with the program over a network** — which is
 exactly what offering mesh generation as a service is. Without it, meshes may
 have holes where the model saw no geometry.
 
-`mesh-instantmesh` also pulls `plyfile`, and has a separate problem: it depends
-on `sudo-ai/zero123plus-v1.2`, whose repository carries **no licence at all**.
-No licence is worse than a restrictive one — the default is that no rights are
-granted. Treat that family as unresolved.
+### mesh-instantmesh is disabled
+
+It does not install, `--families all` skips it, and `CMakeLists.txt` no longer
+clones the repository. Asking for it by name prints the reason and exits
+non-zero rather than failing obscurely.
+
+InstantMesh's own code is Apache-2.0 and its checkpoints are Apache-2.0 — which
+is why this took a second look to catch. The problem is what it loads at
+runtime: the multi-view stage is `sudo-ai/zero123plus-v1.2`, whose repository
+publishes **no licence at all** — no `LICENSE` file, no license field on the
+model card.
+
+**No licence is worse than a restrictive one.** A restrictive licence grants
+something under conditions; silence grants nothing, so there is no basis on
+which to copy, run or distribute the weights. Nothing on our side can fix a
+property of the upstream model.
+
+The worker script is kept rather than deleted, so the family can be revived in
+one step if zero123plus is ever published under a licence. To install it anyway
+— you have a grant from the authors, or you are in a non-commercial setting and
+accept the risk:
+
+```bash
+CAGE_ALLOW_UNLICENSED_MODELS=1 ./setup-workers.sh --families mesh-instantmesh
+```
+
+**Use `mesh-trellis` instead.** MIT code, MIT weights, copyleft dependencies
+decoupled — it is the better-licensed backend and the better model.
 
 ### Sizes, measured
 
