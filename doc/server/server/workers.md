@@ -162,22 +162,45 @@ cd venvs/repos/TRELLIS && source ../../mesh-trellis/bin/activate
 venvs/mesh-trellis/bin/python -c 'import trellis'   # should now succeed
 ```
 
-**mesh-trellis pulls in AGPL and GPL dependencies.** TRELLIS's requirements
-include `pymeshfix` (**AGPL-3.0**), `igraph` and `plyfile` (GPL), and
-`easydict` (LGPL-3.0). `mesh-instantmesh` also pulls `plyfile`.
+**mesh-trellis's copyleft dependencies are decoupled, deliberately.** TRELLIS
+itself is MIT and so are its weights, but three of its dependencies are not,
+and all three were imported at module scope — so every process that touched
+TRELLIS at all loaded them, including runs that never reached the code needing
+them:
 
-These are installed into your own virtualenv by `setup-workers.sh`; CAGE does
-not redistribute them, and they run in a separate worker process that talks to
-the server over a pipe rather than being linked into any CAGE binary. On the
-usual reading that keeps them separate works, so they place no obligation on
-CAGE's own source.
+| Package | Licence | Used by |
+|---|---|---|
+| `pymeshfix` | **AGPL-3.0** | `_fill_holes()` only |
+| `igraph` | GPL | `_fill_holes()` only |
+| `plyfile` | GPL | `Gaussian.save_ply()` / `load_ply()` only |
 
-The sharp edge is **AGPL-3.0 §13**, which is triggered by users interacting
-with the program *over a network* — and offering mesh generation as a network
-service is exactly what this is for. The obligation attaches to `pymeshfix`
-itself (unmodified, so pointing at upstream satisfies it), not to your code.
-If you intend to commercialise the mesh features, this is the one dependency
-worth putting in front of a lawyer, or replacing.
+Neither path is on CAGE's route: we export GLB, never PLY, and hole filling is
+optional. So `setup-workers.sh` runs `python/patch_trellis_licence.py` after
+cloning, which rewrites those three imports to load on first use, and the
+worker passes `fill_holes=False`. **A deployment can then run TRELLIS with none
+of the three installed.**
+
+That claim is tested rather than asserted: importing
+`trellis.pipelines`, `trellis.utils.postprocessing_utils` and
+`trellis.representations.gaussian.gaussian_model` all succeed with the three
+packages blocked at the import hook, and the same test fails on an unpatched
+checkout — which is what makes it a test and not a hope.
+
+The patch is idempotent, so re-run it after updating the clone. It changes no
+behaviour and relicenses nothing; if upstream moves those usage sites it stops
+with an error rather than silently patching the wrong thing.
+
+**If you want hole filling back**, install `pymeshfix` and `igraph` and pass
+`fill_holes: true` in the request. That is a licensing decision, not only a
+quality one: it pulls AGPL-3.0 code into the worker process, and **AGPL §13
+triggers on users interacting with the program over a network** — which is
+exactly what offering mesh generation as a service is. Without it, meshes may
+have holes where the model saw no geometry.
+
+`mesh-instantmesh` also pulls `plyfile`, and has a separate problem: it depends
+on `sudo-ai/zero123plus-v1.2`, whose repository carries **no licence at all**.
+No licence is worse than a restrictive one — the default is that no rights are
+granted. Treat that family as unresolved.
 
 ### Sizes, measured
 

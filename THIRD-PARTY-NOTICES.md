@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 本檔由 `./dev.sh licenses` 產生，請勿手改 —— 相依變了就重跑。
-產生時間：2026-08-11 19:04 UTC
+產生時間：2026-08-11 23:42 UTC
 
 CAGE server 散布的產物（`bin/` 的執行檔、`lib/` 隨行的共享函式庫、
 `share/cage/` 的轉檔腳本）內含下列第三方軟體。各元件的授權原文全文
@@ -97,7 +97,9 @@ FreeType 是 **FTL 或 GPLv2 二選一**。本產品採用 **FTL** —— 它明
 
 - `setup-workers.sh` 以 pip 安裝的 Python 套件，以及它 clone 的上游 repo
   （InstantMesh、TRELLIS、Hunyuan3D-2）。其中部分帶 copyleft 或非商業條款
-  —— 見 doc/server/server/workers.md。
+  —— 見 doc/server/server/workers.md。TRELLIS 的 AGPL/GPL 相依
+  （pymeshfix / igraph / plyfile）已由 `patch_trellis_licence.py` 改為
+  延遲載入，預設路徑不需要安裝它們。
 - **模型權重**。本產品不含任何權重，`config.example.xml` 只有佔位路徑。
   多個常見權重帶商業限制（非商業、營收門檻、使用者數門檻、地域排除）
   —— 見 doc/server/server/models.md。
