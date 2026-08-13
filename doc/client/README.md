@@ -1,6 +1,6 @@
 # Client Guide
 
-The AIWrapper client is a VSCode extension. It holds no models and runs no
+The CAGE client is a VSCode extension. It holds no models and runs no
 inference — every model decision belongs to the server and to the logic graph.
 What the client does is show you the conversation, let you design the agent's
 behaviour, and execute the tool calls the model asks for, in your editor, with
@@ -13,7 +13,7 @@ Installation is covered separately in
 
 ## The two windows
 
-![The AIWrapper chat panel in VSCode](../images/chat-panel.png)
+![The CAGE chat panel in VSCode](../images/chat-panel.png)
 
 ### [Chat Panel →](chat-panel.md)
 
@@ -25,7 +25,7 @@ calls, switch sessions, browse history. The selectors along the bottom decide
 
 A visual editor for the graph that drives the agent. Nodes are the steps,
 connections are the order, and the panel on the left holds the reusable
-configurations those nodes reference. This is where AIWrapper differs most from
+configurations those nodes reference. This is where CAGE differs most from
 a normal chat extension: the agent loop is data you edit, not code you accept.
 
 ---
@@ -46,7 +46,7 @@ a normal chat extension: the agent loop is data you edit, not code you accept.
 | [Staging & Flush](staging.md) | Why file changes do not reach disk until you commit them |
 | [MCP Servers](mcp.md) | Attaching third-party tool servers |
 | [Project Indexing](indexing.md) | What the client sends to the server and when |
-| [Settings](settings.md) | Every `aiwrapper.*` setting |
+| [Settings](settings.md) | Every `cage.*` setting |
 
 ---
 

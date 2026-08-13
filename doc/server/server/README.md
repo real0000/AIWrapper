@@ -1,6 +1,6 @@
 # Inference Server
 
-`aiwrapper-server` is the process that does the work: it loads models, executes
+`cage-server` is the process that does the work: it loads models, executes
 logic graphs, retrieves from the project index, dispatches tool calls to the
 connected editor, and streams answers back.
 
@@ -26,14 +26,14 @@ Normally the agent starts it. To run it directly — useful when diagnosing a
 startup problem, because the output goes to your terminal:
 
 ```bash
-cd /opt/aiwrapper && ./bin/aiwrapper-server
+cd /opt/cage && ./bin/cage-server
 ```
 
 It reads `config.xml` from the working directory. Point it elsewhere with an
 environment variable:
 
 ```bash
-CONFIG_FILE=/opt/aiwrapper/config.xml ./bin/aiwrapper-server
+CONFIG_FILE=/opt/cage/config.xml ./bin/cage-server
 ```
 
 There are no other command-line arguments — everything is in the config file.
@@ -43,12 +43,12 @@ There are no other command-line arguments — everything is in the config file.
 The log tells you what it decided, in order:
 
 ```
-Config loaded from: /opt/aiwrapper/config.xml
+Config loaded from: /opt/cage/config.xml
 Hardware topology: GPU0=…, GPU1=…; 6 NVLink pair(s); RAM 995 GiB
-AIWrapper Server starting on port 15963 (threads: 112)
+CAGE Server starting on port 15963 (threads: 112)
 TLS disabled — traffic (including bearer tokens) is plaintext.
 Model registered: my-coder (backend=llama, format=gguf, quants=3, …)
-MySQL pool: 127.0.0.1:3306/aiwrapper (pool=4)
+MySQL pool: 127.0.0.1:3306/cage (pool=4)
 [auth] auth DISABLED (dev-open) (users=0, masterKey=no)
 [BackendBudget] RAM cap=815483 MB, VRAM cap=129018 MB, eviction=lru
 LlamaWorkerPool ready (lazy)

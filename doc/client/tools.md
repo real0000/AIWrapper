@@ -91,9 +91,9 @@ more than you meant to.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `aiwrapper.toolApproval.mode` | `ask` | Default for every tool |
-| `aiwrapper.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides |
-| `aiwrapper.toolApproval.timeoutSeconds` | 30 | How long a request waits before lapsing. `0` waits forever |
+| `cage.toolApproval.mode` | `ask` | Default for every tool |
+| `cage.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides |
+| `cage.toolApproval.timeoutSeconds` | 30 | How long a request waits before lapsing. `0` waits forever |
 
 `auto` for everything means a model can run arbitrary commands on your machine
 without asking. Reasonable in a scratch workspace; a poor trade in a repository
@@ -102,12 +102,12 @@ you care about.
 ## Command output
 
 Long output is not pasted into the conversation. Past
-`aiwrapper.tool.outputThresholdKB` (128 KB), the client uploads it as a file and
+`cage.tool.outputThresholdKB` (128 KB), the client uploads it as a file and
 hands the model the exit code, a summary and a reference — so a noisy build does
 not eat the context window.
 
-Commands are killed at `aiwrapper.tool.commandTimeoutMs` (2 minutes); builds and
-tests get `aiwrapper.build.timeoutMs` (10 minutes). Background processes started
+Commands are killed at `cage.tool.commandTimeoutMs` (2 minutes); builds and
+tests get `cage.build.timeoutMs` (10 minutes). Background processes started
 with `run_terminal(background:true)` have no timeout and are yours to stop.
 
 ## Adding tools

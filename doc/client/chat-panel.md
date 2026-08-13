@@ -1,11 +1,11 @@
 # Chat Panel
 
-The chat panel lives in the AIWrapper container in the activity bar. It is where
+The chat panel lives in the CAGE container in the activity bar. It is where
 you talk to the agent, and where tool calls stop for your approval.
 
 ![The chat panel](../images/chat-panel.png)
 
-Open it with the activity bar icon, or **AIWrapper: Open Chat** from the command
+Open it with the activity bar icon, or **CAGE: Open Chat** from the command
 palette.
 
 ---
@@ -21,7 +21,7 @@ palette.
 | Start selector | Which entry point in that graph the run begins at |
 | Settings | Opens the extension's settings — see [Settings](settings.md) |
 | Session buttons (top right) | History panel, and new session |
-| Status chip (status bar) | `AIWrapper: Idle` / `Connecting…` / `Generating` / an error |
+| Status chip (status bar) | `CAGE: Idle` / `Connecting…` / `Generating` / an error |
 
 ## Attaching files
 

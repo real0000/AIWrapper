@@ -13,11 +13,11 @@ Three ways, all ending in the same place — a `<model>` entry in the local
 | Route | When |
 |---|---|
 | Control-plane web UI | Normal case. Search Hugging Face, pick a quantization group, download, and the entry is written for you |
-| `aiw-model-dl` | Scripted or headless installs |
+| `cage-model-dl` | Scripted or headless installs |
 | Editing `config.xml` | Models already on disk, or paths the downloader cannot reach |
 
 ```bash
-./bin/aiw-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
+./bin/cage-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
 ```
 
 | Option | Meaning |

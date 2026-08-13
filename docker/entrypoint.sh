@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
 # Container entrypoint: seed the configs on first run, optionally wait for the
-# database, then hand over to aiw-launcher as PID 1's child.
+# database, then hand over to cage-launcher as PID 1's child.
 set -euo pipefail
 
 CFG_DIR="${CFG_DIR:-/config}"
 CONFIG_FILE="${CONFIG_FILE:-${CFG_DIR}/config.xml}"
-CONTROL_CONFIG="${AIW_CONTROL_CONFIG:-${CFG_DIR}/control.xml}"
-TEMPLATES=/opt/aiwrapper/templates
+CONTROL_CONFIG="${CAGE_CONTROL_CONFIG:-${CFG_DIR}/control.xml}"
+TEMPLATES=/opt/cage/templates
 
 log() { printf '[entrypoint] %s\n' "$*"; }
 
-mkdir -p "${CFG_DIR}" /opt/aiwrapper/data /venvs /tmp/aiwrapper/modality
+mkdir -p "${CFG_DIR}" /opt/cage/data /venvs /tmp/cage/modality
 
 # ── First run: seed configs ─────────────────────────────────────────────────
 # Substituted from the environment so a compose file can set the database
@@ -22,9 +22,9 @@ seed() {
     log "creating ${target} from the template"
     sed -e "s|@MYSQL_HOST@|${MYSQL_HOST:-mysql}|g" \
         -e "s|@MYSQL_PORT@|${MYSQL_PORT:-3306}|g" \
-        -e "s|@MYSQL_USER@|${MYSQL_USER:-aiwrapper}|g" \
+        -e "s|@MYSQL_USER@|${MYSQL_USER:-cage}|g" \
         -e "s|@MYSQL_PASSWORD@|${MYSQL_PASSWORD:-}|g" \
-        -e "s|@MYSQL_DATABASE@|${MYSQL_DATABASE:-aiwrapper}|g" \
+        -e "s|@MYSQL_DATABASE@|${MYSQL_DATABASE:-cage}|g" \
         -e "s|@ADMIN_USER@|${ADMIN_USER:-admin}|g" \
         -e "s|@ADMIN_PASSWORD@|${ADMIN_PASSWORD:-}|g" \
         -e "s|@NODE_TOKEN@|${NODE_TOKEN:-}|g" \
@@ -41,8 +41,8 @@ seed "${TEMPLATES}/control.xml.template" "${CONTROL_CONFIG}"
 # host without sudo, even though the docs tell you to. Set PUID/PGID to your own
 # ids (id -u / id -g) and the folders become yours.
 if [[ -n "${PUID:-}" && -n "${PGID:-}" ]]; then
-    log "chown ${PUID}:${PGID} on /config, /opt/aiwrapper/data, /venvs, /tmp/aiwrapper"
-    chown -R "${PUID}:${PGID}" "${CFG_DIR}" /opt/aiwrapper/data /venvs /tmp/aiwrapper 2>/dev/null || \
+    log "chown ${PUID}:${PGID} on /config, /opt/cage/data, /venvs, /tmp/cage"
+    chown -R "${PUID}:${PGID}" "${CFG_DIR}" /opt/cage/data /venvs /tmp/cage 2>/dev/null || \
         log "chown failed (continuing)"
 fi
 
@@ -60,8 +60,8 @@ fi
 if [[ -n "${VLLM_PYTHON:-}" ]] && [[ ! -x "${VLLM_PYTHON}" ]]; then
     log "WARNING: VLLM_PYTHON=${VLLM_PYTHON} is not executable"
     log "         safetensors (backend=\"vllm\") models will not load. Build it with:"
-    log "           docker compose exec aiwrapper python3 -m venv /venvs/vllm"
-    log "           docker compose exec aiwrapper /venvs/vllm/bin/pip install vllm"
+    log "           docker compose exec cage python3 -m venv /venvs/vllm"
+    log "           docker compose exec cage /venvs/vllm/bin/pip install vllm"
 fi
 if [[ ! -d /models ]] || [[ -z "$(ls -A /models 2>/dev/null)" ]]; then
     log "NOTE: /models is empty — mount your model directories there"
@@ -75,13 +75,13 @@ if [[ -n "${MYSQL_PASSWORD:-}" ]]; then
     log "waiting for ${host}:${port}"
     for i in $(seq 1 60); do
         if mysqladmin ping -h "${host}" -P "${port}" \
-             -u"${MYSQL_USER:-aiwrapper}" -p"${MYSQL_PASSWORD}" --silent 2>/dev/null; then
+             -u"${MYSQL_USER:-cage}" -p"${MYSQL_PASSWORD}" --silent 2>/dev/null; then
             log "database is up"
             # Idempotent: the schema uses CREATE TABLE IF NOT EXISTS.
-            if [[ -f /opt/aiwrapper/sql/schema.sql ]]; then
-                mysql -h "${host}" -P "${port}" -u"${MYSQL_USER:-aiwrapper}" \
-                      -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE:-aiwrapper}" \
-                      < /opt/aiwrapper/sql/schema.sql 2>/dev/null \
+            if [[ -f /opt/cage/sql/schema.sql ]]; then
+                mysql -h "${host}" -P "${port}" -u"${MYSQL_USER:-cage}" \
+                      -p"${MYSQL_PASSWORD}" "${MYSQL_DATABASE:-cage}" \
+                      < /opt/cage/sql/schema.sql 2>/dev/null \
                     && log "schema applied" || log "could not apply the schema (continuing)"
             fi
             break
@@ -91,8 +91,8 @@ if [[ -n "${MYSQL_PASSWORD:-}" ]]; then
     done
 fi
 
-log "starting aiw-launcher $*"
-cd /opt/aiwrapper
-exec ./bin/aiw-launcher "$@" \
+log "starting cage-launcher $*"
+cd /opt/cage
+exec ./bin/cage-launcher "$@" \
     --config "${CONFIG_FILE}" \
     --control-config "${CONTROL_CONFIG}"

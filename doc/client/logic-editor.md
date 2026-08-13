@@ -4,7 +4,7 @@ The Logic Editor is where you design what the agent does. A logic graph replaces
 the single fixed "think, call a tool, repeat" loop most assistants have: you lay
 out the steps, decide which model runs each one, and wire the branches yourself.
 
-Open it with **AIWrapper: Open Logic Editor**.
+Open it with **CAGE: Open Logic Editor**.
 
 ![The Logic Editor](../images/logic-editor.png)
 

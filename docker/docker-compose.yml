@@ -1,6 +1,6 @@
-# AIWrapper — single-machine deployment.
+# CAGE — single-machine deployment.
 #
-#   cp aiwrapper-server-0.1.0-linux-x64.tar.gz .
+#   cp cage-server-0.1.1-linux-x64.tar.gz .
 #   cp .env.example .env      # then edit it: passwords and MODELS_DIR
 #   docker compose up -d --build
 #
@@ -26,12 +26,12 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-aiwrapper}
-      MYSQL_USER: ${MYSQL_USER:-aiwrapper}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cage}
+      MYSQL_USER: ${MYSQL_USER:-cage}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
     volumes:
       - ${STATE_DIR:-./data}/mysql:/var/lib/mysql
-    # Not published by default — only the aiwrapper container needs it.
+    # Not published by default — only the cage container needs it.
     # Uncomment to inspect the database from the host.
     # ports:
     #   - "127.0.0.1:3306:3306"
@@ -42,12 +42,12 @@ services:
       retries: 12
       start_period: 30s
 
-  aiwrapper:
+  cage:
     build:
       context: .
       args:
-        PACKAGE: ${PACKAGE:-aiwrapper-server-0.1.0-linux-x64.tar.gz}
-    image: aiwrapper:${VERSION:-0.1.0}
+        PACKAGE: ${PACKAGE:-cage-server-0.1.1-linux-x64.tar.gz}
+    image: cage:${VERSION:-0.1.1}
     restart: unless-stopped
     depends_on:
       mysql:
@@ -55,8 +55,8 @@ services:
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-aiwrapper}
-      MYSQL_USER: ${MYSQL_USER:-aiwrapper}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cage}
+      MYSQL_USER: ${MYSQL_USER:-cage}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
@@ -83,11 +83,11 @@ services:
       # resolves data/logic_graphs, data/workflows and data/vectors relative
       # to its working directory, so anything mounted elsewhere is ignored
       # and the graphs are lost when the container is recreated.
-      - ${STATE_DIR:-./data}/server:/opt/aiwrapper/data
+      - ${STATE_DIR:-./data}/server:/opt/cage/data
       - ${STATE_DIR:-./data}/venvs:/venvs
       - ${MODELS_DIR:?set MODELS_DIR in .env}:/models:ro
       # Generated images, audio and meshes are written here.
-      - ${STATE_DIR:-./data}/output:/tmp/aiwrapper
+      - ${STATE_DIR:-./data}/output:/tmp/cage
     # Models are memory-mapped and workers use shared memory; the 64 MB default
     # is far too small and shows up as an unexplained worker crash.
     shm_size: ${SHM_SIZE:-8gb}

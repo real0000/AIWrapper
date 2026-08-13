@@ -12,15 +12,15 @@ Installation is covered separately in
 ## The three pieces
 
 ```
-[browser] ──HTTP──> aiw-launcher --control          one per deployment
+[browser] ──HTTP──> cage-launcher --control          one per deployment
                       │  accounts · web UI · the list of machines
                       │
-                      └──HTTP /node/*──> aiw-launcher --agent      one per machine
+                      └──HTTP /node/*──> cage-launcher --agent      one per machine
                                            │  supervises the server on this box
                                            │  edits this box's config.xml
                                            │  downloads models to this box's disks
                                            │
-                                           └──spawns──> aiwrapper-server
+                                           └──spawns──> cage-server
                                                           the actual inference
 ```
 
@@ -30,9 +30,9 @@ with your models, database and config as host folders. The install page
 
 | Process | Binary | One per | Job |
 |---|---|---|---|
-| [Node agent](agent/README.md) | `aiw-launcher --agent` | machine | Starts, stops and restarts the local server; edits its config; downloads models |
-| [Inference server](server/README.md) | `aiwrapper-server` | machine | Runs the models, executes logic graphs, serves the clients |
-| [Control plane](control/README.md) | `aiw-launcher --control` | deployment | Web UI, accounts, and the list of machines it drives |
+| [Node agent](agent/README.md) | `cage-launcher --agent` | machine | Starts, stops and restarts the local server; edits its config; downloads models |
+| [Inference server](server/README.md) | `cage-server` | machine | Runs the models, executes logic graphs, serves the clients |
+| [Control plane](control/README.md) | `cage-launcher --control` | deployment | Web UI, accounts, and the list of machines it drives |
 
 The server is **not** a service of its own. The agent spawns it, which is why
 stopping the server leaves the agent running and able to bring it back.

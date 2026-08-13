@@ -1,10 +1,13 @@
 # The server package is ~113 MB, past GitHub's 100 MB per-file limit for
 # repository content. It is published as a GitHub Release asset instead:
 #
-#   gh release create v0.1.0 dist/aiwrapper-server-0.1.0-linux-x64.tar.gz \
-#                            dist/aiwrapper-0.1.0.vsix
+#   gh release create v0.1.1 dist/cage-server-0.1.1-linux-x64.tar.gz \
+#                            dist/cage-0.1.1.vsix
 #
 # The .vsix is small enough to live in the repository and is committed.
+dist/cage-server-*.tar.gz
+dist/cage-backend-*.tar.gz
+# Superseded 0.1.0 build, kept out of the repo by name as well as by size.
 dist/aiwrapper-server-*.tar.gz
 
 # Docker: the user's own secrets, their copy of the package, and the folders

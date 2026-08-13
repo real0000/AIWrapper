@@ -1,14 +1,14 @@
 # Control Plane
 
-`aiw-launcher --control` is the web UI and the only piece that knows about more
+`cage-launcher --control` is the web UI and the only piece that knows about more
 than one machine. It holds the accounts, and it drives each machine through
 that machine's [node agent](../agent/README.md).
 
 ```bash
-aiw-launcher --control --control-config /opt/aiwrapper/control.xml
+cage-launcher --control --control-config /opt/cage/control.xml
 ```
 
-Installed as the `aiw-control` service. Open `http://<host>:8088/`.
+Installed as the `cage-control` service. Open `http://<host>:8088/`.
 
 ![The control plane server tab](../../images/control-server.png)
 
@@ -53,8 +53,8 @@ straight to the inference server; control is out of that path entirely.
 
   <mysql>
     <host>127.0.0.1</host><port>3306</port>
-    <user>aiwrapper</user><password>…</password>
-    <database>aiwrapper</database><pool_size>2</pool_size>
+    <user>cage</user><password>…</password>
+    <database>cage</database><pool_size>2</pool_size>
   </mysql>
 
   <admin>
@@ -103,7 +103,7 @@ port accordingly:
 Control reaches agents over HTTP, so the usual suspects are ordinary network
 ones:
 
-1. Is the agent running on that machine? `systemctl status aiw-agent`
+1. Is the agent running on that machine? `systemctl status cage-agent`
 2. Does the agent's `<bind>` allow a remote connection? `127.0.0.1` does not.
 3. Does the `token` in `<nodes>` match that machine's `<node_token>`?
 4. Is the port reachable? `curl http://<host>:15972/health`

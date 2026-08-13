@@ -1,4 +1,4 @@
-# AIWrapper
+# CAGE
 
 **A self-hosted AI coding assistant: a C++20 inference server plus a VSCode client.
 Models, sessions, project index and generated artifacts all stay on your own hardware.**
@@ -32,8 +32,8 @@ terms: <https://github.com/real0000>
 
 | Package | Platform | Contents | Where |
 |---|---|---|---|
-| `aiwrapper-server-0.1.0-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) (194 MB) |
-| [`aiwrapper-0.1.0.vsix`](dist/aiwrapper-0.1.0.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
+| `cage-server-0.1.1-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) (194 MB) |
+| [`cage-0.1.1.vsix`](dist/cage-0.1.1.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
 
 Installation: **[doc/server-install.md](doc/server-install.md)** — Docker or
 native — then **[doc/extension-install.md](doc/extension-install.md)** for the
@@ -45,7 +45,7 @@ editor client.
 
 ```
    VSCode extension ──┐
-                      ├── WebSocket + HTTP ──► AIWrapper Server ──► local models / GPUs
+                      ├── WebSocket + HTTP ──► CAGE Server ──► local models / GPUs
    native client    ──┘                              │
                                                      ├── llama.cpp (in-process)
                                                      ├── Python workers (multimodal)
@@ -56,7 +56,7 @@ The server owns everything expensive: model loading and placement, the agent
 loop, retrieval, and the multimodal pipelines. The client is a thin editor
 front end that renders the conversation and executes tool calls locally.
 
-![The AIWrapper chat panel in VSCode](doc/images/chat-panel.png)
+![The CAGE chat panel in VSCode](doc/images/chat-panel.png)
 
 *The chat panel runs inside VSCode. The selector at the bottom picks which
 logic graph drives the conversation.*

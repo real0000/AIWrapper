@@ -1,8 +1,8 @@
 # VSCode Extension Installation
 
-Installing the AIWrapper client and connecting it to a server.
+Installing the CAGE client and connecting it to a server.
 
-Package: [`dist/aiwrapper-0.1.0.vsix`](../dist/)
+Package: [`dist/cage-0.1.1.vsix`](../dist/)
 
 ---
 
@@ -11,7 +11,7 @@ Package: [`dist/aiwrapper-0.1.0.vsix`](../dist/)
 | | Required |
 |---|---|
 | VSCode | 1.85 or newer |
-| Server | A reachable AIWrapper Server — see [server-install.md](server-install.md) |
+| Server | A reachable CAGE Server — see [server-install.md](server-install.md) |
 
 The extension holds no models and no inference logic; everything runs on the
 server.
@@ -21,7 +21,7 @@ server.
 From the command line:
 
 ```bash
-code --install-extension aiwrapper-0.1.0.vsix
+code --install-extension cage-0.1.1.vsix
 ```
 
 Or in VSCode: **Extensions** view → **⋯** menu (top right of the panel) →
@@ -31,7 +31,7 @@ Verify:
 
 ```bash
 $ code --list-extensions --show-versions
-aiwrapper.aiwrapper@0.1.0
+cage.cage@0.1.1
 ```
 
 The extension is not published on the Marketplace, so VSCode will not update it
@@ -39,26 +39,26 @@ automatically. Installing a newer `.vsix` over the old one is the upgrade path.
 
 ## 3. Connect to the server
 
-Open **Settings** (`Ctrl+,`) and search for `aiwrapper`, or edit `settings.json`
+Open **Settings** (`Ctrl+,`) and search for `cage`, or edit `settings.json`
 directly:
 
 ```jsonc
 {
   // Host only — no http:// or ws:// prefix. The protocol is derived from
-  // aiwrapper.server.tls.
-  "aiwrapper.server.host": "192.168.1.10",
-  "aiwrapper.server.port": 15963,
-  "aiwrapper.server.tls": false
+  // cage.server.tls.
+  "cage.server.host": "192.168.1.10",
+  "cage.server.port": 15963,
+  "cage.server.tls": false
 }
 ```
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `aiwrapper.server.host` | `localhost` | Server hostname, without protocol prefix |
-| `aiwrapper.server.port` | `15963` | Server `<port>` |
-| `aiwrapper.server.tls` | `false` | Use `https://` / `wss://`. Requires `<tls_cert>`/`<tls_key>` on the server |
-| `aiwrapper.server.tlsRejectUnauthorized` | `true` | Verify the server certificate |
-| `aiwrapper.server.apiKey` | empty | Bearer token. Prefer **AIWrapper: Login** over setting this by hand |
+| `cage.server.host` | `localhost` | Server hostname, without protocol prefix |
+| `cage.server.port` | `15963` | Server `<port>` |
+| `cage.server.tls` | `false` | Use `https://` / `wss://`. Requires `<tls_cert>`/`<tls_key>` on the server |
+| `cage.server.tlsRejectUnauthorized` | `true` | Verify the server certificate |
+| `cage.server.apiKey` | empty | Bearer token. Prefer **CAGE: Login** over setting this by hand |
 
 ## 4. Self-signed certificates
 
@@ -68,8 +68,8 @@ it:
 
 ```jsonc
 {
-  "aiwrapper.server.tls": true,
-  "aiwrapper.server.tlsRejectUnauthorized": false
+  "cage.server.tls": true,
+  "cage.server.tlsRejectUnauthorized": false
 }
 ```
 
@@ -79,29 +79,29 @@ network.
 
 ## 5. Log in
 
-If the server has a database and accounts configured, run **AIWrapper: Login**
+If the server has a database and accounts configured, run **CAGE: Login**
 from the Command Palette (`Ctrl+Shift+P`) and enter the account created in the
 control-plane web UI. The session token is stored by VSCode; you do not need to
-fill in `aiwrapper.server.apiKey`.
+fill in `cage.server.apiKey`.
 
 If the server runs without a database it accepts every request without
 authentication, and this step is skipped.
 
 ## 6. First use
 
-Click the **AIWrapper** icon in the activity bar to open the Chat panel.
+Click the **CAGE** icon in the activity bar to open the Chat panel.
 
 Command Palette entries:
 
 | Command | Purpose |
 |---|---|
-| `AIWrapper: Open Chat` | Chat panel |
-| `AIWrapper: New Session` | Start a fresh conversation |
-| `AIWrapper: Open Logic Editor` | Visual editor for the logic graph that drives the agent |
-| `AIWrapper: Rebuild Index` | Re-index the workspace for retrieval |
-| `AIWrapper: Manage MCP Servers` | Add / remove MCP servers |
-| `AIWrapper: Open Logic Debug` | Inspect a graph run |
-| `AIWrapper: Login` / `Logout` | Account session |
+| `CAGE: Open Chat` | Chat panel |
+| `CAGE: New Session` | Start a fresh conversation |
+| `CAGE: Open Logic Editor` | Visual editor for the logic graph that drives the agent |
+| `CAGE: Rebuild Index` | Re-index the workspace for retrieval |
+| `CAGE: Manage MCP Servers` | Add / remove MCP servers |
+| `CAGE: Open Logic Debug` | Inspect a graph run |
+| `CAGE: Login` / `Logout` | Account session |
 
 Tool calls the model makes — reading and writing files, applying patches,
 running terminal commands — execute in your editor and ask for approval first.
@@ -109,15 +109,15 @@ Approval behaviour is configurable:
 
 | Setting | Default |
 |---|---|
-| `aiwrapper.toolApproval.mode` | `ask` |
-| `aiwrapper.toolApproval.perTool` | `run_terminal`, `write_file`, `build_project` → `ask` |
-| `aiwrapper.toolApproval.timeoutSeconds` | `30` |
+| `cage.toolApproval.mode` | `ask` |
+| `cage.toolApproval.perTool` | `run_terminal`, `write_file`, `build_project` → `ask` |
+| `cage.toolApproval.timeoutSeconds` | `30` |
 
 ## 7. Troubleshooting
 
 | Symptom | Cause |
 |---|---|
-| Connection refused | Server not running, or `aiwrapper.server.port` does not match `<port>` in `config.xml` |
+| Connection refused | Server not running, or `cage.server.port` does not match `<port>` in `config.xml` |
 | Connection closes immediately when TLS is on | Server has no `<tls_cert>`/`<tls_key>`, or the certificate is self-signed and `tlsRejectUnauthorized` is still `true` |
 | `401` / login rejected | The server and the control plane point at different databases, so the account is invisible to the server |
 | Model list is empty | `<models>` in the server's `config.xml` is empty, or every `<path>` failed to scan — check the server log |
@@ -125,7 +125,7 @@ Approval behaviour is configurable:
 ## 8. Uninstall
 
 ```bash
-code --uninstall-extension aiwrapper.aiwrapper
+code --uninstall-extension cage.cage
 ```
 
 ---

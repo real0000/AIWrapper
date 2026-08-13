@@ -19,8 +19,8 @@
   <tls_key></tls_key>
 
   <node>
-    <server_binary>/opt/aiwrapper/bin/aiwrapper-server</server_binary>
-    <working_dir>/opt/aiwrapper</working_dir>
+    <server_binary>/opt/cage/bin/cage-server</server_binary>
+    <working_dir>/opt/cage</working_dir>
     <autostart>true</autostart>
     <!-- 0.0.0.0 so the control plane can reach the agent from another
          container. The port is not published by default. -->
@@ -28,7 +28,7 @@
     <agent_port>15972</agent_port>
     <node_token>@NODE_TOKEN@</node_token>
     <download_dir>/models</download_dir>
-    <log_file>/opt/aiwrapper/data/server.log</log_file>
+    <log_file>/opt/cage/data/server.log</log_file>
   </node>
 
   <mysql>
@@ -100,7 +100,7 @@
   <models>
   </models>
 
-  <modalities python_exe="python3" script_dir="/opt/aiwrapper/python"
+  <modalities python_exe="python3" script_dir="/opt/cage/python"
               cuda_visible_devices="">
   </modalities>
 

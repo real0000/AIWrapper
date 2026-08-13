@@ -25,7 +25,7 @@ A text-only deployment needs none of this.
 The package ships `setup-workers.sh`, which builds one virtualenv per family:
 
 ```bash
-cd /opt/aiwrapper
+cd /opt/cage
 ./setup-workers.sh --list                       # what exists and what it needs
 ./setup-workers.sh                              # llm only — the text/code path
 ./setup-workers.sh --families llm,image,tts
@@ -285,8 +285,8 @@ on `sys.path`, not just pip packages — the worker imports `src`, `trellis` and
 
 ```xml
 <modality alias="trellis-image-large">
-  <python_exe>/opt/aiwrapper/venvs/mesh-trellis/bin/python</python_exe>
-  <extra><repo>/opt/aiwrapper/venvs/repos/TRELLIS</repo></extra>
+  <python_exe>/opt/cage/venvs/mesh-trellis/bin/python</python_exe>
+  <extra><repo>/opt/cage/venvs/repos/TRELLIS</repo></extra>
 </modality>
 ```
 

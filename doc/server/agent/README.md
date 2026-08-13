@@ -1,17 +1,17 @@
 # Node Agent
 
-`aiw-launcher --agent` is the resident process on each machine. It owns the
-local `aiwrapper-server`: starting it, stopping it, restarting it, editing the
+`cage-launcher --agent` is the resident process on each machine. It owns the
+local `cage-server`: starting it, stopping it, restarting it, editing the
 config it will read, and pulling models onto the local disks.
 
 It is the only piece that has to be running all the time. The server it
 supervises can be down and the machine is still manageable.
 
 ```bash
-aiw-launcher --agent --config /opt/aiwrapper/config.xml
+cage-launcher --agent --config /opt/cage/config.xml
 ```
 
-Installed as the `aiw-agent` service — see
+Installed as the `cage-agent` service — see
 [server-install.md](../../server-install.md).
 
 ---
@@ -20,7 +20,7 @@ Installed as the `aiw-agent` service — see
 
 | Job | Detail |
 |---|---|
-| Supervise the server | Spawns `aiwrapper-server` as a child process, stops it with SIGTERM then SIGKILL, restarts on demand |
+| Supervise the server | Spawns `cage-server` as a child process, stops it with SIGTERM then SIGKILL, restarts on demand |
 | Report status | Answers "is it up, what is loaded, how much VRAM is free" by asking the local server over HTTP |
 | Edit the model list | Rewrites `<models>` in the local `config.xml` — see [Models & downloads](models.md) |
 | Download models | Fetches from Hugging Face onto the local disks, choosing between them by free space |
@@ -34,20 +34,20 @@ The agent reads the `<node>` block of the same `config.xml` the server uses:
 
 ```xml
 <node>
-  <server_binary>./bin/aiwrapper-server</server_binary>
+  <server_binary>./bin/cage-server</server_binary>
   <working_dir></working_dir>
   <autostart>true</autostart>
   <bind>127.0.0.1</bind>
   <agent_port>15972</agent_port>
   <node_token></node_token>
   <download_dir>models</download_dir>
-  <log_file>/tmp/aiwrapper/server.log</log_file>
+  <log_file>/tmp/cage/server.log</log_file>
 </node>
 ```
 
 | Field | Meaning |
 |---|---|
-| `server_binary` | Path to `aiwrapper-server` |
+| `server_binary` | Path to `cage-server` |
 | `working_dir` | The server's working directory. Empty = the directory holding this file. **Not** the build directory — the server resolves `data/` and `models/` against its cwd |
 | `autostart` | Start the server as soon as the agent comes up |
 | `bind` / `agent_port` | Where the node API listens. `127.0.0.1` for a single machine; a reachable address when a remote control plane drives it |
@@ -88,9 +88,9 @@ and the pending entries become live.
 ## Watching it
 
 ```bash
-systemctl status aiw-agent
-journalctl -u aiw-agent -f          # the agent
-tail -f /tmp/aiwrapper/server.log   # the server it spawned
+systemctl status cage-agent
+journalctl -u cage-agent -f          # the agent
+tail -f /tmp/cage/server.log   # the server it spawned
 ```
 
 The server's own output goes to `log_file`, not to the journal — the agent

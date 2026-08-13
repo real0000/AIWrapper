@@ -1,10 +1,10 @@
-# AIWrapper Server — container image.
+# CAGE Server — container image.
 #
 # Build it yourself; nothing is published to a registry. The server package goes
 # in the build context next to this file:
 #
-#   cp aiwrapper-server-0.1.0-linux-x64.tar.gz release/docker/
-#   docker build -t aiwrapper:0.1.0 release/docker
+#   cp cage-server-0.1.1-linux-x64.tar.gz release/docker/
+#   docker build -t cage:0.1.1 release/docker
 #
 # Base image notes, both load-bearing:
 #   * ubuntu24.04 — the server binary needs GLIBC_2.38. Ubuntu 22.04 ships 2.35
@@ -19,7 +19,7 @@
 # host's CUDA toolkit exactly.
 FROM nvidia/cuda:12.6.3-devel-ubuntu24.04
 
-ARG PACKAGE=aiwrapper-server-0.1.0-linux-x64.tar.gz
+ARG PACKAGE=cage-server-0.1.1-linux-x64.tar.gz
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Runtime libraries the server links against, plus what setup-workers.sh needs:
@@ -42,30 +42,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ── The package ─────────────────────────────────────────────────────────────
 # To pull from a GitHub Release instead of the build context, replace the COPY
 # with:
-#   ADD https://github.com/real0000/AIWrapper/releases/download/v0.1.0/${PACKAGE} /tmp/
+#   ADD https://github.com/real0000/AIWrapper/releases/download/v0.1.1/${PACKAGE} /tmp/
 WORKDIR /tmp
 COPY ${PACKAGE} /tmp/pkg.tar.gz
-RUN mkdir -p /opt/aiwrapper \
-    && tar -xzf /tmp/pkg.tar.gz --strip-components=1 -C /opt/aiwrapper \
+RUN mkdir -p /opt/cage \
+    && tar -xzf /tmp/pkg.tar.gz --strip-components=1 -C /opt/cage \
     && rm -f /tmp/pkg.tar.gz \
-    && chmod 755 /opt/aiwrapper/bin/* /opt/aiwrapper/*.sh
+    && chmod 755 /opt/cage/bin/* /opt/cage/*.sh
 
-WORKDIR /opt/aiwrapper
+WORKDIR /opt/cage
 
 # Templates are seeded into /config on first start if it is empty.
-COPY config.xml.template control.xml.template /opt/aiwrapper/templates/
+COPY config.xml.template control.xml.template /opt/cage/templates/
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 755 /usr/local/bin/entrypoint.sh
 
 # ── Mount points ────────────────────────────────────────────────────────────
 #   /config              config.xml + control.xml     (holds credentials)
 #   /models              model files, mount read-only (huge; never in the image)
-#   /opt/aiwrapper/data  logic graphs, workflows, vectors — the server resolves
+#   /opt/cage/data  logic graphs, workflows, vectors — the server resolves
 #                        these relative to its working directory, so this exact
 #                        path is what has to be persisted
 #   /venvs               Python worker environments  (~46 GB for every family,
 #                        and rebuilding them recompiles CUDA)
-VOLUME ["/config", "/opt/aiwrapper/data", "/venvs"]
+VOLUME ["/config", "/opt/cage/data", "/venvs"]
 
 #   15963  AI API — HTTP + WebSocket, what the editor connects to
 #   15972  node agent API
@@ -73,7 +73,7 @@ VOLUME ["/config", "/opt/aiwrapper/data", "/venvs"]
 EXPOSE 15963 15972 8088
 
 ENV CONFIG_FILE=/config/config.xml \
-    AIW_CONTROL_CONFIG=/config/control.xml
+    CAGE_CONTROL_CONFIG=/config/control.xml
 
 # tini reaps the worker subprocesses the server spawns; without an init the
 # container accumulates zombies as models load and unload.

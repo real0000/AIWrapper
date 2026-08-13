@@ -49,9 +49,9 @@ Users are created in the UI. Each can hold personal access tokens.
 
 A client authenticates with either:
 
-- a **session token** from `AIWrapper: Login` — the normal path, managed by the
+- a **session token** from `CAGE: Login` — the normal path, managed by the
   extension; or
-- a **personal access token** pasted into `aiwrapper.server.apiKey` — for
+- a **personal access token** pasted into `cage.server.apiKey` — for
   scripted or headless clients.
 
 Tokens are sent as a bearer on every request, which is the reason TLS matters

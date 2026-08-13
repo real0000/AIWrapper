@@ -5,8 +5,8 @@ list of its own — what a model is offered is exactly what the connected client
 declares. That includes the built-in tools, and it means adding a capability is
 a matter of attaching a server rather than changing the product.
 
-Manage them with **AIWrapper: Manage MCP Servers**, or by editing
-`aiwrapper.mcp.servers` in settings.
+Manage them with **CAGE: Manage MCP Servers**, or by editing
+`cage.mcp.servers` in settings.
 
 ![The MCP servers page](../images/mcp-tools.png)
 
@@ -30,7 +30,7 @@ The prefix is also how a call is routed back to the right server.
 Each entry needs a name, a command, and optionally arguments and environment:
 
 ```jsonc
-"aiwrapper.mcp.servers": [
+"cage.mcp.servers": [
   {
     "name": "filesystem",
     "command": "npx",
@@ -47,7 +47,7 @@ Each entry needs a name, a command, and optionally arguments and environment:
 
 Servers are launched as child processes and spoken to over stdio. The client
 connects on startup, asks each one for its tool list, and forwards the combined
-list to the AIWrapper server.
+list to the CAGE server.
 
 **Only stdio transport is supported.** SSE and streamable-HTTP entries are
 rejected rather than silently ignored.

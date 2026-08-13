@@ -63,7 +63,7 @@ maintain; nothing enforces it.
 
 ## Which server does a client talk to?
 
-Directly, and only to one: `aiwrapper.server.host` and `.port` in the editor.
+Directly, and only to one: `cage.server.host` and `.port` in the editor.
 Control is not a proxy and is not in that path.
 
 So distributing work across machines means pointing editors at different

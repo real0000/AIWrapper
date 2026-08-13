@@ -1,7 +1,7 @@
 # Server Installation
 
 Two ways to install, both from the same package on Linux x86-64:
-[`dist/aiwrapper-server-0.1.0-linux-x64.tar.gz`](../dist/).
+[`dist/cage-server-0.1.1-linux-x64.tar.gz`](../dist/).
 
 ---
 
@@ -34,7 +34,7 @@ through the server.
 
 ```bash
 cd release/docker
-cp ../dist/aiwrapper-server-0.1.0-linux-x64.tar.gz .
+cp ../dist/cage-server-0.1.1-linux-x64.tar.gz .
 cp .env.example .env      # models directory, state directory, passwords
 docker compose up -d --build
 ```
@@ -98,16 +98,16 @@ nvidia-smi --query-gpu=name,compute_cap --format=csv
 ## 2. Unpack
 
 ```bash
-tar -xzf aiwrapper-server-0.1.0-linux-x64.tar.gz
-cd aiwrapper-server-0.1.0-linux-x64
+tar -xzf cage-server-0.1.1-linux-x64.tar.gz
+cd cage-server-0.1.1-linux-x64
 ```
 
 Contents:
 
 ```
-bin/aiwrapper-server    the inference server
-bin/aiw-launcher        node agent + control plane (web UI)
-bin/aiw-model-dl        Hugging Face model downloader
+bin/cage-server    the inference server
+bin/cage-launcher        node agent + control plane (web UI)
+bin/cage-model-dl        Hugging Face model downloader
 python/                 workers for the multimodal families
 sql/schema.sql          database schema
 config.example.xml      server configuration template
@@ -119,12 +119,12 @@ setup-workers.sh        builds the Python worker environments
 ## 3. Install
 
 ```bash
-./install.sh                       # to /opt/aiwrapper, with systemd services
+./install.sh                       # to /opt/cage, with systemd services
 ```
 
 | Option | Meaning |
 |---|---|
-| `--prefix DIR` | Install directory (default `/opt/aiwrapper`) |
+| `--prefix DIR` | Install directory (default `/opt/cage`) |
 | `--user NAME` | Account the services run as (default: invoking user) |
 | `--no-service` | Copy files only, skip systemd |
 | `--force` | Overwrite an existing `config.xml` / `control.xml` |
@@ -132,21 +132,21 @@ setup-workers.sh        builds the Python worker environments
 The installer checks the CUDA runtime and that every shared library the server
 needs resolves, copies the files, creates `config.xml` and `control.xml` from
 the templates (mode 600 — they hold database credentials), and creates
-`data/`, `models/` and `/tmp/aiwrapper`.
+`data/`, `models/` and `/tmp/cage`.
 
 `sudo` is used only when the target directory is not writable. To install
 without root:
 
 ```bash
-./install.sh --prefix ~/aiwrapper --no-service
+./install.sh --prefix ~/cage --no-service
 ```
 
 Two systemd units are installed unless `--no-service` is given:
 
 | Unit | Command | Role |
 |---|---|---|
-| `aiw-agent` | `aiw-launcher --agent` | Resident. Supervises `aiwrapper-server`, edits the model list, downloads models |
-| `aiw-control` | `aiw-launcher --control` | Web UI, admin accounts, multi-node management |
+| `cage-agent` | `cage-launcher --agent` | Resident. Supervises `cage-server`, edits the model list, downloads models |
+| `cage-control` | `cage-launcher --control` | Web UI, admin accounts, multi-node management |
 
 The server is **not** a service of its own — the agent starts and stops it.
 The units are enabled but not started, because `config.xml` still needs editing.
@@ -160,9 +160,9 @@ first run:
 <mysql>
   <host>127.0.0.1</host>
   <port>3306</port>
-  <user>aiwrapper</user>
+  <user>cage</user>
   <password>your-password</password>
-  <database>aiwrapper</database>
+  <database>cage</database>
 </mysql>
 
 <ai>
@@ -191,17 +191,17 @@ The file is read from the working directory. Point at another copy with
 `CONFIG_FILE`:
 
 ```bash
-CONFIG_FILE=/opt/aiwrapper/config.xml ./bin/aiwrapper-server
+CONFIG_FILE=/opt/cage/config.xml ./bin/cage-server
 ```
 
 All relative paths inside `config.xml` resolve against the directory the file
 lives in, not the process working directory.
 
-Models are normally added through the control-plane web UI or `aiw-model-dl`,
+Models are normally added through the control-plane web UI or `cage-model-dl`,
 both of which rewrite the `<models>` section for you:
 
 ```bash
-./bin/aiw-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
+./bin/cage-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
 ```
 
 ## 5. Python environments
@@ -219,7 +219,7 @@ A GGUF-only text deployment needs neither: the `llama` backend runs inside the
 server process.
 
 ```bash
-cd /opt/aiwrapper
+cd /opt/cage
 ./setup-workers.sh --list          # the families and what each needs
 ./setup-workers.sh                 # llm only — the text/code path
 ./setup-workers.sh --families all  # everything, tens of GB
@@ -244,7 +244,7 @@ when a worker will not start: **[Python workers](server/server/workers.md)**.
 ## 6. Database (optional)
 
 ```bash
-mysql -u root -p < /opt/aiwrapper/sql/schema.sql
+mysql -u root -p < /opt/cage/sql/schema.sql
 ```
 
 `<mysql>` in `config.xml` and in `control.xml` must point at the **same**
@@ -257,14 +257,14 @@ visible to the server and clients cannot log in.
 With systemd:
 
 ```bash
-sudo systemctl start aiw-agent aiw-control
-journalctl -u aiw-agent -f
+sudo systemctl start cage-agent cage-control
+journalctl -u cage-agent -f
 ```
 
 In the foreground (agent + control + server in one process, Ctrl+C stops all):
 
 ```bash
-cd /opt/aiwrapper && ./bin/aiw-launcher --all
+cd /opt/cage && ./bin/cage-launcher --all
 ```
 
 Verify:
@@ -308,15 +308,15 @@ machine.
 Set both fields in `config.xml` to serve https/wss on the same port:
 
 ```xml
-<tls_cert>/opt/aiwrapper/server.crt</tls_cert>
-<tls_key>/opt/aiwrapper/server.key</tls_key>
+<tls_cert>/opt/cage/server.crt</tls_cert>
+<tls_key>/opt/cage/server.key</tls_key>
 ```
 
 Self-signed certificate for LAN use:
 
 ```bash
 openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
-  -keyout server.key -out server.crt -subj "/CN=aiwrapper" \
+  -keyout server.key -out server.crt -subj "/CN=cage" \
   -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:<your-lan-ip>"
 ```
 
@@ -341,10 +341,10 @@ localhost.
 ## 11. Uninstall
 
 ```bash
-sudo systemctl disable --now aiw-agent aiw-control
-sudo rm /etc/systemd/system/aiw-agent.service /etc/systemd/system/aiw-control.service
+sudo systemctl disable --now cage-agent cage-control
+sudo rm /etc/systemd/system/cage-agent.service /etc/systemd/system/cage-control.service
 sudo systemctl daemon-reload
-sudo rm -rf /opt/aiwrapper
+sudo rm -rf /opt/cage
 ```
 
 ---

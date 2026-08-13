@@ -73,9 +73,9 @@ specific torch and CUDA versions, and sharing an environment with the
 multimodal workers will break one or the other.
 
 ```bash
-python3 -m venv /opt/aiwrapper/venvs/vllm
-/opt/aiwrapper/venvs/vllm/bin/pip install --upgrade pip
-/opt/aiwrapper/venvs/vllm/bin/pip install vllm
+python3 -m venv /opt/cage/venvs/vllm
+/opt/cage/venvs/vllm/bin/pip install --upgrade pip
+/opt/cage/venvs/vllm/bin/pip install vllm
 ```
 
 Conda works equally well:
@@ -89,7 +89,7 @@ Check it before wiring it up. This is the same module the server spawns, so if
 this fails the server will fail identically:
 
 ```bash
-/opt/aiwrapper/venvs/vllm/bin/python -c "import vllm; print(vllm.__version__)"
+/opt/cage/venvs/vllm/bin/python -c "import vllm; print(vllm.__version__)"
 ```
 
 ### GPU requirements — read this before picking a version
@@ -117,7 +117,7 @@ For Volta, three settings are not optional:
 
 ```xml
 <vllm>
-  <python_exe>/opt/aiwrapper/venvs/vllm-v100/bin/python</python_exe>
+  <python_exe>/opt/cage/venvs/vllm-v100/bin/python</python_exe>
   <env>
     <!-- V1 engine requires sm_80; Volta needs the V0 path. -->
     <VLLM_USE_V1>0</VLLM_USE_V1>
@@ -166,7 +166,7 @@ loading:
 ```xml
 <ai>
   <vllm>
-    <python_exe>/opt/aiwrapper/venvs/vllm/bin/python</python_exe>
+    <python_exe>/opt/cage/venvs/vllm/bin/python</python_exe>
     <port_base>18000</port_base>
     <ready_timeout_sec>900</ready_timeout_sec>
     <request_timeout_sec>600</request_timeout_sec>
@@ -244,10 +244,10 @@ architectures and tokenizer layouts.
 Much lighter than vLLM: no GPU, no CUDA matching, a CPU torch wheel is enough.
 
 ```bash
-python3 -m venv /opt/aiwrapper/venvs/convert
-/opt/aiwrapper/venvs/convert/bin/pip install torch \
+python3 -m venv /opt/cage/venvs/convert
+/opt/cage/venvs/convert/bin/pip install torch \
     --index-url https://download.pytorch.org/whl/cpu
-/opt/aiwrapper/venvs/convert/bin/pip install numpy transformers \
+/opt/cage/venvs/convert/bin/pip install numpy transformers \
     sentencepiece protobuf
 ```
 
@@ -264,7 +264,7 @@ turned out not to run on your cards.
 ```xml
 <ai>
   <convert>
-    <python_exe>/opt/aiwrapper/venvs/convert/bin/python</python_exe>
+    <python_exe>/opt/cage/venvs/convert/bin/python</python_exe>
     <script_path></script_path>
     <tmp_dir>/dev/shm/cage-convert</tmp_dir>
     <timeout_sec>7200</timeout_sec>
@@ -341,14 +341,14 @@ environments live, so it survives image upgrades:
 
 ```bash
 # Option A
-docker compose exec aiwrapper python3 -m venv /venvs/vllm
-docker compose exec aiwrapper /venvs/vllm/bin/pip install vllm
+docker compose exec cage python3 -m venv /venvs/vllm
+docker compose exec cage /venvs/vllm/bin/pip install vllm
 
 # Option B (much smaller)
-docker compose exec aiwrapper python3 -m venv /venvs/convert
-docker compose exec aiwrapper /venvs/convert/bin/pip install torch \
+docker compose exec cage python3 -m venv /venvs/convert
+docker compose exec cage /venvs/convert/bin/pip install torch \
     --index-url https://download.pytorch.org/whl/cpu
-docker compose exec aiwrapper /venvs/convert/bin/pip install numpy \
+docker compose exec cage /venvs/convert/bin/pip install numpy \
     transformers sentencepiece protobuf
 ```
 

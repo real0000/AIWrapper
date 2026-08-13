@@ -18,7 +18,7 @@ Files are in [`docker/`](../../docker/).
 
 ```bash
 cd release/docker
-cp ../dist/aiwrapper-server-0.1.0-linux-x64.tar.gz .   # the package
+cp ../dist/cage-server-0.1.1-linux-x64.tar.gz .   # the package
 cp .env.example .env                                    # then edit it
 docker compose up -d --build
 ```
@@ -35,7 +35,7 @@ Three things must be set in `.env`:
 Then:
 
 ```bash
-docker compose logs -f aiwrapper       # watch it come up
+docker compose logs -f cage       # watch it come up
 curl http://127.0.0.1:15963/health     # {"status":"ok"}
 ```
 
@@ -75,13 +75,13 @@ Everything that matters is a host folder, so containers stay disposable.
 | Host | Container | Holds |
 |---|---|---|
 | `${STATE_DIR}/config` | `/config` | `config.xml`, `control.xml` — seeded on first start, then yours |
-| `${STATE_DIR}/server` | `/opt/aiwrapper/data` | Logic graphs, workflows, retrieval vectors, the server log |
+| `${STATE_DIR}/server` | `/opt/cage/data` | Logic graphs, workflows, retrieval vectors, the server log |
 | `${STATE_DIR}/mysql` | `/var/lib/mysql` | The database |
-| `${STATE_DIR}/output` | `/tmp/aiwrapper` | Generated images, audio, meshes |
+| `${STATE_DIR}/output` | `/tmp/cage` | Generated images, audio, meshes |
 | `${STATE_DIR}/venvs` | `/venvs` | Python environments: multimodal workers, and vLLM if you use it |
 | `${MODELS_DIR}` | `/models` (read-only) | Your models |
 
-**The server data mount is `/opt/aiwrapper/data`, not `/data`.** The server
+**The server data mount is `/opt/cage/data`, not `/data`.** The server
 resolves `data/logic_graphs`, `data/workflows` and `data/vectors` against its
 working directory, so a volume anywhere else is silently ignored and the graphs
 disappear the next time the container is recreated. This cost one round of
@@ -98,7 +98,7 @@ rebuild does not repeat that.
 | 15963 | yes | AI API — HTTP + WebSocket. What the editor connects to |
 | 8088 | yes, bound to `127.0.0.1` | Control-plane web UI |
 | 15972 | no | Node agent API. Only needed if a control plane on another machine drives this node |
-| 3306 | no | MySQL. Only the aiwrapper container needs it |
+| 3306 | no | MySQL. Only the cage container needs it |
 
 The web UI is bound to localhost because it can start, stop and reconfigure the
 server. Publishing it more widely is a decision to make deliberately, behind a
@@ -117,8 +117,8 @@ upgrades.
 **vLLM** — several GB of wheels on top of a pinned torch build:
 
 ```bash
-docker compose exec aiwrapper python3 -m venv /venvs/vllm
-docker compose exec aiwrapper /venvs/vllm/bin/pip install vllm
+docker compose exec cage python3 -m venv /venvs/vllm
+docker compose exec cage /venvs/vllm/bin/pip install vllm
 ```
 
 ```
@@ -130,10 +130,10 @@ is converted to GGUF in memory on first use and served by the in-process
 backend:
 
 ```bash
-docker compose exec aiwrapper python3 -m venv /venvs/convert
-docker compose exec aiwrapper /venvs/convert/bin/pip install torch \
+docker compose exec cage python3 -m venv /venvs/convert
+docker compose exec cage /venvs/convert/bin/pip install torch \
     --index-url https://download.pytorch.org/whl/cpu
-docker compose exec aiwrapper /venvs/convert/bin/pip install numpy \
+docker compose exec cage /venvs/convert/bin/pip install numpy \
     transformers sentencepiece protobuf
 ```
 
@@ -160,9 +160,9 @@ The image has no worker environments; they are too large and too
 hardware-specific to bake in. Build them once into the volume:
 
 ```bash
-docker compose exec aiwrapper ./setup-workers.sh --list
-docker compose exec aiwrapper ./setup-workers.sh --prefix /venvs
-docker compose exec aiwrapper ./setup-workers.sh --prefix /venvs --families all
+docker compose exec cage ./setup-workers.sh --list
+docker compose exec cage ./setup-workers.sh --prefix /venvs
+docker compose exec cage ./setup-workers.sh --prefix /venvs --families all
 ```
 
 The default (`llm`) is the text and code path and is what most deployments need.
@@ -218,7 +218,7 @@ Three things broke while testing, and are fixed in these files:
 | What broke | Why, and what changed |
 |---|---|
 | `chown ...: operation not permitted` on startup | The checkout was on exFAT, which has no Unix ownership, and Docker chowns bind-mount sources. State now lives at `STATE_DIR`, separate from the checkout |
-| Logic graphs and vectors written to a throwaway path | The server resolves `data/…` against its working directory, so a volume at `/data` was simply ignored. It is now mounted at `/opt/aiwrapper/data`, which is where the server actually writes |
+| Logic graphs and vectors written to a throwaway path | The server resolves `data/…` against its working directory, so a volume at `/data` was simply ignored. It is now mounted at `/opt/cage/data`, which is where the server actually writes |
 | `config.xml` not editable from the host | The container runs as root, so the seeded config was root-owned and mode 600 while the docs told you to edit it. `PUID`/`PGID` now hand the bind mounts to your user |
 
 The last two are the kind that look fine until the day you need them: the first
@@ -228,14 +228,14 @@ change a setting.
 ## Everyday commands
 
 ```bash
-docker compose logs -f aiwrapper          # server, agent and control together
-docker compose exec aiwrapper bash        # a shell inside
-docker compose restart aiwrapper          # apply config.xml changes
+docker compose logs -f cage          # server, agent and control together
+docker compose exec cage bash        # a shell inside
+docker compose restart cage          # apply config.xml changes
 docker compose down                       # stop; volumes and data stay
 docker compose up -d --build              # after a new package
 ```
 
-The container runs `aiw-launcher --all`, so the agent, control plane and server
+The container runs `cage-launcher --all`, so the agent, control plane and server
 share one process and one log stream. Restarting the container restarts all
 three.
 
@@ -247,7 +247,7 @@ The entrypoint prints a warning for each of the common mistakes before starting
 
 | Symptom | Likely cause |
 |---|---|
-| Container exits immediately | Check `docker compose logs aiwrapper`. A GLIBC error means the base image was changed to 22.04 |
+| Container exits immediately | Check `docker compose logs cage`. A GLIBC error means the base image was changed to 22.04 |
 | `could not select device driver` at start | NVIDIA Container Toolkit is not installed, or the daemon was not restarted after installing it |
 | Server starts, no GPU in the log | Same, or the `deploy.resources` block was removed |
 | GGUF models never load | Check the model path is under a mounted directory; `backend` should be `llama` |

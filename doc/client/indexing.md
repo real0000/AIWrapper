@@ -34,20 +34,20 @@ the model sees the project as it is at that moment.
 
 The first sync sends the whole index. Later ones send only what changed —
 unless the proportion of changed files crosses
-`aiwrapper.index.deltaFullThreshold` (40%), where a full index is cheaper than
+`cage.index.deltaFullThreshold` (40%), where a full index is cheaper than
 describing the difference. A branch switch usually crosses it.
 
 ## Settings
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `aiwrapper.index.enabled` | `true` | Turn indexing off entirely |
-| `aiwrapper.index.excludePatterns` | `**/node_modules/**`, `**/.git/**`, `**/build/**`, `**/dist/**` | Globs never walked |
-| `aiwrapper.index.maxDepth` | 8 | Directory depth limit |
-| `aiwrapper.index.debounceMs` | 2000 | Quiet period after a save |
-| `aiwrapper.index.deltaFullThreshold` | 0.4 | Change ratio above which a full index is sent |
+| `cage.index.enabled` | `true` | Turn indexing off entirely |
+| `cage.index.excludePatterns` | `**/node_modules/**`, `**/.git/**`, `**/build/**`, `**/dist/**` | Globs never walked |
+| `cage.index.maxDepth` | 8 | Directory depth limit |
+| `cage.index.debounceMs` | 2000 | Quiet period after a save |
+| `cage.index.deltaFullThreshold` | 0.4 | Change ratio above which a full index is sent |
 
-**AIWrapper: Rebuild Index** forces a full re-index, which is the thing to try
+**CAGE: Rebuild Index** forces a full re-index, which is the thing to try
 when retrieval results look stale.
 
 ## Keeping it useful

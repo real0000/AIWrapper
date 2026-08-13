@@ -1,4 +1,4 @@
-# AIWrapper Documentation
+# CAGE Documentation
 
 ## Install
 
