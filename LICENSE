@@ -1,64 +1,259 @@
-AIWrapper — Proprietary Software License
+CAGE — END USER LICENCE AGREEMENT
 Copyright (c) 2026 real0000. All Rights Reserved.
 
-This software, including all binaries, installers, documentation, models,
-configuration files, and any accompanying materials (collectively, the
-"Software"), is proprietary and confidential to real0000 (the "Licensor").
-The Software is licensed, not sold.
+CAGE (formerly AIWrapper) is proprietary software. It is licensed, not sold.
+No source code is provided or sold under this Agreement.
 
-1. GRANT OF LICENSE
-   Subject to the terms below, the Licensor grants you a personal,
-   non-exclusive, non-transferable, non-sublicensable, revocable license to
-   download, install, and run the Software solely for internal evaluation and
-   testing purposes.
+By downloading, installing, or using the Software you agree to this Agreement.
+If you do not agree, do not install or use the Software, and you may request a
+refund under Section 9.
 
-2. RESTRICTIONS
-   You may not, in whole or in part:
-   a. redistribute, publish, sell, rent, lease, lend, host, or otherwise make
-      the Software available to any third party;
-   b. use the Software for production, commercial, or revenue-generating
-      purposes without a separate written commercial agreement with the
-      Licensor;
-   c. reverse engineer, decompile, disassemble, or otherwise attempt to derive
-      the source code, algorithms, or internal structure of the Software,
-      except to the extent such restriction is expressly prohibited by
-      applicable law;
+--------------------------------------------------------------------------------
+1. DEFINITIONS
+--------------------------------------------------------------------------------
+
+   "Licensor" means real0000, the copyright holder.
+
+   "Software" means the compiled CAGE server distribution and the CAGE editor
+   client, together with their installers, scripts, configuration templates and
+   documentation, in object-code form only.
+
+   "You" or "Licensee" means the legal entity that purchased a Commercial
+   Licence, together with any entity that entity controls, is controlled by, or
+   is under common control with, where "control" means holding more than fifty
+   percent (50%) of the voting interests. For a purchase made by an individual
+   acting in a personal capacity, it means that individual.
+
+   "Major Version" means the first number of a release version (for example,
+   1.4.2 and 1.9.0 are both Major Version 1). Each Major Version is a separate
+   product.
+
+   "Reseller" means an authorised sales platform through which the Software is
+   sold, including Gumroad and Paddle, each acting as merchant of record.
+
+--------------------------------------------------------------------------------
+2. COMMERCIAL LICENCE GRANT
+--------------------------------------------------------------------------------
+
+   Upon payment in full, the Licensor grants You a perpetual, worldwide,
+   non-exclusive, non-transferable, non-sublicensable licence to:
+
+   a. install and run an unlimited number of instances of the Software on
+      hardware owned, leased, or otherwise controlled by You; and
+
+   b. use the Software for Your own internal business purposes, including the
+      development of Your own products.
+
+   This is an organisation-wide (site) licence. You do not need to count
+   servers, seats, CPUs, GPUs, or users.
+
+2.1 VERSION SCOPE
+
+   A Commercial Licence is granted for one Major Version. It covers that Major
+   Version and every subsequent release within it, for as long as the Licensor
+   publishes them, and You may download and run those releases indefinitely.
+
+   A later Major Version is a separate product and requires a separate purchase.
+   Your rights to the Major Version You purchased are perpetual and are not
+   affected by any later release, by the Licensor ceasing to publish updates, or
+   by the Software being withdrawn from sale.
+
+2.2 EVALUATION LICENCE
+
+   Where the Licensor makes the Software available without charge and
+   identifies it as an evaluation, trial, or preview build, You may install and
+   run it solely to evaluate it, and not in production or for any
+   revenue-generating purpose. Sections 3 through 12 apply to evaluation use.
+   The Licensor may withdraw an evaluation build at any time.
+
+--------------------------------------------------------------------------------
+3. RESTRICTIONS
+--------------------------------------------------------------------------------
+
+   Except as Section 4 permits, You may not, in whole or in part:
+
+   a. distribute, publish, sell, resell, rent, lease, lend, or sublicense the
+      Software, or otherwise make it available to any third party;
+
+   b. use the Software to provide a commercial service to third parties. Making
+      the Software's functionality available to anyone outside Your
+      organisation — as a hosted service, a service bureau, an API, a
+      time-sharing arrangement, or as a component of a product You supply to
+      others — requires a separate written agreement with the Licensor;
+
+   c. reverse engineer, decompile, or disassemble the Software, or attempt to
+      derive its source code or internal structure;
+
    d. modify, adapt, translate, or create derivative works of the Software;
-   e. remove, obscure, or alter any copyright, trademark, or other proprietary
-      notices contained in the Software.
 
-3. OWNERSHIP
-   The Software is protected by copyright and other intellectual property
-   laws and treaties. The Licensor retains all right, title, and interest in
-   and to the Software, including all intellectual property rights therein.
-   No rights are granted except as expressly set forth in this License.
+   e. remove, obscure, or alter any copyright, trademark, or proprietary notice
+      in the Software, or circumvent any licence-management or access-control
+      mechanism it contains;
 
-4. TERM AND TERMINATION
-   This License is effective until terminated. It terminates automatically
-   and without notice if you breach any of its terms. The Licensor may also
-   terminate this License at any time at its sole discretion. Upon
-   termination, you must cease all use of the Software and destroy all copies
-   in your possession or control.
+   f. publish or disclose the results of any benchmark of the Software without
+      the Licensor's prior written consent.
 
-5. NO WARRANTY
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. YOU ASSUME
-   THE ENTIRE RISK ARISING OUT OF THE USE OR PERFORMANCE OF THE SOFTWARE.
+   Your own configuration, logic graphs, prompts, and generated output are Yours
+   and are not restricted by this Agreement.
 
-6. LIMITATION OF LIABILITY
-   IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
-   FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-   DEALINGS IN THE SOFTWARE, INCLUDING ANY LOSS OF DATA, PROFITS, OR BUSINESS
-   INTERRUPTION.
+--------------------------------------------------------------------------------
+4. LIMITS ON THOSE RESTRICTIONS
+--------------------------------------------------------------------------------
 
-7. THIRD-PARTY COMPONENTS
-   The Software may include third-party components distributed under their
-   own license terms. Those terms govern the use of the corresponding
-   components and are unaffected by this License.
+   a. Section 3(c) does not apply to the extent that reverse engineering is
+      permitted by law that cannot be excluded by agreement, including Articles
+      5(3) and 6 of Directive 2009/24/EC in the European Union and any
+      equivalent right under the law applicable to You. Before relying on such a
+      right for interoperability purposes, please ask the Licensor — the
+      information is usually supplied on request.
 
-8. COMMERCIAL LICENSING
-   Commercial use, source code access, and transfer of intellectual property
-   or commercial rights are available only under a separate written agreement
-   with the Licensor. Inquiries: https://github.com/real0000
+   b. Section 3 does not restrict Your rights in the third-party components
+      described in Section 6. Those components are governed by their own
+      licences.
+
+   c. You may transfer this licence in its entirety to a successor in interest
+      to all or substantially all of Your business or assets, provided You give
+      the Licensor written notice and the successor accepts this Agreement in
+      writing, and You retain no copies. Any other transfer is void.
+
+--------------------------------------------------------------------------------
+5. OWNERSHIP
+--------------------------------------------------------------------------------
+
+   The Software is protected by copyright and other intellectual property laws
+   and treaties. The Licensor retains all right, title, and interest in and to
+   the Software. No rights are granted except as expressly stated here, and no
+   rights are granted by implication or estoppel.
+
+--------------------------------------------------------------------------------
+6. THIRD-PARTY COMPONENTS
+--------------------------------------------------------------------------------
+
+   The Software includes third-party open-source components. They are listed,
+   with their copyright notices and licence texts, in THIRD-PARTY-NOTICES.md and
+   the accompanying licenses/ directory.
+
+   Those components are licensed to You under their own terms, not under this
+   Agreement. Where a third-party licence grants You rights broader than this
+   Agreement, that licence prevails for that component. Nothing in this
+   Agreement is intended to limit any right You have under an open-source
+   licence.
+
+--------------------------------------------------------------------------------
+7. WHAT IS NOT INCLUDED
+--------------------------------------------------------------------------------
+
+   The Software contains no model weights, and none are supplied with it. It
+   also does not supply the Python worker environments, which are installed from
+   third-party sources onto Your own machines by the setup scripts.
+
+   Model weights and worker dependencies are licensed to You by their own
+   authors, on their own terms. Several in common use restrict commercial use,
+   impose revenue or user-count thresholds, or exclude particular territories.
+   Determining whether Your intended use is permitted is Your responsibility,
+   and the Licensor makes no representation about any model or dataset You
+   choose to run. See the model licensing section of the server documentation.
+
+--------------------------------------------------------------------------------
+8. PURCHASE THROUGH A RESELLER
+--------------------------------------------------------------------------------
+
+   The Software is sold through a Reseller acting as merchant of record. The
+   Reseller is the seller for the purposes of Your purchase, invoicing, and any
+   applicable sales tax or VAT; this Agreement governs Your use of the Software
+   and is between You and the Licensor.
+
+   Where the Reseller's own terms of purchase conflict with this Agreement in
+   respect of the transaction itself — payment, tax, invoicing, refunds — the
+   Reseller's terms prevail for those matters.
+
+--------------------------------------------------------------------------------
+9. REFUNDS AND CONSUMER RIGHTS
+--------------------------------------------------------------------------------
+
+   Refund requests are handled by the Reseller under its published refund
+   policy. The Licensor will honour any refund the Reseller grants; on refund,
+   the Commercial Licence terminates and You must stop using the Software and
+   delete all copies.
+
+   If You are a consumer, this Agreement does not affect any right You have that
+   cannot be waived under the consumer-protection law applicable to You. That
+   includes any statutory right of withdrawal for digital content, and any
+   statutory guarantee as to quality or conformity. Nothing in Sections 10 or 11
+   excludes or limits liability for death or personal injury caused by
+   negligence, for fraud, or for anything else that cannot lawfully be limited.
+
+--------------------------------------------------------------------------------
+10. NO WARRANTY
+--------------------------------------------------------------------------------
+
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED
+   "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+   The Licensor does not warrant that the Software will be uninterrupted or
+   error-free, that it will run on any particular hardware, or that any
+   particular model will load or perform in any particular way. You assume the
+   entire risk arising out of the use or performance of the Software.
+
+--------------------------------------------------------------------------------
+11. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------------
+
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR'S TOTAL
+   AGGREGATE LIABILITY ARISING OUT OF OR RELATING TO THIS AGREEMENT OR THE
+   SOFTWARE SHALL NOT EXCEED THE AMOUNT YOU ACTUALLY PAID FOR THE LICENCE GIVING
+   RISE TO THE CLAIM.
+
+   IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS,
+   REVENUE, DATA, OR BUSINESS INTERRUPTION, HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+   You are responsible for the output the Software produces and for anything You
+   do with it, including any code it writes, any command it runs, and any change
+   it applies to Your systems.
+
+--------------------------------------------------------------------------------
+12. TERM AND TERMINATION
+--------------------------------------------------------------------------------
+
+   The Commercial Licence is perpetual unless terminated under this Section.
+
+   It terminates automatically if You materially breach this Agreement and do
+   not cure the breach within thirty (30) days of written notice, and
+   immediately upon refund under Section 9. On termination You must stop using
+   the Software and delete all copies in Your possession or control.
+
+   Sections 5, 6, 7, 10, 11, and 13 survive termination.
+
+--------------------------------------------------------------------------------
+13. GENERAL
+--------------------------------------------------------------------------------
+
+   Export and sanctions. You may not use or export the Software in violation of
+   any applicable export-control or sanctions law.
+
+   Governing law. This Agreement is governed by the laws of the Republic of
+   China (Taiwan), without regard to its conflict-of-laws rules. The Taiwan
+   Taipei District Court shall be the court of first instance for any dispute,
+   save that a consumer may bring proceedings in the courts of their place of
+   residence where mandatory law so provides.
+
+   Entire agreement. This Agreement is the entire agreement between You and the
+   Licensor concerning the Software and supersedes any prior understanding. Any
+   variation must be in writing and signed by the Licensor.
+
+   Severability. If any provision is held unenforceable, it shall be modified to
+   the minimum extent necessary to make it enforceable, and the remainder
+   continues in force.
+
+   No waiver. A failure to enforce any provision is not a waiver of it.
+
+--------------------------------------------------------------------------------
+CONTACT
+--------------------------------------------------------------------------------
+
+   Licensing enquiries, including hosted-service and OEM terms:
+   https://github.com/real0000

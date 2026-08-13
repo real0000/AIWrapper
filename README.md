@@ -4,14 +4,27 @@
 Models, sessions, project index and generated artifacts all stay on your own hardware.**
 
 > **Proprietary software.** Copyright (c) 2026 real0000. All Rights Reserved.
-> The binaries published here are licensed for **evaluation and testing only** —
-> see [LICENSE](LICENSE). This repository distributes compiled packages and
-> documentation; it does not contain the source code.
+> This repository distributes compiled packages and documentation; it does not
+> contain the source code, and the source code is not for sale.
 
-## Commercial Availability
+## Licensing
 
-This software is proprietary. Evaluation binaries are available for testing.
-Acquisition of the complete source code, intellectual property, and commercial rights is available upon request.
+A **Commercial Licence** is an organisation-wide (site) licence: install and run
+it on as many machines as you like within one company, for your own internal
+use. No per-seat, per-GPU or per-server counting.
+
+| | |
+|---|---|
+| Scope | One legal entity and the entities it controls; unlimited installations |
+| Use | Your own internal business purposes, including building your own products |
+| Version | One major version — `1.x` includes every `1.x` release, forever. `2.x` is a separate product |
+| Not included | Offering CAGE's functionality to third parties as a hosted service, API, or service bureau — that needs a separate agreement |
+
+Free evaluation builds are available for testing, and may not be used in
+production.
+
+Full terms: **[LICENSE](LICENSE)**. Enquiries, including hosted-service and OEM
+terms: <https://github.com/real0000>
 
 ---
 
@@ -137,7 +150,8 @@ several machines.
 ## License
 
 Proprietary — Copyright (c) 2026 real0000. All Rights Reserved.
-See [LICENSE](LICENSE) for the full terms.
+Licensed, not sold; no source code is included or sold. See [LICENSE](LICENSE)
+for the full terms, and [Licensing](#licensing) above for what a purchase covers.
 
 CAGE incorporates open-source components, all under permissive licences; they
 are listed with their copyright notices in
