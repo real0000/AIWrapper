@@ -4,6 +4,10 @@ Copyright (c) 2026 real0000. All Rights Reserved.
 CAGE is proprietary software. It is licensed, not sold.
 No source code is provided or sold under this Agreement.
 
+CAGE is sold as a base product plus separately purchased modules. Every product
+carries perpetual updates: buy it once, and every future release of that product
+is included. See Sections 2.1 and 2.2.
+
 By downloading, installing, or using the Software you agree to this Agreement.
 If you do not agree, do not install or use the Software, and you may request a
 refund under Section 9.
@@ -24,9 +28,19 @@ refund under Section 9.
    percent (50%) of the voting interests. For a purchase made by an individual
    acting in a personal capacity, it means that individual.
 
-   "Major Version" means the first number of a release version (for example,
-   1.4.2 and 1.9.0 are both Major Version 1). Each Major Version is a separate
-   product.
+   "Base Product" means the CAGE server distribution and the CAGE editor client
+   as offered for sale as a single product.
+
+   "Module" means a substantial additional capability that the Licensor offers
+   for sale as a separate product, priced separately from the Base Product and
+   from every other Module.
+
+   "Product" means the Base Product or a Module, as the context requires. This
+   Agreement applies separately to each Product You license.
+
+   "Update" means any later release of a Product You have licensed — bug fixes,
+   improvements, new hardware support, and new functionality within that
+   Product — however it is numbered or named.
 
    "Reseller" means an authorised sales platform through which the Software is
    sold, including Gumroad and Paddle, each acting as merchant of record.
@@ -35,34 +49,57 @@ refund under Section 9.
 2. COMMERCIAL LICENCE GRANT
 --------------------------------------------------------------------------------
 
-   Upon payment in full, the Licensor grants You a perpetual, worldwide,
-   non-exclusive, non-transferable, non-sublicensable licence to:
+   Upon payment in full for a Product, the Licensor grants You a perpetual,
+   worldwide, non-exclusive, non-transferable, non-sublicensable licence to:
 
-   a. install and run an unlimited number of instances of the Software on
+   a. install and run an unlimited number of instances of that Product on
       hardware owned, leased, or otherwise controlled by You; and
 
-   b. use the Software for Your own internal business purposes, including the
+   b. use that Product for Your own internal business purposes, including the
       development of Your own products.
+
+   This grant applies separately to each Product You license.
 
    This is an organisation-wide (site) licence. You do not need to count
    servers, seats, CPUs, GPUs, or users.
 
-2.1 VERSION SCOPE
+2.1 UPDATES ARE INCLUDED, PERPETUALLY
 
-   A Commercial Licence is granted for one Major Version. It covers that Major
-   Version and every subsequent release within it, for as long as the Licensor
-   publishes them, and You may download and run those releases indefinitely.
+   Every Update to a Product You have licensed is included at no further charge,
+   for as long as the Licensor publishes Updates for it. There is no maintenance
+   period, no renewal, and no version boundary at which Your licence stops: a
+   licence to a Product covers that Product and all of its future releases.
 
-   A later Major Version is a separate product and requires a separate purchase.
-   Your rights to the Major Version You purchased are perpetual and are not
-   affected by any later release, by the Licensor ceasing to publish updates, or
-   by the Software being withdrawn from sale.
+   Your rights are not affected by the Licensor ceasing to publish Updates, by
+   the price changing, or by the Product being withdrawn from sale. What You
+   licensed keeps running, and whatever Updates were published remain Yours to
+   download and use.
 
-2.2 EVALUATION LICENCE
+2.2 MODULES ARE SEPARATE PRODUCTS
 
-   Where the Licensor makes the Software available without charge and
-   identifies it as an evaluation, trial, or preview build, You may install and
-   run it solely to evaluate it, and not in production or for any
+   The Base Product does not include Modules. Each Module is licensed by a
+   separate purchase, on the terms of this Agreement, and carries its own
+   perpetual right to Updates under Section 2.1.
+
+   A Module requires a licensed Base Product to run. Licensing a Module does not
+   license the Base Product, and licensing the Base Product does not license any
+   Module.
+
+   A MODULE NEVER TAKES AWAY WHAT YOU ALREADY LICENSED. A capability present in
+   a Product at the time You licensed it remains part of that Product and will
+   not later be moved behind a separate purchase. Modules are additional
+   capabilities offered alongside what You already have — the boundary is fixed
+   when a Module is first offered for sale, not retroactively.
+
+   Where a Module is offered without a separate price — bundled, promotional, or
+   included in the Base Product — it is part of the Base Product for the
+   purposes of the preceding paragraph.
+
+2.3 EVALUATION LICENCE
+
+   Where the Licensor makes a Product available without charge and identifies it
+   as an evaluation, trial, or preview build, You may install and run it solely
+   to evaluate it, and not in production or for any
    revenue-generating purpose. Sections 3 through 12 apply to evaluation use.
    The Licensor may withdraw an evaluation build at any time.
 
@@ -172,9 +209,10 @@ refund under Section 9.
 --------------------------------------------------------------------------------
 
    Refund requests are handled by the Reseller under its published refund
-   policy. The Licensor will honour any refund the Reseller grants; on refund,
-   the Commercial Licence terminates and You must stop using the Software and
-   delete all copies.
+   policy. The Licensor will honour any refund the Reseller grants. A refund
+   ends Your licence to the refunded Product only: You must stop using that
+   Product and delete its copies, and Your licences to any other Product are
+   unaffected.
 
    If You are a consumer, this Agreement does not affect any right You have that
    cannot be waived under the consumer-protection law applicable to You. That
@@ -219,12 +257,17 @@ refund under Section 9.
 12. TERM AND TERMINATION
 --------------------------------------------------------------------------------
 
-   The Commercial Licence is perpetual unless terminated under this Section.
+   Each Commercial Licence is perpetual unless terminated under this Section.
 
-   It terminates automatically if You materially breach this Agreement and do
-   not cure the breach within thirty (30) days of written notice, and
-   immediately upon refund under Section 9. On termination You must stop using
-   the Software and delete all copies in Your possession or control.
+   A licence terminates automatically if You materially breach this Agreement in
+   respect of that Product and do not cure the breach within thirty (30) days of
+   written notice, and immediately upon refund of that Product under Section 9.
+   On termination You must stop using that Product and delete its copies.
+
+   Termination is per Product. Losing Your licence to one Module does not affect
+   the Base Product or any other Module — except that a Module cannot be used
+   without a licensed Base Product, so termination of the Base Product licence
+   stops the Modules with it.
 
    Sections 5, 6, 7, 10, 11, and 13 survive termination.
 

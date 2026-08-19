@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 本檔由 `./dev.sh licenses` 產生，請勿手改 —— 相依變了就重跑。
-產生時間：2026-08-11 23:42 UTC
+產生時間：2026-08-13 16:50 UTC
 
 CAGE server 散布的產物（`bin/` 的執行檔、`lib/` 隨行的共享函式庫、
 `share/cage/` 的轉檔腳本）內含下列第三方軟體。各元件的授權原文全文

@@ -9,16 +9,25 @@ Models, sessions, project index and generated artifacts all stay on your own har
 
 ## Licensing
 
-A **Commercial Licence** is an organisation-wide (site) licence: install and run
-it on as many machines as you like within one company, for your own internal
-use. No per-seat, per-GPU or per-server counting.
+CAGE is sold as a **base product plus separately purchased modules**, and every
+product carries **perpetual updates** — buy it once and every future release of
+that product is included. No maintenance period, no renewal, no version at which
+your licence stops.
+
+A **Commercial Licence** is organisation-wide: install and run it on as many
+machines as you like within one company, for your own internal use. No per-seat,
+per-GPU or per-server counting.
 
 | | |
 |---|---|
 | Scope | One legal entity and the entities it controls; unlimited installations |
 | Use | Your own internal business purposes, including building your own products |
-| Version | One major version — `1.x` includes every `1.x` release, forever. `2.x` is a separate product |
+| Updates | Perpetual. Every future release of what you bought, at no further charge |
+| Modules | Major new capabilities are sold separately, each with its own perpetual updates. A module needs a licensed base product to run |
 | Not included | Offering CAGE's functionality to third parties as a hosted service, API, or service bureau — that needs a separate agreement |
+
+**A module never takes away what you already bought.** Whatever a product could
+do when you licensed it stays part of that product; modules only ever add to it.
 
 Free evaluation builds are available for testing, and may not be used in
 production.
