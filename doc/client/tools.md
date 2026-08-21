@@ -3,9 +3,9 @@
 Tool calls run **in your editor**, not on the server. When the model reads a
 file it reads your workspace; when it runs a command it runs on your machine.
 
-Two things stand between the model and your project: **approval**, which gates
-individual calls, and the **staging area**, which means file changes do not
-reach disk at all until you commit them.
+Two gates stand between the model and your project: **tool approval**, which
+gates individual calls by tool, and **[file approval](file-approval.md)**, which
+asks about every single file before it is written.
 
 Which tools a node may use is set on the node — see **Enable Tool Calls** and
 **Allowed Tools** in [Send To AI](nodes.md#send-to-ai).
@@ -21,9 +21,9 @@ MCP servers page.*
 
 | Tool | Approval | What it does |
 |---|:---:|---|
-| `read_file` | auto | Reads a file, plus a diff of anything staged on top of it |
-| `write_file` | auto | **Stages** a write. Nothing reaches disk |
-| `apply_patch` | auto | Applies a unified diff to the staged copy, or to disk content if nothing is staged yet, and stages the result |
+| `read_file` | auto | Reads a file from your workspace |
+| `write_file` | [per file](file-approval.md) | Writes a file, after you approve that file |
+| `apply_patch` | [per file](file-approval.md) | Applies a unified diff, asking once per file it touches |
 | `run_terminal` | **ask** | Runs a shell command. Can run in the background and return a process id |
 | `process_status` | auto | Status and buffered output of a background process |
 | `process_stop` | auto | Terminates a background process |
@@ -33,6 +33,7 @@ MCP servers page.*
 | `get_diagnostics` | auto | Errors and warnings from the language server |
 | `open_file` | auto | Opens a file, optionally at a line |
 | `get_project_info` | auto | Detected project type and metadata |
+| `remember` | auto | Records one durable note about a source file — why something was done, not what changed. Shown again in later sessions whenever that file is in play |
 | `build_project` | **ask** | Builds with the detected build system |
 | `run_tests` | **ask** | Runs the project's tests |
 
@@ -47,17 +48,18 @@ question would prompt twice for one interaction.
 job: launch a GUI with `run_terminal(background:true)`, have a vision model
 confirm the window shows what it should, then `process_stop`.
 
-## Why the write tools are automatic
+The server also drives a hidden `scan_memory` tool as part of the project-memory
+pipeline. It is not offered to the model and never asks for approval.
 
-`write_file` and `apply_patch` default to automatic approval because **they do
-not modify your workspace**. They write into a per-session staging area, and the
-staged changes are applied to disk only when you approve a flush.
+## The write tools have their own gate
 
-That inverts the usual arrangement: instead of approving every individual write
-blind, you review the complete set of changes once, per file, at the end.
+`write_file` and `apply_patch` do not use `cage.toolApproval.perTool` at all.
+Every file they touch is approved individually, immediately before it is
+written, with that file's diff in front of you. There is no setting that makes
+them automatic.
 
-See [Staging & Flush](staging.md) — worth reading before you turn approval modes
-down.
+Approvals are serialised into one queue shared with tool approval, so only one
+question waits on you at a time. See [File Approval](file-approval.md).
 
 ## Risk levels
 
@@ -67,11 +69,11 @@ Shown on the approval card to help you decide quickly:
 |---|---|
 | 🔴 High | `run_terminal` |
 | 🟡 Medium | `build_project`, `run_tests` |
-| 🟢 Low | everything else, including the staging write tools |
+| 🟢 Low | everything else |
 
-`run_terminal` is the one that genuinely reaches outside: it runs in a shadow
-copy of the workspace so file mutations are captured into staging, but the
-command itself is a real command on your machine.
+`run_terminal` is the one that genuinely reaches outside. It runs a real command
+on your machine, in your workspace root — it can reach the network, install
+packages, and touch paths that no file gate sees.
 
 ## Approving
 
@@ -117,4 +119,4 @@ Third-party tools attach over MCP and go through the same approval flow. See
 
 ---
 
-[← Chat Panel](chat-panel.md) · [Staging & Flush](staging.md) · [MCP Servers](mcp.md) · [Settings](settings.md) · [Client Guide](README.md)
+[← Chat Panel](chat-panel.md) · [File Approval](file-approval.md) · [MCP Servers](mcp.md) · [Settings](settings.md) · [Client Guide](README.md)

@@ -27,7 +27,7 @@ See [Tools & Approval](tools.md).
 | Setting | Default | Meaning |
 |---|---|---|
 | `cage.toolApproval.mode` | `ask` | Default mode: `ask`, `auto`, `deny` |
-| `cage.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides. `write_file` and `apply_patch` are absent on purpose: they only write to the staging area, so they run automatically and are reviewed together at the flush |
+| `cage.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides. `write_file` and `apply_patch` are absent because they do not use this setting: every file is approved individually before it is written — see [File Approval](file-approval.md) |
 | `cage.toolApproval.timeoutSeconds` | 30 | Wait before a request lapses. `0` waits forever |
 
 ## Tool execution
@@ -70,14 +70,6 @@ See [Project Indexing](indexing.md).
 | `cage.index.maxDepth` | 8 |
 | `cage.index.debounceMs` | 2000 |
 | `cage.index.deltaFullThreshold` | 0.4 |
-
-## Workflow
-
-| Setting | Default | Meaning |
-|---|---|---|
-| `cage.workflow.enabled` | `true` | Turn the workflow subsystem off |
-| `cage.workflow.defaultId` | `text_code` | Workflow selected on a fresh workspace |
-| `cage.workflow.judgeMaxTokens` | 200 | Token cap for the model calls that judge whether a workflow applies and whether it is finished |
 
 ## MCP
 

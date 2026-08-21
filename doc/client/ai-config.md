@@ -5,7 +5,10 @@ reference it by name, so several [Send To AI](nodes.md#send-to-ai) nodes can
 share one config, and one graph can mix a small fast model for routine steps
 with a large one for the hard step.
 
-Configs live in the **AI CONFIGS** section of the Logic Editor sidebar.
+Configs live in the **AI CONFIGS** section of the Logic Editor sidebar — one
+list holding both text models and the generative ones (image, speech, audio,
+music, 3D). The property sheet changes to match the model you pick; the
+generative fields are described in [Modality Configs](modality-config.md).
 
 ![The AI config editor](../images/ai-config.png)
 

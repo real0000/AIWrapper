@@ -31,11 +31,11 @@ name**, so renaming one updates every node that uses it.
 
 | Section | What it defines | Detail |
 |---|---|---|
-| AI Configs | A model plus how to load and sample it | [AI Configs →](ai-config.md) |
-| Modality Configs | Image / speech / audio / music / 3D generation targets | [Modality Configs →](modality-config.md) |
+| AI Configs | A model plus how to load and sample it — text models and the generative ones (image / speech / audio / music / 3D) in one list | [AI Configs →](ai-config.md) · [generative fields →](modality-config.md) |
 | Format | Output shapes: JSON, required keys, regex, non-empty | [Format Configs →](format-config.md) |
 | Variables | Named state that lives for one run of the graph | [Variables →](variables.md) |
 | RAG | Which config embeds your project, enabling retrieval | [RAG →](rag.md) |
+| Memory | Which rule files load when, and the config that judges it | [Project Memory →](memory.md) |
 
 **Test All** runs every AI config's connectivity test at once. Each config also
 has its own ▶ test button, which validates the settings and then actually loads
@@ -103,4 +103,4 @@ selector for everyone on that server.
 - [Variables](variables.md) — carrying state between nodes
 - [RAG](rag.md) — giving nodes your project as context
 
-[← Client Guide](README.md)
+[Graph file format](graph-format.md) · [← Client Guide](README.md)

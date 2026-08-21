@@ -43,11 +43,11 @@ You can send an attachment with no text at all.
 
 The pair of dropdowns at the bottom decides what actually runs.
 
-**Graph** picks the workflow, and through it the logic graph. Six workflows ship
-built in — Text / Code, Speech-to-Text, Image / UI / 2D, Text-to-Speech,
-Music / Sound Effects, and 3D Model / Texture / Animation — and each binds to a
-logic graph. Selecting one here is what tells the server which graph to execute
-for your next message.
+**Graph** picks the logic graph to run. Six ship built in — Text / Code,
+Speech-to-Text, Image / UI / 2D, Text-to-Speech, Music / Sound Effects, and
+3D Model / Texture / Animation. Your selection travels with the message itself,
+so it is what the server executes for that message; there is no separate session
+binding that can drift out of step with the dropdown.
 
 **Start** picks the entry point. A graph always has a `Default` Start node, and
 may have more; each has a name. Choosing a different Start runs the same graph
@@ -80,9 +80,11 @@ allow everything for the session, or deny. Approval is covered in
 
 ## Reviewing changes
 
-File changes are not written as they happen — they collect in a staging area,
-and at the end of a run the panel lists them with their diffs so you can accept
-all, reject all, or pick file by file. See [Staging & Flush](staging.md).
+Each file a tool is about to write appears as its own card, with the unified
+diff against what is on disk, syntax-coloured. Approve it and the file is
+written; decline it and nothing happens and the model is told. Only one card
+waits on you at a time — the rest queue behind it. See
+[File Approval](file-approval.md).
 
 ## Interim steps
 

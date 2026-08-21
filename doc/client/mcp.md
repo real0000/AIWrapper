@@ -20,7 +20,7 @@ are listed read-only below, exactly as the model receives them.*
 | Source | Named | Why it lives there |
 |---|---|---|
 | The client itself | plain (`read_file`, `apply_patch`, …) | Needs the editor: your workspace, your selection, your terminal |
-| The server | plain (`run_code`, `list_staged`, …) | Needs the server's sandbox and its per-session staging area |
+| The server | plain (`run_code`, …) | Needs the server's own sandbox rather than your editor |
 | Third-party MCP servers | `mcp__<server>__<tool>` | Yours to add. The prefix marks them as external |
 
 The prefix is also how a call is routed back to the right server.

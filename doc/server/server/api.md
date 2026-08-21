@@ -57,17 +57,15 @@ Client to server:
 
 | Message | Purpose |
 |---|---|
-| `message` | A user message. Runs the logic graph, or the fallback loop |
+| `message` | A user message. Carries `logic_graph_id` and `start_name`, naming the graph and entry point to run |
 | `tool_result` | The result of a tool the server asked for |
 | `cancel` | Abort the run |
 | `project_index.full` / `.delta` | Index sync |
 | `logic_graph.update` | Save a graph |
 | `logic.execute` | Run a graph explicitly |
-| `workflow.select` | Bind a workflow to the session |
 | `mcp_tools_register` / `_update` | Declare which tools this client can run |
 | `file_response` | A file the server asked for |
-| `staging.flush_ack` / `staging.status` | Staging decisions and snapshots |
-| `file_transfer.init`, binary frames | File upload |
+| `file_transfer.init`, binary frames | Chunked upload. **Not supported** — use `POST /api/files/upload` instead |
 
 Server to client:
 
@@ -79,8 +77,7 @@ Server to client:
 | `logic_result` | The End node's result |
 | `logic_debug` | Per-node before/after/error events |
 | `file_request` | Send me this file |
-| `staging.flush_request` / `status_query` / `discard` | Staging |
-| `logic_graph.diverged` / `workflow.diverged` | Version conflict |
+| `logic_graph.diverged` | Version conflict |
 | `done` / `error` | End of exchange |
 
 **The tool list is entirely client-declared.** The server holds no static tool

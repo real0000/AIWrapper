@@ -1,10 +1,17 @@
 # Modality Configs
 
 A modality config points at something that generates a file rather than text:
-an image, speech, audio, music, or a 3D mesh. It sits beside
-[AI Configs](ai-config.md) in the Logic Editor sidebar and is referenced the
-same way — a [Send To AI](nodes.md#send-to-ai) node picks it in its **AI Config**
-dropdown.
+an image, speech, audio, music, or a 3D mesh.
+
+**It lives in the same AI CONFIGS list as everything else.** Picking a model is
+one decision, not two — the list is one section, generative entries are labelled
+with their type (`image`, `tts`, …), and the Inspector's property sheet switches
+to match whichever kind of model the config names. A [Send To AI](nodes.md#send-to-ai)
+node picks it in the same **AI Config** dropdown as a text config.
+
+The model dropdown lists both kinds. Choosing a generative model in a text
+config — or the reverse — converts the config in place and keeps its name, so
+every node already bound to it stays bound.
 
 When a node runs a modality config, the model call becomes a generation call:
 no tool loop, no retrieval, no structured output. The node's `ALL` pin carries
@@ -24,6 +31,10 @@ editor will only let you wire it somewhere that accepts that kind of file.
 | `mesh` | 3D meshes |
 
 ## Local or remote
+
+Local modality workers are on the server's **VRAM ledger** alongside every other
+model, and they select GPUs per device the same way a text config does — there
+is no separate GPU whitelist to keep in step.
 
 **Local** configs name an alias from the server's `config.xml`. The server
 starts the corresponding Python worker on first use and talks to it over a
