@@ -18,18 +18,29 @@ Files are in [`docker/`](../../docker/).
 
 ```bash
 cd release/docker
-cp ../dist/cage-server-0.1.1-linux-x64.tar.gz .              # the server
-cp ../dist/cage-backend-cuda-sm89_sm90-0.1.1-linux-x64.tar.gz .   # your GPU
-cp .env.example .env                                          # then edit it
+cp ../dist/cage-server-0.1.1-linux-x64.tar.gz .   # the server, always
+
+# then every backend pack you want the image to cover — one, or several
+cp ../dist/cage-backend-cuda-sm89_sm90-*.tar.gz .
+cp ../dist/cage-backend-cuda-sm80_sm86-*.tar.gz .
+cp ../dist/cage-backend-vulkan-*.tar.gz .
+
+cp .env.example .env                              # then edit it
 docker compose up -d --build
 ```
 
-**Both packages.** The server package carries no GPU code; the
-[backend pack](server/backend-packs.md) carries the compiled kernels for your
-cards. Every `cage-backend-*.tar.gz` in `release/docker/` is unpacked into the
-image, so copy in as many as you need covered.
+**The server package carries no GPU code**, so the image needs at least one
+[backend pack](server/backend-packs.md) as well. **Every**
+`cage-backend-*.tar.gz` in `release/docker/` is unpacked into the image — the
+same as a native install, where you drop as many packs as you like into `bin/`
+and the server probes each one per card.
 
-Build without one and the image still runs — `vllm` and `remote` models work,
+Copying in more than one is the normal thing to do when a machine has mixed
+cards, or when one image serves several machines. There is no cost beyond image
+size, and no configuration: an AI config binds to whichever backend can drive
+the GPUs it selected.
+
+Build with none and the image still runs — `vllm` and `remote` models work,
 `backend="llama"` ones fail to load. The build prints a warning saying so.
 
 Three things must be set in `.env`:
@@ -60,9 +71,9 @@ folders would otherwise belong to root.
 | | |
 |---|---|
 | Docker | With Compose v2 (`docker compose`, not `docker-compose`) |
-| NVIDIA Container Toolkit | For GPU access. Without it, drop the `deploy.resources` block and everything runs on CPU |
+| GPU access | **NVIDIA**: nvidia-container-toolkit on the host, which the shipped `deploy.resources` block uses. **AMD**: no runtime plugin — swap that block for the `/dev/kfd` + `/dev/dri` device mapping commented into `docker-compose.yml`. Without either, everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
-| GPU | Whatever your [backend pack](server/backend-packs.md) covers. The CUDA packs start at compute capability 7.0; AMD and Intel go through the Vulkan pack |
+| GPU | Whatever your [backend pack](server/backend-packs.md) covers — CUDA from compute capability 7.0, AMD through the HIP packs, anything else through Vulkan |
 | Disk | 13.1 GB image before the backend pack, and a CUDA pack adds ~1.6 GB unpacked (Vulkan and CPU packs, ~50 MB). Plus the worker environments (1.9 GB for `llm`) and your models |
 
 The base image is `nvidia/cuda:12.6.3-devel-ubuntu24.04`, and both halves of that

@@ -54,9 +54,9 @@ terms: <https://github.com/real0000>
 > not the licensed product and are not for production use — see
 > [Licensing](#licensing).
 >
-> Purchases go through Gumroad and Paddle, which act as merchant of record, and
-> a licensed copy is delivered from there. A purchase carries perpetual updates
-> for that product; this repository is not the update channel for it.
+> Purchases go through Gumroad, which acts as merchant of record, and a licensed
+> copy is delivered from there. A purchase carries perpetual updates for that
+> product; this repository is not the update channel for it.
 
 **The server package contains no GPU code.** In-process GGUF inference needs a
 backend pack as well — a second download carrying the compiled kernels for your

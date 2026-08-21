@@ -91,7 +91,8 @@ services:
     # Models are memory-mapped and workers use shared memory; the 64 MB default
     # is far too small and shows up as an unexplained worker crash.
     shm_size: ${SHM_SIZE:-8gb}
-    # Needs nvidia-container-toolkit on the host.
+    # ── GPU access ──────────────────────────────────────────────────────────
+    # NVIDIA (default). Needs nvidia-container-toolkit on the host.
     deploy:
       resources:
         reservations:
@@ -99,3 +100,19 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    #
+    # AMD: delete the `deploy:` block above and uncomment this instead. ROCm
+    # does not go through a container runtime plugin — the container is given
+    # the kernel driver's device nodes directly, and the user must be in the
+    # groups that own them.
+    # devices:
+    #   - /dev/kfd            # ROCm's compute interface
+    #   - /dev/dri            # the DRM render nodes
+    # group_add:
+    #   - video
+    #   - render
+    # security_opt:
+    #   - seccomp:unconfined  # some ROCm versions need this for HSA queues
+    #
+    # Intel / anything through the Vulkan pack: `devices: [/dev/dri]` alone,
+    # plus the vendor's Vulkan ICD installed inside the image.

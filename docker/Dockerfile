@@ -3,8 +3,9 @@
 # Build it yourself; nothing is published to a registry. The server package and
 # the backend pack for your GPUs both go in the build context next to this file:
 #
-#   cp cage-server-0.1.1-linux-x64.tar.gz              release/docker/
-#   cp cage-backend-cuda-sm89_sm90-0.1.1-linux-x64.tar.gz release/docker/
+#   cp cage-server-0.1.1-linux-x64.tar.gz  release/docker/
+#   cp cage-backend-cuda-sm89_sm90-*.tar.gz release/docker/   # one or more
+#   cp cage-backend-vulkan-*.tar.gz         release/docker/
 #   docker build -t cage:0.1.1 release/docker
 #
 # The server package carries no GPU code. Without a backend pack the image still
