@@ -58,6 +58,9 @@ one and put `libcage-llama-*.so` in the server's `bin/`.
 | `vulkan` | Any Vulkan 1.2 GPU — AMD, Intel, or NVIDIA |
 | `cpu` | No GPU |
 
+Exactly how far each piece has been tested is listed in
+[verification status](doc/verification-status.md).
+
 **The AMD packs are new and unproven.** They compile, load, resolve every symbol
 and identify themselves correctly — but all of that was verified on a machine
 with no AMD hardware. Nobody has yet confirmed they compute the right answers or

@@ -1,7 +1,11 @@
-# CAGE
+# CAGE — Composable Agent Graph Engine
 
 **A self-hosted AI coding assistant: a C++20 inference server plus a VSCode client.
 Models, sessions, project index and generated artifacts all stay on your own hardware.**
+
+The name is the design: the agent loop is a **graph** you compose from nodes and
+edit, not a fixed loop inside the binary. Each node picks its own model, so one
+run can plan with a small fast model and write code with a large one.
 
 > **Proprietary software.** Copyright (c) 2026 real0000. All Rights Reserved.
 > This repository distributes compiled packages and documentation; it does not
@@ -44,6 +48,15 @@ terms: <https://github.com/real0000>
 | `cage-server-0.1.1-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) |
 | `cage-backend-*-0.1.1-linux-x64.tar.gz` | Linux x86-64 | **GPU support — one pack for your hardware.** See below | [Releases](../../releases) |
 | [`cage-0.1.1.vsix`](dist/cage-0.1.1.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
+
+> **What is on GitHub is the evaluation build.** Releases here carry preview and
+> evaluation packages, for trying CAGE out and reporting what breaks. They are
+> not the licensed product and are not for production use — see
+> [Licensing](#licensing).
+>
+> Purchases go through Gumroad and Paddle, which act as merchant of record, and
+> a licensed copy is delivered from there. A purchase carries perpetual updates
+> for that product; this repository is not the update channel for it.
 
 **The server package contains no GPU code.** In-process GGUF inference needs a
 backend pack as well — a second download carrying the compiled kernels for your
@@ -170,6 +183,7 @@ several machines.
 | Document | Contents |
 |---|---|
 | [WHATSNEW.md](WHATSNEW.md) | **Upgrading from 0.1.0?** What changed, and what needs action from you |
+| [doc/verification-status.md](doc/verification-status.md) | **How far each piece has been tested** — and which reports would help most |
 | [doc/server-install.md](doc/server-install.md) | **Start here** — Docker or native, then the native path in full: configuration, workers, database, TLS, troubleshooting |
 | [doc/server/docker.md](doc/server/docker.md) | The Docker path — one `docker compose up`, with models, database and config as host folders |
 | [doc/extension-install.md](doc/extension-install.md) | Installing the `.vsix`, connecting to a server, logging in, first use |
