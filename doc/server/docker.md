@@ -29,6 +29,26 @@ cp .env.example .env                              # then edit it
 docker compose up -d --build
 ```
 
+**On AMD, use the other compose file** — `docker-compose.amd.yml`, complete and
+ready to run, nothing to edit:
+
+```bash
+cp ../dist/cage-backend-hip-gfx1100_gfx1101_gfx1102-*.tar.gz .
+docker compose -f docker-compose.amd.yml up -d --build
+```
+
+Two files rather than one with a switch, because the two are not variations of
+the same thing: NVIDIA hands GPUs to a container through
+nvidia-container-toolkit, while ROCm has no runtime plugin at all — the kernel
+driver's device nodes are mapped in directly and the container user has to be in
+the groups that own them. The AMD image also drops the CUDA base, since a HIP
+pack carries its own ROCm libraries and the CUDA base would be a dozen wasted
+gigabytes.
+
+Check the host can see the cards first — `ls /dev/kfd /dev/dri`. No `/dev/kfd`
+means the amdgpu driver is not loaded, and no amount of container configuration
+will help.
+
 **The server package carries no GPU code**, so the image needs at least one
 [backend pack](server/backend-packs.md) as well. **Every**
 `cage-backend-*.tar.gz` in `release/docker/` is unpacked into the image — the
@@ -71,7 +91,7 @@ folders would otherwise belong to root.
 | | |
 |---|---|
 | Docker | With Compose v2 (`docker compose`, not `docker-compose`) |
-| GPU access | **NVIDIA**: nvidia-container-toolkit on the host, which the shipped `deploy.resources` block uses. **AMD**: no runtime plugin — swap that block for the `/dev/kfd` + `/dev/dri` device mapping commented into `docker-compose.yml`. Without either, everything runs on CPU |
+| GPU access | **NVIDIA**: nvidia-container-toolkit on the host (`docker-compose.yml`). **AMD**: the amdgpu driver, so that `/dev/kfd` exists (`docker-compose.amd.yml`). With neither, everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
 | GPU | Whatever your [backend pack](server/backend-packs.md) covers — CUDA from compute capability 7.0, AMD through the HIP packs, anything else through Vulkan |
 | Disk | 13.1 GB image before the backend pack, and a CUDA pack adds ~1.6 GB unpacked (Vulkan and CPU packs, ~50 MB). Plus the worker environments (1.9 GB for `llm`) and your models |

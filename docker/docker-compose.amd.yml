@@ -1,24 +1,26 @@
-# CAGE — single-machine deployment.
+# CAGE — AMD / ROCm 版的 compose。
 #
-#   cp cage-server-0.1.1-linux-x64.tar.gz .
-#   cp .env.example .env      # then edit it: passwords and MODELS_DIR
-#   docker compose up -d --build
+# 與 docker-compose.yml 的差別只有兩件事，其餘完全相同：
 #
-# Nothing is pulled from a private registry. The image is built here; mysql is
-# the official public one.
+#   ① base image 用 ubuntu:24.04 而不是 nvidia/cuda。HIP 後端包自帶 ROCm 的
+#      執行期函式庫（libamdhip64 / librocblas / rocBLAS 的 Tensile kernel…），
+#      所以不需要 CUDA base —— 那會白白多背十幾 GB。
+#      代價：容器裡沒有 nvcc，所以不能在容器內建 Python worker 的 venv。
+#      AMD 的 worker 本來就要 ROCm 版的 torch，那條路另外處理。
 #
-# Everything that matters is a host folder, so it survives the container. Where
-# those folders live is up to you (STATE_DIR in .env), because they must sit on a
-# filesystem with Unix ownership — ext4, xfs and friends. A bind mount onto
-# exFAT or NTFS fails at startup with
-#   error while creating mount source path ...: chown ...: operation not permitted
-# which is why STATE_DIR is separate from wherever you unpacked this.
+#   ② GPU 的給法。NVIDIA 走 nvidia-container-toolkit（deploy.resources），
+#      ROCm 完全不走那條 —— 它是把核心驅動的裝置節點直接映射進容器，
+#      使用者還必須在擁有那些節點的群組裡。
 #
-#   ${STATE_DIR}/mysql    the database
-#   ${STATE_DIR}/server   logic graphs, workflows, retrieval vectors
-#   ${STATE_DIR}/config   config.xml and control.xml
-#   ${STATE_DIR}/venvs    Python environments (multimodal workers, optional vLLM)
-#   ${MODELS_DIR}         your models, mounted read-only
+# 用法：
+#
+#   cp ../dist/cage-server-0.1.1-linux-x64.tar.gz  .
+#   cp ../dist/cage-backend-hip-gfx1100_*.tar.gz   .    # 你的卡那一包
+#   cp .env.example .env                                # 然後編輯它
+#   docker compose -f docker-compose.amd.yml up -d --build
+#
+# 先確認主機看得到卡：ls /dev/kfd /dev/dri
+# 沒有 /dev/kfd 就是 amdgpu 驅動沒載入，容器再怎麼設定都沒用。
 
 services:
   mysql:
@@ -47,7 +49,8 @@ services:
       context: .
       args:
         PACKAGE: ${PACKAGE:-cage-server-0.1.1-linux-x64.tar.gz}
-    image: cage:${VERSION:-0.1.1}
+        BASE_IMAGE: ${BASE_IMAGE:-ubuntu:24.04}
+    image: cage-amd:${VERSION:-0.1.1}
     restart: unless-stopped
     depends_on:
       mysql:
@@ -91,13 +94,15 @@ services:
     # Models are memory-mapped and workers use shared memory; the 64 MB default
     # is far too small and shows up as an unexplained worker crash.
     shm_size: ${SHM_SIZE:-8gb}
-    # NVIDIA。需要主機安裝 nvidia-container-toolkit。
-    # AMD 請改用 docker-compose.amd.yml —— ROCm 不走 container runtime plugin，
-    # 兩者的機制完全不同，硬塞進同一個檔案只會讓兩邊都要編輯它。
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # ROCm 的 GPU 存取：直接映射核心驅動的裝置節點，沒有 runtime plugin。
+    devices:
+      - /dev/kfd            # ROCm 的運算介面
+      - /dev/dri            # DRM render node
+    # 容器內的使用者要在擁有上面那些節點的群組裡，否則會是「看得到檔案、
+    # 打不開」—— 症狀是 probe 回報 0 個裝置，跟「沒裝後端包」長得一樣。
+    group_add:
+      - video
+      - render
+    # 部分 ROCm 版本的 HSA queue 會被預設的 seccomp profile 擋下。
+    security_opt:
+      - seccomp:unconfined

@@ -24,7 +24,12 @@
 # CUDA 12.x containers run on any driver from the 12.x series (>= 525.60.13)
 # thanks to minor-version compatibility, so this does not have to match the
 # host's CUDA toolkit exactly.
-FROM nvidia/cuda:12.6.3-devel-ubuntu24.04
+# BASE_IMAGE 讓同一份 Dockerfile 服務兩種硬體：
+#   NVIDIA → nvidia/cuda:*-devel（預設；需要 nvcc 才能在容器內建 Python worker）
+#   AMD    → ubuntu:24.04（HIP 後端包自帶 ROCm 的執行期函式庫，不需要 CUDA base）
+# 見 docker-compose.yml 與 docker-compose.amd.yml。
+ARG BASE_IMAGE=nvidia/cuda:12.6.3-devel-ubuntu24.04
+FROM ${BASE_IMAGE}
 
 ARG PACKAGE=cage-server-0.1.1-linux-x64.tar.gz
 ARG DEBIAN_FRONTEND=noninteractive
@@ -44,6 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libavformat-dev libavcodec-dev libavdevice-dev \
         libavutil-dev libavfilter-dev libswscale-dev libswresample-dev \
         default-mysql-client \
+        libnuma1 libelf1 libdrm2 libdrm-amdgpu1 \
     && rm -rf /var/lib/apt/lists/*
 
 # ── The package ─────────────────────────────────────────────────────────────
