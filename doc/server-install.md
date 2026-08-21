@@ -57,43 +57,48 @@ From here on this page is the **native** install. For containers see
 | | Required | Notes |
 |---|---|---|
 | OS | Linux x86-64, glibc 2.38+ | Ubuntu 24.04 or newer. The binary needs `GLIBC_2.38`, so Ubuntu 22.04 (2.35) will not run it |
-| GPU | NVIDIA driver + CUDA 12 runtime | `libcudart.so.12`, `libcublas.so.12`. Without them the server still starts, but everything runs on CPU. See [supported GPUs](#supported-gpus) |
+| GPU | A driver, plus a [backend pack](server/server/backend-packs.md) | NVIDIA needs only the driver — the CUDA packs carry their own `libcudart`/`libcublas`. No CUDA toolkit to install. See [supported GPUs](#supported-gpus) |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
 | MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §8 |
 | Python | 3.10+, optional | Needed for the multimodal workers, and — if you run safetensors models — for either vLLM or the GGUF conversion fallback. A GGUF-only text deployment needs none |
 
-Check the CUDA runtime:
+Check the driver:
 
 ```bash
 nvidia-smi                       # driver + GPUs
-ldconfig -p | grep libcudart     # CUDA 12 runtime
 ```
 
 ### Supported GPUs
 
-The build carries compiled kernels for every architecture from Volta to Hopper,
-plus PTX so anything newer still works:
+GPU support is a **separate download**. The server package contains no GPU code
+at all; you also fetch the backend pack matching your hardware. Full detail in
+[Backend Packs](server/server/backend-packs.md) — the short version:
 
-| Compute capability | Examples | How |
+| Pack | Hardware | Compute capability |
 |---|---|---|
-| 7.0 | V100, Titan V | Compiled kernels |
-| 7.5 | RTX 20xx, T4, Quadro RTX | Compiled kernels |
-| 8.0 | A100, A30 | Compiled kernels |
-| 8.6 | RTX 30xx, A40, A10 | Compiled kernels |
-| 8.9 | RTX 40xx, L40, L4 | Compiled kernels |
-| 9.0 and newer | H100, H200, RTX 50xx | PTX, compiled by the driver on first load — expect a delay the first time a model loads, then it is cached |
-| 6.x and older | GTX 10xx, P100 | **Not supported** |
+| `cage-backend-cuda-sm70_sm75` | V100, Titan V, T4, RTX 20xx, GTX 16xx | 7.0, 7.5 |
+| `cage-backend-cuda-sm80_sm86` | A100, A30, A40, A10, RTX 30xx | 8.0, 8.6 |
+| `cage-backend-cuda-sm89_sm90` | L40, L40S, L4, RTX 40xx, H100, H200 | 8.9, 9.0 |
+| `cage-backend-hip-*` | AMD via ROCm, split by ISA generation. Needs `libdrm2 libdrm-amdgpu1 libnuma1 libelf1` | n/a |
+| `cage-backend-vulkan` | Any Vulkan 1.2 GPU — AMD, Intel, or NVIDIA | n/a |
+| `cage-backend-cpu` | No GPU | n/a |
 
-This is why the package is 194 MB: those kernels are 91% of the binary. A build
-for one architecture is about a third of the size, so if you are deploying to a
-fleet of identical machines and care, building for just your own is a real
-saving — see `CUDA_ARCHS` in `dev.sh`.
+NVIDIA compute capability **6.x and older** (GTX 10xx, P100) is not covered by
+any CUDA pack; the Vulkan pack may still drive those cards.
+
+You can install more than one pack — the server probes each one per device and
+an AI config binds to whichever backend can drive the GPUs it selected.
 
 Check what you have:
 
 ```bash
-nvidia-smi --query-gpu=name,compute_cap --format=csv
+nvidia-smi --query-gpu=name,compute_cap --format=csv   # NVIDIA
+vulkaninfo --summary | head -30                        # anything else
 ```
+
+Without a pack the server still starts, and `vllm` and `remote` models still
+work — but a `backend="llama"` model fails at load with a message naming the
+pack to download.
 
 ## 2. Unpack
 
@@ -105,16 +110,37 @@ cd cage-server-0.1.1-linux-x64
 Contents:
 
 ```
-bin/cage-server    the inference server
-bin/cage-launcher        node agent + control plane (web UI)
-bin/cage-model-dl        Hugging Face model downloader
+bin/cage-server         the inference server
+bin/cage-launcher       node agent + control plane (web UI)
+bin/cage-model-dl       Hugging Face model downloader, and --scan for models
+                        already on disk
+bin/cage-backend-probe  reports which backend pack you have and which of your
+                        cards it can drive
+bin/cage-llama-fit      dry-run placement calculator
+bin/cage-rpc-worker     serves this machine's GPUs to another node
+lib/                    runtime libraries the server needs
+share/cage/             safetensors → GGUF conversion script
 python/                 workers for the multimodal families
 sql/schema.sql          database schema
 config.example.xml      server configuration template
 control.example.xml     control-plane configuration template
 install.sh              installer
 setup-workers.sh        builds the Python worker environments
+LICENSE                 end user licence agreement
+THIRD-PARTY-NOTICES.md  open-source components and their licences
 ```
+
+**No GPU code is in here.** Unpack your [backend pack](server/server/backend-packs.md)
+over the same directory before installing, so the installer picks it up:
+
+```bash
+tar -xzf cage-backend-cuda-sm89_sm90-0.1.1-linux-x64.tar.gz
+cp cage-backend-cuda-sm89_sm90-0.1.1-linux-x64/bin/* bin/
+cp cage-backend-cuda-sm89_sm90-0.1.1-linux-x64/lib/* lib/
+```
+
+You can add more than one pack. `./install.sh` lists the packs it found, and
+warns if there are none.
 
 ## 3. Install
 
@@ -129,8 +155,8 @@ setup-workers.sh        builds the Python worker environments
 | `--no-service` | Copy files only, skip systemd |
 | `--force` | Overwrite an existing `config.xml` / `control.xml` |
 
-The installer checks the CUDA runtime and that every shared library the server
-needs resolves, copies the files, creates `config.xml` and `control.xml` from
+The installer reports which backend packs it found and checks that every shared
+library the server needs resolves, copies the files, creates `config.xml` and `control.xml` from
 the templates (mode 600 — they hold database credentials), and creates
 `data/`, `models/` and `/tmp/cage`.
 
@@ -333,7 +359,8 @@ localhost.
 | `Fatal error: config.xml: cannot open file` | Started from a directory without `config.xml`. Use `CONFIG_FILE=…` or `cd` to the install directory first |
 | `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
-| Server starts but no GPU is listed | Driver or CUDA 12 runtime missing; check `nvidia-smi` and `ldconfig -p | grep libcudart` |
+| A `backend="llama"` model fails to load | No backend pack installed, or the wrong one. Run `bin/cage-backend-probe` — it names the backend and says which of your cards it can drive |
+| Server starts but no GPU is listed | Driver missing, or the pack cannot see the cards; check `nvidia-smi` and `bin/cage-backend-probe` |
 | A safetensors model never loads | Neither `<ai><vllm><python_exe>` nor `<ai><convert><python_exe>` is usable; the error names both reasons — see [Safetensors models](server/server/vllm.md) |
 | A modality worker fails immediately | Its `<python_exe>` is not a venv built by `setup-workers.sh` — see [Python workers](server/server/workers.md) |
 | Port already in use | Another instance is running, or `<port>` collides with `<agent_port>` |

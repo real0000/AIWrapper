@@ -65,6 +65,7 @@ The process that actually loads models and answers clients.
 | [Python workers](server/workers.md) | Worker environments: what a fresh machine needs, and the script that builds them |
 | [Models](server/models.md) | Model directories, quantization discovery, vision models, licence metadata |
 | [Backends](server/backends.md) | In-process llama.cpp vs Python workers, the RAM/VRAM budget, eviction |
+| [Backend Packs](server/backend-packs.md) | **The separate GPU download** — choosing one, installing it, verifying it, running several |
 | [Modalities](server/modalities.md) | Image, speech, audio, music and 3D workers |
 | [Retrieval](server/rag.md) | Chunking, embedding, the vector store |
 | [API](server/api.md) | HTTP endpoints and WebSocket messages |

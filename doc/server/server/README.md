@@ -15,6 +15,7 @@ its own.
 |---|---|
 | [Models](models.md) | Model directories, how quantizations are discovered, vision models, licence metadata |
 | [Backends](backends.md) | In-process llama.cpp vs Python workers, the RAM/VRAM budget and eviction |
+| [Backend Packs](backend-packs.md) | **The separate GPU download** — choosing one, installing it, verifying it, running several |
 | [Python workers](workers.md) | Setting up the worker environments — the part a fresh machine actually needs |
 | [Modalities](modalities.md) | Image, speech, audio, music and 3D generation workers |
 | [Retrieval](rag.md) | Chunking, embedding, the vector store |
@@ -77,7 +78,6 @@ Several paths are relative to the process working directory, not the config:
 | Path | Holds |
 |---|---|
 | `data/logic_graphs/` | Saved logic graphs, one JSON per graph |
-| `data/workflows/` | Workflow definitions |
 | `data/vectors/` | Per-project vector indexes |
 
 This is why `<working_dir>` matters: point the agent at the build directory and

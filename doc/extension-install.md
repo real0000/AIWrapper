@@ -31,11 +31,12 @@ Verify:
 
 ```bash
 $ code --list-extensions --show-versions
-cage.cage@0.1.1
+real0000.cage@0.1.1
 ```
 
-The extension is not published on the Marketplace, so VSCode will not update it
-automatically. Installing a newer `.vsix` over the old one is the upgrade path.
+Installing a newer `.vsix` over the old one is the upgrade path. A side-loaded
+extension is not updated automatically, whether or not the same version is also
+listed on the Marketplace.
 
 ## 3. Connect to the server
 
@@ -125,7 +126,7 @@ Approval behaviour is configurable:
 ## 8. Uninstall
 
 ```bash
-code --uninstall-extension cage.cage
+code --uninstall-extension real0000.cage
 ```
 
 ---

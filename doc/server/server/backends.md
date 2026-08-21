@@ -6,9 +6,9 @@ tools, retrieval — is identical either way.
 
 ---
 
-The server binary carries compiled CUDA kernels for compute capability 7.0
-through 8.9, plus PTX for anything newer — see
-[supported GPUs](../../server-install.md#supported-gpus).
+The server binary carries **no GPU code at all**. In-process GGUF inference
+needs a [backend pack](backend-packs.md) — a separate download matching your
+hardware. Without one, `vllm` and `remote` still work and `llama` does not.
 
 ## The three
 
@@ -18,7 +18,7 @@ through 8.9, plus PTX for anything newer — see
 | Formats | GGUF | safetensors (HF directory) | n/a |
 | Multimodal | Yes, via `<mmproj>` | Model-dependent | Provider-dependent |
 | GPU visibility | Fixed at server start | Per model | n/a |
-| Needs | Nothing extra | A Python environment with `vllm` — **or** one with `torch`, and the model is converted to GGUF instead | Network + an API key |
+| Needs | A [backend pack](backend-packs.md) for your GPU | A Python environment with `vllm` — **or** one with `torch`, and the model is converted to GGUF instead | Network + an API key |
 
 ```xml
 <model alias="a" backend="llama">…</model>
@@ -28,8 +28,8 @@ through 8.9, plus PTX for anything newer — see
 
 `<ai><default_backend>` sets the default for entries that do not say.
 
-**Pick by format, not preference.** GGUF goes to `llama`, which needs nothing
-installed and runs inside the server process. Unquantized Hugging Face weights
+**Pick by format, not preference.** GGUF goes to `llama`, which runs inside the
+server process and needs only a backend pack — no Python, no separate service. Unquantized Hugging Face weights
 cannot be loaded by llama.cpp at all, so they go to `vllm`.
 
 `backend="vllm"` names the *format*, not a hard dependency on vLLM. Both engines
@@ -89,7 +89,7 @@ One ledger across the local backends caps how much can be resident at once.
 ```xml
 <budget>
   <ram_mb>0</ram_mb>          <!-- 0 = detect -->
-  <vram_mb>0</vram_mb>        <!-- 0 = sum of what nvidia-smi reports -->
+  <vram_mb>0</vram_mb>        <!-- 0 = sum of every detected card -->
   <ram_ratio>0.8</ram_ratio>
   <vram_ratio>0.9</vram_ratio>
   <eviction>lru</eviction>    <!-- lru | reject -->
@@ -114,6 +114,10 @@ Sizes are estimated from file size with a margin when a model has no explicit
 Set `vram_mb` explicitly when some GPUs are reserved for other work — automatic
 detection sums every card it can see, including ones you did not intend to use.
 
+Detection is not NVIDIA-only: `nvidia-smi`, AMD's KFD interface, Apple's
+`sysctl` and a Vulkan fallback are tried in turn, and `CAGE_GPU_PROBE` forces
+one. Multimodal workers are on this same ledger.
+
 ## Worker parameter conflicts
 
 Two AI configs naming the same model with different **load-time** parameters
@@ -129,4 +133,4 @@ give one of them a different model.
 
 ---
 
-[← Inference Server](README.md) · [Models](models.md) · [vLLM](vllm.md) · [Server Guide](../README.md)
+[← Inference Server](README.md) · [Backend Packs](backend-packs.md) · [Models](models.md) · [vLLM](vllm.md) · [Server Guide](../README.md)

@@ -14,7 +14,8 @@ Three ways, all ending in the same place — a `<model>` entry in the local
 |---|---|
 | Control-plane web UI | Normal case. Search Hugging Face, pick a quantization group, download, and the entry is written for you |
 | `cage-model-dl` | Scripted or headless installs |
-| Editing `config.xml` | Models already on disk, or paths the downloader cannot reach |
+| `cage-model-dl --scan` | Models already on disk — registers them, licence included |
+| Editing `config.xml` | Paths none of the above can reach |
 
 ```bash
 ./bin/cage-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
@@ -29,6 +30,58 @@ Three ways, all ending in the same place — a `<model>` entry in the local
 | `--backend` | `llama` (GGUF) or `vllm` (safetensors); otherwise the configured default |
 | `--list` | List the downloadable groups and exit |
 | `-y` | Skip the confirmation, still asks which group |
+
+## Models already on disk
+
+Weights that arrived by some other route — rsync, a manual download, a tool
+that predates this one — used to be invisible: the downloader only ever went
+one way (repo id → API → download → write `config.xml`), so the only option was
+typing the entry in by hand, licence and all.
+
+`--scan` runs that path backwards, from the files:
+
+```bash
+./bin/cage-model-dl --scan /mnt/models --config config.xml
+```
+
+| Option | Meaning |
+|---|---|
+| `--scan DIR` | Walk this directory and register what it finds |
+| `--dry-run` | Report what would be registered, change nothing |
+| `--offline` | Never reach the network; use only what is on disk |
+
+Format, quantizations and the vision projector come from the same scanner the
+server runs at startup — not a second implementation that could disagree with
+it.
+
+**Licence** is resolved in order: the GGUF's `general.license` metadata, the
+model card's YAML front matter, the `.git` remote, then the upstream Hugging
+Face card. What it cannot establish is written as `commercial=""` rather than
+guessed — the control plane lists unknown and non-free entries for review.
+
+Two traps it handles, both found in real files:
+
+- **A repacker's embedded model name is whatever they felt like.** One llava
+  GGUF calls itself `Downloads`, and searching Hugging Face for that finds a
+  real, unrelated repository whose licence would then be attached to your
+  model. Name searches are validated against the directory on disk, never
+  against metadata.
+- **Models distilled from restricted weights advertise the wrong licence.**
+  `DeepSeek-R1-Distill-Llama-70B` says `license: mit` while the weights remain
+  under the Llama 3.3 community licence. Those are promoted to the licence that
+  actually governs them — and where the base is only *possibly* a Llama
+  (TinyLlama really is Apache-2.0), `commercial` is cleared with a reason
+  rather than a side being picked.
+
+It also refuses what does not belong in `<models>`, with the reason: embedding
+models in safetensors, diffusers pipelines (those need a `<modalities>` entry),
+and GGUFs with no `block_count` — image and 3D weights are `.gguf` too, and all
+three would otherwise become aliases that appear in the list and fail on first
+use.
+
+The same scan is available in the control plane's Models tab, under "Import
+models that are already on disk". Import re-scans on the server rather than
+trusting the fields the browser sends back.
 
 ## Quantization groups
 

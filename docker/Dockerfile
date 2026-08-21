@@ -1,10 +1,16 @@
 # CAGE Server — container image.
 #
-# Build it yourself; nothing is published to a registry. The server package goes
-# in the build context next to this file:
+# Build it yourself; nothing is published to a registry. The server package and
+# the backend pack for your GPUs both go in the build context next to this file:
 #
-#   cp cage-server-0.1.1-linux-x64.tar.gz release/docker/
+#   cp cage-server-0.1.1-linux-x64.tar.gz              release/docker/
+#   cp cage-backend-cuda-sm89_sm90-0.1.1-linux-x64.tar.gz release/docker/
 #   docker build -t cage:0.1.1 release/docker
+#
+# The server package carries no GPU code. Without a backend pack the image still
+# runs, but only the vllm and remote backends work — in-process GGUF inference
+# is unavailable. Copy in as many packs as you want covered; every
+# cage-backend-*.tar.gz in the context is unpacked.
 #
 # Base image notes, both load-bearing:
 #   * ubuntu24.04 — the server binary needs GLIBC_2.38. Ubuntu 22.04 ships 2.35
@@ -43,11 +49,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # To pull from a GitHub Release instead of the build context, replace the COPY
 # with:
 #   ADD https://github.com/real0000/AIWrapper/releases/download/v0.1.1/${PACKAGE} /tmp/
+#
+# The backend glob is in the same COPY as the server package on purpose: a glob
+# that matches nothing is tolerated as long as another source matched, so the
+# build still works when no pack was copied in. On its own it would be an error.
 WORKDIR /tmp
-COPY ${PACKAGE} /tmp/pkg.tar.gz
+COPY ${PACKAGE} cage-backend-*.tar.gz* /tmp/pkgs/
 RUN mkdir -p /opt/cage \
-    && tar -xzf /tmp/pkg.tar.gz --strip-components=1 -C /opt/cage \
-    && rm -f /tmp/pkg.tar.gz \
+    && tar -xzf "/tmp/pkgs/${PACKAGE}" --strip-components=1 -C /opt/cage \
+    && rm -f "/tmp/pkgs/${PACKAGE}" \
+    && for b in /tmp/pkgs/cage-backend-*.tar.gz; do \
+           [ -e "$b" ] || continue; \
+           echo "backend pack: $(basename "$b")"; \
+           tar -xzf "$b" --strip-components=1 -C /opt/cage; \
+       done \
+    && rm -rf /tmp/pkgs \
+    && ls /opt/cage/bin/libcage-llama-*.so >/dev/null 2>&1 \
+       || echo "WARNING: no backend pack — backend=\"llama\" models will not load" \
     && chmod 755 /opt/cage/bin/* /opt/cage/*.sh
 
 WORKDIR /opt/cage
@@ -60,7 +78,7 @@ RUN chmod 755 /usr/local/bin/entrypoint.sh
 # ── Mount points ────────────────────────────────────────────────────────────
 #   /config              config.xml + control.xml     (holds credentials)
 #   /models              model files, mount read-only (huge; never in the image)
-#   /opt/cage/data  logic graphs, workflows, vectors — the server resolves
+#   /opt/cage/data  logic graphs and retrieval vectors — the server resolves
 #                        these relative to its working directory, so this exact
 #                        path is what has to be persisted
 #   /venvs               Python worker environments  (~46 GB for every family,

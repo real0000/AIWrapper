@@ -18,10 +18,19 @@ Files are in [`docker/`](../../docker/).
 
 ```bash
 cd release/docker
-cp ../dist/cage-server-0.1.1-linux-x64.tar.gz .   # the package
-cp .env.example .env                                    # then edit it
+cp ../dist/cage-server-0.1.1-linux-x64.tar.gz .              # the server
+cp ../dist/cage-backend-cuda-sm89_sm90-0.1.1-linux-x64.tar.gz .   # your GPU
+cp .env.example .env                                          # then edit it
 docker compose up -d --build
 ```
+
+**Both packages.** The server package carries no GPU code; the
+[backend pack](server/backend-packs.md) carries the compiled kernels for your
+cards. Every `cage-backend-*.tar.gz` in `release/docker/` is unpacked into the
+image, so copy in as many as you need covered.
+
+Build without one and the image still runs — `vllm` and `remote` models work,
+`backend="llama"` ones fail to load. The build prints a warning saying so.
 
 Three things must be set in `.env`:
 
@@ -53,8 +62,8 @@ folders would otherwise belong to root.
 | Docker | With Compose v2 (`docker compose`, not `docker-compose`) |
 | NVIDIA Container Toolkit | For GPU access. Without it, drop the `deploy.resources` block and everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
-| GPU | Compute capability 7.0 or newer — see [supported GPUs](../server-install.md#supported-gpus) |
-| Disk | 13.1 GB image, plus the worker environments (1.9 GB for `llm`) and your models |
+| GPU | Whatever your [backend pack](server/backend-packs.md) covers. The CUDA packs start at compute capability 7.0; AMD and Intel go through the Vulkan pack |
+| Disk | 13.1 GB image before the backend pack, and a CUDA pack adds ~1.6 GB unpacked (Vulkan and CPU packs, ~50 MB). Plus the worker environments (1.9 GB for `llm`) and your models |
 
 The base image is `nvidia/cuda:12.6.3-devel-ubuntu24.04`, and both halves of that
 matter:
@@ -75,14 +84,14 @@ Everything that matters is a host folder, so containers stay disposable.
 | Host | Container | Holds |
 |---|---|---|
 | `${STATE_DIR}/config` | `/config` | `config.xml`, `control.xml` — seeded on first start, then yours |
-| `${STATE_DIR}/server` | `/opt/cage/data` | Logic graphs, workflows, retrieval vectors, the server log |
+| `${STATE_DIR}/server` | `/opt/cage/data` | Logic graphs, retrieval vectors, the server log |
 | `${STATE_DIR}/mysql` | `/var/lib/mysql` | The database |
 | `${STATE_DIR}/output` | `/tmp/cage` | Generated images, audio, meshes |
 | `${STATE_DIR}/venvs` | `/venvs` | Python environments: multimodal workers, and vLLM if you use it |
 | `${MODELS_DIR}` | `/models` (read-only) | Your models |
 
 **The server data mount is `/opt/cage/data`, not `/data`.** The server
-resolves `data/logic_graphs`, `data/workflows` and `data/vectors` against its
+resolves `data/logic_graphs` and `data/vectors` against its
 working directory, so a volume anywhere else is silently ignored and the graphs
 disappear the next time the container is recreated. This cost one round of
 testing to find.
@@ -205,7 +214,7 @@ only you can reach; not otherwise. See [Accounts](control/accounts.md).
 | Step | Result |
 |---|---|
 | GPU passthrough | All 5 GPUs visible via `--gpus all`, correct compute capabilities |
-| Image build | 13.1 GB, from the CUDA 12.6.3 devel base |
+| Image build | 13.1 GB from the CUDA 12.6.3 devel base, before any backend pack |
 | Stack start | MySQL healthy, then the server; bootstrap admin seeded, `auth ENABLED` |
 | Model scan | GGUF found through the read-only `/models` mount |
 | Web UI | Serves on 8088 |

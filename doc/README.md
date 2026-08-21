@@ -6,9 +6,14 @@
 |---|---|
 | [server-install.md](server-install.md) | **Start here** — picks between the two install paths, then covers the native one in full |
 | [server/docker.md](server/docker.md) | The Docker path: Dockerfile and compose, with the database, models and config as host folders |
+| [server/server/backend-packs.md](server/server/backend-packs.md) | **GPU support is a separate download.** Which pack to get and how to install it |
 | [extension-install.md](extension-install.md) | Installing the `.vsix`, connecting to a server, self-signed certificates, login, first use |
 
-Start with the server — the extension needs one to connect to.
+Start with the server — the extension needs one to connect to. The server needs
+a backend pack before it can run GGUF models on your GPU.
+
+Upgrading from 0.1.0? See [What's New](../WHATSNEW.md) for what changed and what
+needs action from you.
 
 ## Use
 
