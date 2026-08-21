@@ -79,6 +79,7 @@ at all; you also fetch the backend pack matching your hardware. Full detail in
 | `cage-backend-cuda-sm70_sm75` | V100, Titan V, T4, RTX 20xx, GTX 16xx | 7.0, 7.5 |
 | `cage-backend-cuda-sm80_sm86` | A100, A30, A40, A10, RTX 30xx | 8.0, 8.6 |
 | `cage-backend-cuda-sm89_sm90` | L40, L40S, L4, RTX 40xx, H100, H200 | 8.9, 9.0 |
+| `cage-backend-cuda-sm120_sm121` | RTX 50xx, GB10 (DGX Spark) | 12.0, 12.1 |
 | `cage-backend-hip-*` | AMD via ROCm, split by ISA generation. Needs `libdrm2 libdrm-amdgpu1 libnuma1 libelf1` | n/a |
 | `cage-backend-vulkan` | Any Vulkan 1.2 GPU — AMD, Intel, or NVIDIA | n/a |
 | `cage-backend-cpu` | No GPU | n/a |
@@ -116,8 +117,8 @@ bin/cage-model-dl       Hugging Face model downloader, and --scan for models
                         already on disk
 bin/cage-backend-probe  reports which backend pack you have and which of your
                         cards it can drive
-bin/cage-llama-fit      dry-run placement calculator
-bin/cage-rpc-worker     serves this machine's GPUs to another node
+bin/cage-llama-fit      asks where a model would go, without loading it
+                        (see server/server/backends.md)
 lib/                    runtime libraries the server needs
 share/cage/             safetensors → GGUF conversion script
 python/                 workers for the multimodal families

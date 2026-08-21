@@ -118,6 +118,36 @@ Detection is not NVIDIA-only: `nvidia-smi`, AMD's KFD interface, Apple's
 `sysctl` and a Vulkan fallback are tried in turn, and `CAGE_GPU_PROBE` forces
 one. Multimodal workers are on this same ledger.
 
+## Asking where a model would go, without loading it
+
+`cage-llama-fit` runs the same placement logic the server uses and prints what
+it decided, as one line of JSON. Nothing is loaded, so it answers in seconds
+instead of minutes.
+
+```bash
+bin/cage-llama-fit --model /models/Qwen3-Coder-Next --ctx 32768
+```
+
+| Option | |
+|---|---|
+| `--model PATH` | Model directory or file. Required |
+| `--ctx N` | Context size. **Required, and must be > 0** |
+| `--batch N` | Prompt batch size |
+| `--kv f16\|q8_0\|q4_0` | KV cache type |
+| `--flash on\|off` | Flash attention |
+| `--rpc host:port[,…]` | Include remote nodes in the placement |
+
+It reports the island split, the device order, `split_mode`, `max_gpu` and
+whether expert offload is needed. `CUDA_VISIBLE_DEVICES` is inherited, so
+restricting it to the cards an AI config selects answers the question for that
+config specifically.
+
+It needs a [backend pack](backend-packs.md) beside it, for the same reason the
+server does — the placement logic asks the backend what the cards are.
+
+**Use it before a long load.** Asking a 400 GB model to load and watching it
+fail after eight minutes tells you the same thing this tells you immediately.
+
 ## Worker parameter conflicts
 
 Two AI configs naming the same model with different **load-time** parameters

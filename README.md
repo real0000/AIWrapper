@@ -54,6 +54,7 @@ cards. Pick by compute capability:
 | `cage-backend-cuda-sm70_sm75` | V100, Titan V, T4, RTX 20xx, GTX 16xx |
 | `cage-backend-cuda-sm80_sm86` | A100, A30, A40, A10, RTX 30xx |
 | `cage-backend-cuda-sm89_sm90` | L40, L40S, L4, RTX 40xx, H100, H200 |
+| `cage-backend-cuda-sm120_sm121` | RTX 50xx, GB10 (DGX Spark) |
 | `cage-backend-hip-*` | AMD via ROCm, split by ISA generation (RDNA2/3/4, CDNA) |
 | `cage-backend-vulkan` | Any Vulkan 1.2 GPU — AMD, Intel, or NVIDIA |
 | `cage-backend-cpu` | No GPU |
