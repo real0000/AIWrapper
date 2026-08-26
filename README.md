@@ -45,9 +45,9 @@ terms: <https://github.com/real0000>
 
 | Package | Platform | Contents | Where |
 |---|---|---|---|
-| `cage-server-0.1.1-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) |
-| `cage-backend-*-0.1.1-linux-x64.tar.gz` | Linux x86-64 | **GPU support — one pack for your hardware.** See below | [Releases](../../releases) |
-| [`cage-0.1.1.vsix`](dist/cage-0.1.1.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
+| `cage-server-0.1.2-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) |
+| `cage-backend-*-0.1.2-linux-x64.tar.gz` | Linux x86-64 | **GPU support — one pack for your hardware.** See below | [Releases](../../releases) |
+| [`cage-0.1.2.vsix`](dist/cage-0.1.2.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
 
 > **What is on GitHub is the evaluation build.** Releases here carry preview and
 > evaluation packages, for trying CAGE out and reporting what breaks. They are

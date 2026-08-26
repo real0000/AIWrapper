@@ -8,6 +8,19 @@ This is not an optional extra for most installations. Without a pack the server
 starts and runs, but only the `vllm` and `remote` backends work; anything with
 `backend="llama"` fails to load with a message naming the pack to fetch.
 
+> **The pack must match the server version.** A pack built before 0.1.2 is
+> refused at load time with
+> `missing chat-template symbols […]. This backend pack predates the
+> chat-template shim (0.1.1 or earlier). Download the backend pack that matches
+> this server.`
+>
+> This is deliberate. From 0.1.2 the tool-call format is taken from each model's
+> own chat template, and the code that reads it lives **inside the pack**. An
+> older pack has no such code, so the server would have to fall back to guessing
+> the format — which is exactly the failure mode 0.1.2 removes. Refusing to load
+> is easier to diagnose than tool calls that quietly stop working. Upgrading the
+> server means re-downloading the pack.
+
 ---
 
 ## Why it is separate
@@ -106,8 +119,8 @@ watchdog. A pack that does not fit your card tells you so immediately instead.
 The pack has the same layout as the server package, so it merges into it:
 
 ```bash
-tar -xzf cage-backend-cuda-sm89_sm90-0.1.1-linux-x64.tar.gz
-cd cage-backend-cuda-sm89_sm90-0.1.1-linux-x64
+tar -xzf cage-backend-cuda-sm89_sm90-0.1.2-linux-x64.tar.gz
+cd cage-backend-cuda-sm89_sm90-0.1.2-linux-x64
 cp bin/libcage-llama-*.so  /opt/cage/bin/
 cp lib/*                   /opt/cage/lib/
 ```

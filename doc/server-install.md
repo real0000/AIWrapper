@@ -1,7 +1,7 @@
 # Server Installation
 
 Two ways to install, both from the same package on Linux x86-64:
-[`dist/cage-server-0.1.1-linux-x64.tar.gz`](../dist/).
+[`dist/cage-server-0.1.2-linux-x64.tar.gz`](../dist/).
 
 ---
 
@@ -34,7 +34,7 @@ through the server.
 
 ```bash
 cd release/docker
-cp ../dist/cage-server-0.1.1-linux-x64.tar.gz .
+cp ../dist/cage-server-0.1.2-linux-x64.tar.gz .
 cp .env.example .env      # models directory, state directory, passwords
 docker compose up -d --build
 ```
@@ -104,8 +104,8 @@ pack to download.
 ## 2. Unpack
 
 ```bash
-tar -xzf cage-server-0.1.1-linux-x64.tar.gz
-cd cage-server-0.1.1-linux-x64
+tar -xzf cage-server-0.1.2-linux-x64.tar.gz
+cd cage-server-0.1.2-linux-x64
 ```
 
 Contents:
@@ -135,13 +135,18 @@ THIRD-PARTY-NOTICES.md  open-source components and their licences
 over the same directory before installing, so the installer picks it up:
 
 ```bash
-tar -xzf cage-backend-cuda-sm89_sm90-0.1.1-linux-x64.tar.gz
-cp cage-backend-cuda-sm89_sm90-0.1.1-linux-x64/bin/* bin/
-cp cage-backend-cuda-sm89_sm90-0.1.1-linux-x64/lib/* lib/
+tar -xzf cage-backend-cuda-sm89_sm90-0.1.2-linux-x64.tar.gz
+cp cage-backend-cuda-sm89_sm90-0.1.2-linux-x64/bin/* bin/
+cp cage-backend-cuda-sm89_sm90-0.1.2-linux-x64/lib/* lib/
 ```
 
 You can add more than one pack. `./install.sh` lists the packs it found, and
 warns if there are none.
+
+**Use a pack of the same version as the server.** From 0.1.2 the server refuses
+a pack built before 0.1.2 (`missing chat-template symbols …`) rather than
+silently losing tool calls — see [backend packs](server/server/backend-packs.md).
+Upgrading the server means re-downloading the pack.
 
 ## 3. Install
 

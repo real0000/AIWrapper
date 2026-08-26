@@ -1,6 +1,6 @@
 # What has been verified
 
-CAGE 0.1.1 is an evaluation build. This page says exactly how far each piece has
+CAGE 0.1.2 is an evaluation build. This page says exactly how far each piece has
 been tested, so that a field report can go where it is actually useful.
 
 Three levels are used, and the difference between the first two matters more
@@ -43,7 +43,7 @@ Tesla V100-SXM2 (7.0), NVLink between the V100s.
 | Retrieval, project memory | **Runs** | |
 | Multimodal workers | **Loads** | Environments build; not exercised this release |
 
-## Not built for 0.1.1
+## Not built for 0.1.2
 
 | | Why |
 |---|---|
