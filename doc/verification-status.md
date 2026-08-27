@@ -40,7 +40,8 @@ Tesla V100-SXM2 (7.0), NVLink between the V100s.
 |---|---|---|
 | Chat, tools, file approval | **Runs** | Against `glm-4.5-air` across the V100s |
 | Multi-GPU placement | **Runs** | Topology and NVLink reported; placement across four V100s |
-| Retrieval, project memory | **Runs** | |
+| Retrieval, project memory | **Runs** | Workspace indexed and queried through `nemotron-3-embed-1b` (safetensors, converted to GGUF at runtime because no vLLM environment came up); the embedder honours the GPUs chosen on its AI config, confirmed on both the vLLM and in-process paths |
+| Multi-model logic graph with a feedback loop | **Runs** | DemoCoder: plan → code → verify → format check → gate, with the failure path re-entering the coder. One-line request converged on the first iteration in 15m23s across four V100s, with retrieval and shared memory active |
 | Multimodal workers | **Loads** | Environments build; not exercised this release |
 
 ## Not built for 0.1.2

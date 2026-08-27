@@ -16,6 +16,10 @@ refused. See below.
 | Tool-call parsing moved into the backend pack | **Re-download the backend pack for your GPU.** A 0.1.1 pack will not load. |
 | Nothing else | The server configuration, database schema and extension settings are unchanged from 0.1.1. |
 
+The server package was rebuilt on 2026-08-28 for the retrieval and timeout fixes
+below. The backend packs and the extension are unchanged by them — if you already
+have the 0.1.2 packs, only the server tarball is worth fetching again.
+
 The extension and server are compatible across this bump; the pack is the only
 mandatory download.
 
@@ -88,6 +92,40 @@ It is now a **stall timeout** — the clock resets on every token, and fires onl
 when nothing has been produced for the timeout window. A 2894-token file that
 used to be truncated at the 300-second wall now completes in 88 seconds and is
 written out whole.
+
+The same mistake was found on the way *in*: reading a long prompt had its own
+three-minute deadline, so a large context was reported as a stall even while every
+batch was making progress. That is now a stall timeout too, and the message says how
+far it got.
+
+---
+
+## Retrieval no longer takes a GPU you did not give it
+
+If you enabled RAG, the embedding model ignored the GPUs you picked for it and
+loaded onto the first one it found. On a machine with a display card and compute
+cards, that is usually the display card — and nothing said so.
+
+Every other model in CAGE honours the GPU selection on its AI config. The embedder
+was the one that did not, on both the in-process and vLLM paths. It does now, and it
+says which devices it took.
+
+---
+
+## Retrieved code is labelled as excerpts
+
+Context retrieved for a prompt is a set of fragments chosen by similarity — not whole
+files, not in order. That was never stated in the prompt, and models drew conclusions
+from it that the fragments do not support: in one direction assuming a project was
+already finished, in the other reporting a snippet that ends mid-statement as broken
+code. The second one is worth naming because it is convincing: a reviewing step
+produced a list of compiler errors whose line numbers were exactly the chunk
+boundaries, for a program that compiled and ran correctly.
+
+The block now says what it is. If you are building a logic graph, also note the
+matching rule: **a node that judges a piece of text rather than the codebase should
+have RAG turned off on that node.** Retrieval helps the steps that act on code; it
+misleads the ones that grade an answer.
 
 ---
 
