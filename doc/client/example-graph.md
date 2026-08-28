@@ -1,9 +1,14 @@
 # A worked example: DemoCoder
 
-`DemoCoder` ships in `server/data/logic_graphs/`. It is a **generic** build-and-check
-loop: plan the work, write the code, verify it by running it, judge the report, and
-either finish or send the coder back with the errors. Nothing in it names a task —
-what gets built is decided entirely by the chat message.
+`DemoCoder` is a **generic** build-and-check loop: plan the work, write the code, verify
+it by running it, judge the report, and either finish or send the coder back with the
+errors. Nothing in it names a task — what gets built is decided entirely by the chat
+message.
+
+A fresh server has no graphs; `server/data/logic_graphs/` fills up as clients upload
+them. This one lives in the source repository at that path, and the Logic Editor's
+**Import** button takes the JSON directly. Everything below is that file, field by
+field — nothing here is invented for the sake of an example.
 
 This page lists every parameter it uses and says why each one is set that way. Three
 of them are not obvious, and each came from a run that failed silently; those are
