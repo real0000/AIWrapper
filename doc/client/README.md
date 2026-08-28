@@ -42,6 +42,7 @@ a normal chat extension: the agent loop is data you edit, not code you accept.
 | [Format Configs](format-config.md) | Structured output schemas and output validation |
 | [Variables](variables.md) | Graph-level state that survives across nodes within a run |
 | [Graph file format](graph-format.md) | The JSON a graph is stored as — enough to write one without the editor |
+| [Worked example](example-graph.md) | `DemoCoder` end to end: every parameter it sets, why, and the three settings that fail silently when they are wrong |
 | [Project Memory](memory.md) | History written automatically per file, plus your own rules and when they load |
 | [RAG](rag.md) | Retrieval over your project: what gets indexed, how a node uses it |
 | [Tools & Approval](tools.md) | The tools the model can run in your editor, and how approval works |

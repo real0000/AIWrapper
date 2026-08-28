@@ -569,6 +569,13 @@ two of them and finds dangling references in the other two — connections whose
 target node or pin no longer exists, left behind by editing. Those are silent at
 run time: the value simply never arrives.
 
+It does not catch the other silent class: a pin that exists and is simply never
+connected. `CheckFormat` with no edge into `Input` validates the empty string and
+fails every time; a `{{placeholder}}` with no producer expands to nothing. Both are
+structurally valid graphs. See
+[the worked example](example-graph.md#three-settings-that-are-not-obvious) for what
+that looks like from the outside.
+
 ---
 
-[← Logic Editor](logic-editor.md) · [Node types](nodes.md) · [AI Configs](ai-config.md) · [Client Guide](README.md)
+[← Logic Editor](logic-editor.md) · [Node types](nodes.md) · [Worked example](example-graph.md) · [AI Configs](ai-config.md) · [Client Guide](README.md)

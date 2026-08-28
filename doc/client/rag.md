@@ -5,8 +5,13 @@ question, without pasting the whole repository into the prompt.
 
 The chain: the client indexes your workspace and pushes it to the server; the
 server splits files into chunks, embeds them, and stores the vectors; and each
-[Send To AI](nodes.md#send-to-ai) node can look up the top matches for its
-prompt and put them in front of it.
+[Send To AI](nodes.md#send-to-ai) node can look up the top matches and put them in
+front of its prompt.
+
+**The query is the chat message, not the node's prompt.** Every node in a graph
+therefore retrieves against the same text — the thing the user asked for — however
+far down the graph it sits. That matters when deciding which nodes should retrieve
+at all: see [When to turn it off](#when-to-turn-it-off).
 
 ---
 
@@ -42,6 +47,32 @@ Turn it off for nodes where it only adds noise — a node that reformats an
 answer, or one that summarises text already in the prompt. Retrieval costs an
 embedding call and prompt space on every run.
 
+## When to turn it off
+
+Retrieval helps a node that has to find its way around code it did not write —
+a planner deciding what to change, a coder looking for the existing convention.
+
+It hurts a node whose job is to **judge**: one that reads a report or an answer and
+returns a verdict. Two reasons, and they compound:
+
+1. The query is the chat message, so what comes back is code resembling the original
+   request — not the thing being judged. For a judge that is noise at best.
+2. Retrieved blocks are *excerpts*, chosen by similarity and cut at chunk boundaries.
+   A model asked to find defects will find them in the cut.
+
+The second one is not hypothetical. A filter node — no tools, whose entire input was a
+verifier's transcript — ran with retrieval on and returned "fail" four rounds in a row
+with errors like `packer.cpp:248-341: missing code after line 341`. Those line ranges
+were exactly the chunk boundaries. The program compiled and ran correctly throughout,
+and nothing anywhere reported an error; the loop just could not end.
+
+The injected block now states that it contains excerpts, which reduces this. The rule
+still stands: **set RAG to Off on nodes that grade, classify or decide.** The
+[worked example](example-graph.md#3-rag_mode-off-on-the-filter--retrieval-poisons-a-judge)
+shows both settings side by side in one graph.
+
+---
+
 ## What gets indexed
 
 The client walks the workspace and sends the server a file list; the server then
@@ -74,10 +105,9 @@ re-opening a project does not re-embed it.
   usual cause.
 - **Exclude generated directories.** Build output and vendored dependencies
   crowd out real matches and cost embedding time.
-- **Retrieval uses the node's prompt as the query.** A node whose prompt is
-  mostly boilerplate retrieves poorly; a node that puts the user's actual
-  question in the prompt retrieves well.
+- **The query is the chat message**, the same one for every node in the graph.
+  A node deep in a loop does not retrieve against what it is currently working on.
 
 ---
 
-[← Logic Editor](logic-editor.md) · [Project Indexing](indexing.md) · [Client Guide](README.md)
+[← Logic Editor](logic-editor.md) · [Project Indexing](indexing.md) · [Worked example](example-graph.md) · [Client Guide](README.md)

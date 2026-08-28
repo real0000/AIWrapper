@@ -332,4 +332,4 @@ node and it cannot be deleted.
 
 ---
 
-[← Logic Editor](logic-editor.md) · [Client Guide](README.md)
+[← Logic Editor](logic-editor.md) · [Worked example](example-graph.md) · [Graph file format](graph-format.md) · [Client Guide](README.md)
