@@ -5,14 +5,28 @@ it by running it, judge the report, and either finish or send the coder back wit
 errors. Nothing in it names a task — what gets built is decided entirely by the chat
 message.
 
-A fresh server has no graphs; `server/data/logic_graphs/` fills up as clients upload
-them. This one lives in the source repository at that path, and the Logic Editor's
-**Import** button takes the JSON directly. Everything below is that file, field by
-field — nothing here is invented for the sake of an example.
+**This is a reference, not a download.** Everything below is a real file, recorded field
+by field so that nothing is invented for the sake of an example — but the parts that name
+a model, a GPU or a context size describe *one particular machine*. On yours they are
+wrong. Build the graph in the editor and set your own; the value of this page is the
+*shape* — which node holds which setting, and why.
 
-This page lists every parameter it uses and says why each one is set that way. Three
-of them are not obvious, and each came from a run that failed silently; those are
-called out in [Three settings that are not obvious](#three-settings-that-are-not-obvious).
+The machine-specific fields, so they are easy to spot as you read:
+
+| Field | Here | On your machine |
+|---|---|---|
+| `aiConfigs[].model` | `qwen-coder-next`, `nemotron-3-embed-1b` | Whatever aliases your server's `config.xml` defines. The AI Config panel lists them |
+| `aiConfigs[].cudaVisibleDevices` | four V100 UUIDs | Your cards, or empty to let the placer choose |
+| `aiConfigs[].ctxSize` | `262144` | As much as your card and model allow — this graph needs headroom, see below |
+| `ragEmbeddingConfig` | `rag` | Only if you have an embedding model. Leave empty and retrieval is off, which costs this graph nothing structural |
+
+See [AI Configs](ai-config.md) for what each of those fields does and what your options
+are. A fresh server also has no graphs at all — `server/data/logic_graphs/` fills up as
+clients upload them.
+
+This page lists every parameter and says why it is set that way. Three of them are not
+obvious, and each came from a run that failed silently; those are called out in
+[Three settings that are not obvious](#three-settings-that-are-not-obvious).
 
 For the file format itself see [graph-format.md](graph-format.md); for what each node
 type does see [nodes.md](nodes.md).
@@ -70,7 +84,9 @@ not, so that a run either converges or is stopped by you.
 
 ## AI configs
 
-Two, and they do very different jobs.
+Two, and they do very different jobs. **These values are this machine's** — read them for
+which field matters and why, not as settings to copy. What to do instead is in
+[Building it on your machine](#building-it-on-your-machine).
 
 ```json
 {
@@ -423,10 +439,29 @@ header flag was outside what anyone thought to check.
 
 ---
 
-## Adapting it
+## Building it on your machine
 
-The graph is task-agnostic; put the task in the chat message. If you want to change how
-it behaves rather than what it builds:
+The structure transfers; the AI configs do not. In order:
+
+1. **One AI config is enough to start.** Name it, pick a model your server actually
+   serves, and point all four `SendToAi` nodes at it. Different models per role is a
+   refinement, not a requirement.
+2. **Give it as much context as you can.** With `memory_mode: "shared"` the conversation
+   grows by one message per node per round, so a loop that runs several times needs
+   headroom. If your card cannot spare it, set the three actors to `"isolated"` and pass
+   what they need through pins instead — the graph still works, it just forgets more
+   between rounds. Overflow is an explicit `Input tokens (…) exceed` error, not silent
+   truncation, so you will know.
+3. **Retrieval is optional.** No embedding model, or no wish to index — leave
+   `ragEmbeddingConfig` empty and every `rag_mode: "inherit"` becomes a no-op. Nothing
+   structural depends on it. If you do enable it, keep the Filter at `"off"`.
+4. **GPU selection is optional too.** Leave `cudaVisibleDevices` empty and the placer
+   chooses. Set it when a card in the machine should be left alone — a display card, or
+   one another job is using.
+
+Then the task goes in the chat message, not in the graph.
+
+## Changing how it behaves
 
 | Want | Change |
 |---|---|
@@ -434,7 +469,7 @@ it behaves rather than what it builds:
 | An iteration cap | A `Variable` counter incremented on the back edge, plus an `If` before `Coder` |
 | A cheaper judge | Point `Filter.ai_config` at a small model. It only classifies text |
 | Fewer rounds | Strengthen the CHECKS paragraph in the planner. Most extra rounds come from checks that were too weak to fail the first time |
-| More context headroom | Raise `ctxSize`, or move the actors to `memory_mode: "isolated"` and thread state through pins instead |
+| A different pipeline shape | The four prompts are independent of the wiring. Swapping "verifier" for "test runner" or "security reviewer" is a prompt change, not a graph change |
 
 ---
 
