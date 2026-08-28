@@ -16,10 +16,6 @@ refused. See below.
 | Tool-call parsing moved into the backend pack | **Re-download the backend pack for your GPU.** A 0.1.1 pack will not load. |
 | Nothing else | The server configuration, database schema and extension settings are unchanged from 0.1.1. |
 
-The server package was rebuilt on 2026-08-28 for the retrieval and timeout fixes
-below. The backend packs and the extension are unchanged by them — if you already
-have the 0.1.2 packs, only the server tarball is worth fetching again.
-
 The extension and server are compatible across this bump; the pack is the only
 mandatory download.
 
