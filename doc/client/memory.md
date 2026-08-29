@@ -5,7 +5,7 @@ ones into a run. Two kinds, with different rules about who writes them.
 
 **History** is written for you: one file per source file, recording what was
 changed and why. **Rules** are written by you: standing instructions, loaded
-when they apply.
+when they apply — and, if you ask for it, added to by the AI on your terms.
 
 Both live in `.cage/` in your project, as plain Markdown you can read, edit and
 commit.
@@ -38,15 +38,16 @@ created and every turn loaded nothing.
 ## Rules, and when they apply
 
 `.cage/memory-map.json` is a **routing table**. Each row says when one rule file
-should be loaded:
+should be loaded, and — optionally — when the AI may add to it:
 
 ```json
 {
   "version": 1,
   "rows": [
-    { "when": "",                            "file": ".cage/memory.md"    },
-    { "when": "when editing C++ code",       "file": ".cage/types/cpp.md" },
-    { "when": "anything about GPU placement or VRAM", "file": ".cage/gpu.md" }
+    { "when": "",                      "file": ".cage/memory.md",    "write": "" },
+    { "when": "when editing C++ code", "file": ".cage/types/cpp.md",
+      "write": "when we settle on a new C++ convention, or hit a trap worth avoiding, record the rule and why" },
+    { "when": "anything about GPU placement or VRAM", "file": ".cage/gpu.md", "write": "" }
   ]
 }
 ```
@@ -55,6 +56,7 @@ should be loaded:
 |---|---|
 | `when` | **Plain language**, not a glob. Empty means always |
 | `file` | Project-relative path to the rule file. No variables — name the file |
+| `write` | **Plain language**: when the AI should write to this file, and what. Empty means read-only |
 
 An empty `when` is deterministic: the file is always loaded, with no model call.
 Put unconditional rules there. "Always reply in British English" is not a
@@ -78,19 +80,62 @@ Old glob-style rows are still read, and the editor warns you to rewrite them.
 
 ### Editing it
 
-The **Memory → Map** tab in the Logic Editor sidebar edits the table. Saving
-writes `.cage/memory-map.json`; a watcher pushes it to the server, which sends
-back any parse warnings. Rows it had to skip are reported rather than dropped
+The **Memory → Map** tab in the Logic Editor sidebar edits the table — one row
+is three fields: `when`, `file`, `write`. Saving writes
+`.cage/memory-map.json`; a watcher pushes it to the server, which sends back any
+parse warnings. Rows it had to skip are reported rather than dropped
 quietly — a row that vanishes takes a whole category of memory with it.
 
 You can equally edit the JSON by hand. If the file does not exist, a built-in
 default applies, so memory works before you configure anything.
 
+## Letting the AI add to a rule file
+
+`write` is the whole specification, in your own words — both the trigger and the
+content, because that is how you would say it out loud: *"when we settle on a
+new C++ convention, record the rule and why"*. Leave it empty and the file is
+read-only; nothing ever writes there. That is the default, so an existing
+routing table behaves exactly as it did.
+
+A file you have marked writable is reached two ways, and they cover for each
+other:
+
+- **The model can write to it during the turn.** Writable files are listed in
+  the memory block it receives, and `remember` takes a `target` naming one of
+  them. Anything else is refused — the routing table is the only gate, and it is
+  checked in the client, which is where the table lives.
+- **The server checks when a Send To AI node finishes.** It asks the memory
+  model whether what just happened matches your instruction, and if so, what one
+  line to record — one call covering every writable file, and only when the node
+  actually produced something. This exists because the model volunteering is not
+  enough: when `remember` was the only writer, three test runs went by without it
+  being called once. (In a graph with several Send To AI nodes, each one that
+  runs gets that check, so keep the memory model small.)
+
+Either way the line is timestamped and **appended** to the end of the rule file,
+below whatever you wrote there. (File history is the other way round — newest
+first — because that file is read as a log.) The two paths do not double up: a
+file the model already wrote to this turn is skipped by the end-of-turn check.
+
+A row's `when` gates both halves. A file loaded only "when editing C++ code" is
+not written to in a turn that had nothing to do with C++.
+
+**Without a memory AI config, nothing is written automatically.** This is the
+opposite of the reading side, on purpose: failing to load a rule costs you one
+missing instruction, while writing something nothing judged puts unreviewed text
+into a file of yours that goes into git. The model can still write with
+`remember` itself, since that is its own deliberate act.
+
+Every decision is reported in the debug pane — which files were offered as
+writable, what was written, and, when nothing was, why not. A row you filled in
+that silently does nothing is the failure this feature has to avoid.
+
 ## The memory AI config
 
-Judging which rows apply is a model call, configured by **Memory AI Config** at
-graph level. Nodes inherit it and can override it. Leave it unset and every
-conditional row is treated as applying.
+Judging which rows apply — and what, if anything, to write back — is a model
+call, configured by **Memory AI Config** at graph level. Nodes inherit it and can
+override it. Leave it unset and every conditional row is treated as applying,
+and nothing is written automatically.
 
 A small fast model is the right choice — the judgement is short and it runs
 before the real work.
