@@ -1,0 +1,31 @@
+CuMesh -- https://github.com/JeffreyXiang/CuMesh
+
+trellis.cpp does not vendor CuMesh, but ports parts of it. The files
+below are ports of CuMesh sources and are therefore covered by CuMesh's
+license as well as trellis.cpp's own:
+  src/decimate_qem.cpp, src/decimate_qem.cu, src/decimate_qem.comp,
+  src/decimate_qem_vk.cpp   (from src/simplify.cu, connectivity.cu,
+                             dtypes.cuh -- QEM edge-collapse simplifier)
+  src/uv_bake.cpp fill_holes()  (from clean_up.cu)
+
+MIT License
+
+Copyright (c) 2025 Jianfeng XIANG (belljig@outlook.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
