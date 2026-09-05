@@ -1,0 +1,15 @@
+kimodo.cpp is licensed under the Apache License, Version 2.0.
+Upstream: https://github.com/localai-org/kimodo.cpp
+
+Modifications made by the CAGE project (Apache-2.0 section 4(b)):
+  - CMakeLists.txt: use the caller's ggml target when one already
+    exists, instead of building the pinned ggml submodule. CAGE links
+    kimodo into a shared object that already contains one ggml
+    (llama.cpp/mtmd, sd.cpp, trellis.cpp, audio.cpp all share it);
+    a second copy would carry its own backend registry, CUDA context
+    and VRAM accounting, and tensors could not cross between them.
+  - src/ggml_weights.cpp, src/inspect.cpp, src/llm_text_encoder.cpp,
+    src/llm_tokenizer.cpp: include ggml-backend.h / ggml.h instead of
+    ggml-cpu.h / gguf.h. ik_llama.cpp's ggml is a single target and
+    does not split those headers out.
+No other source files were modified; no algorithm was changed.
