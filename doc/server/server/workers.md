@@ -20,6 +20,40 @@ A text-only deployment needs none of this.
 
 ---
 
+## 2026-09-05: five families removed
+
+`image`, `tts`, `audio`, `music` and `mesh-trellis` are gone, for two different
+reasons.
+
+**Replaced by C++.** `sd.cpp`, `audio.cpp` and `trellis.cpp` now share
+`ik_llama.cpp`'s ggml and are built into the server itself, so they need no
+venv, no torch and no cloned repository:
+
+| Was | Now |
+|---|---|
+| `image` — `sd3_worker.py` | sd.cpp (`VERSION_SD3`) |
+| `tts` — `f5_tts_worker.py` | audio.cpp (`community_models/f5_tts`) |
+| `mesh-trellis` — `trellis_worker.py` | trellis.cpp (TRELLIS.2) |
+
+TRELLIS **v1** was retired with the worker: trellis.cpp implements TRELLIS.2
+only, and v1 is its predecessor rather than a separate capability.
+
+**Non-commercial weights.** `audio` ran AudioLDM2 (CC-BY-NC-SA-4.0) and `music`
+ran Stable Audio Open, which had already replaced MusicGen (CC-BY-NC-4.0) for
+the same reason. Neither is worth a setup path.
+
+A side effect worth recording: the whole "TRELLIS's copyleft dependencies"
+problem is gone with it. `pymeshfix` (AGPL-3.0), `igraph` (GPL) and `plyfile`
+(GPL) were module-scope imports that `patch_trellis_licence.py` had to rewrite
+as lazy so a deployment need not install them. trellis.cpp has no counterpart to
+decouple: hole filling is its own centroid-fan implementation, PLY writing is
+its own `fprintf`, and the graph walk igraph did is an `unordered_map`.
+
+⚠ The C++ side has **no C boundary yet** — the three projects expose C++ APIs
+that `dlsym` cannot reach, so they are compiled but not yet called. Until that
+layer lands the server has no image, TTS or 3D capability. This is an accepted
+gap, not an oversight.
+
 ## Use the script
 
 The package ships `setup-workers.sh`, which builds one virtualenv per family:
@@ -54,12 +88,7 @@ working for one and broken for another. The script keeps them apart, and
 |---|---|---|
 | `llm` | `unsloth_worker.py`, GGUF path | `llama-cpp-python` built for your GPUs, `jinja2` |
 | `llm-hf` | `unsloth_worker.py`, safetensors path | `torch`, `transformers`, `unsloth`, `bitsandbytes`, `accelerate` |
-| `image` | `sd3_worker.py` | `stable-diffusion-cpp-python`, `diffusers`, `torch` |
-| `tts` | `f5_tts_worker.py` | `f5-tts` |
-| `audio` | `audioldm2_worker.py` | `diffusers`, `transformers`, `torch`, `scipy` |
-| `music` | `musicgen_worker.py` | `diffusers`, `transformers`, `torch`, `soundfile` |
 | ~~`mesh-instantmesh`~~ | `instantmesh_worker.py` | **Disabled** — its multi-view model has no licence (below) |
-| `mesh-trellis` | `trellis_worker.py` | The TRELLIS repository and its own setup script |
 | `mesh-hy3d` | `hy3d_worker.py` | The Hunyuan3D-2 repository (`hy3dgen`) |
 
 **GGUF and safetensors are separate families** because the GGUF path
@@ -99,13 +128,8 @@ CUDA 12.0 and Python 3.11, then checked by importing what its worker imports.
 |---|---|
 | `llm` | **Verified end to end** — built, then a 7.5 GB Q8_0 GGUF loaded and generated through the server |
 | `llm-hf` | Installs; `unsloth`, `transformers` and `torch` import with CUDA available |
-| `image` | Installs; `stable_diffusion_cpp` and `diffusers` import |
-| `tts` | Installs; `f5_tts.api` imports. **Needs `ffmpeg` at runtime** |
-| `audio` | Installs; `AudioLDM2Pipeline` and `scipy` import |
-| `music` | Installs; `StableAudioPipeline` imports. Weights need a licence decision — see below |
 | ~~`mesh-instantmesh`~~ | **Disabled on licensing grounds** — installed cleanly before that, so this is not a build failure |
 | `mesh-hy3d` | Installs; `hy3dgen` imports from the clone |
-| `mesh-trellis` | Venv and clone ready, **but not usable until upstream's `setup.sh` runs** — `import trellis` fails before that |
 
 Getting there took six fixes to this script, which is the honest summary of what
 a fresh machine runs into:
@@ -118,84 +142,6 @@ a fresh machine runs into:
 | `nvdiffrast`, again | Plain `pip install torch` fetched a **cu130** wheel against a **12.0** toolkit — a major mismatch it refuses to build against. The script now picks a torch wheel matching the local `nvcc` |
 | `rembg` | Imports `onnxruntime`, which InstantMesh's requirements do not list |
 | `pytorch-lightning` | Calls `pkg_resources`, removed in setuptools 81 — pinned below that |
-
-### music runs Stable Audio Open, not MusicGen
-
-This family used to run Meta's MusicGen through `audiocraft`. It was replaced
-for licensing reasons, and the swap fixed an installation problem as a side
-effect.
-
-**The licence problem.** `audiocraft` depends on `encodec`, which is
-**CC-BY-NC-4.0** — a flat prohibition on commercial use. That is not a
-source-disclosure clause, so no process boundary or packaging arrangement
-avoids it. Every `facebook/musicgen-*` checkpoint is CC-BY-NC-4.0 as well, so
-replacing only the code would not have helped either.
-
-Stable Audio Open runs through `diffusers` (Apache-2.0). **Its weights are
-under the Stability AI Community License, which permits commercial use below a
-revenue threshold** — read it and check your own position before shipping
-anything built on it:
-
-<https://huggingface.co/stabilityai/stable-audio-open-1.0>
-
-**The installation problem it also fixed.** `audiocraft` 1.3.0 pinned
-`av==11.0.0`, which publishes no wheel for any current Python, so pip compiled
-it — and that needed the FFmpeg development headers and root. `music` was the
-only family that could not install unattended. It is now an ordinary pip
-install.
-
-**For callers.** The request contract is unchanged for `prompt`,
-`negative_prompt`, `duration`, `cfg_scale` and `seed`. `steps` replaces the
-sampler knobs: `top_k`, `top_p` and `temperature` belonged to MusicGen's
-autoregressive decoder and have no meaning for a diffusion model. The worker
-accepts them and logs that it is ignoring them, rather than pretending.
-
-### mesh-trellis is deliberately incomplete
-
-TRELLIS installs its own CUDA extensions through an interactive, hardware-specific
-`setup.sh`. The script clones the repo and prepares the venv, then prints the
-command for you to run:
-
-```bash
-cd venvs/repos/TRELLIS && source ../../mesh-trellis/bin/activate
-./setup.sh --basic --xformers --flash-attn
-venvs/mesh-trellis/bin/python -c 'import trellis'   # should now succeed
-```
-
-**mesh-trellis's copyleft dependencies are decoupled, deliberately.** TRELLIS
-itself is MIT and so are its weights, but three of its dependencies are not,
-and all three were imported at module scope — so every process that touched
-TRELLIS at all loaded them, including runs that never reached the code needing
-them:
-
-| Package | Licence | Used by |
-|---|---|---|
-| `pymeshfix` | **AGPL-3.0** | `_fill_holes()` only |
-| `igraph` | GPL | `_fill_holes()` only |
-| `plyfile` | GPL | `Gaussian.save_ply()` / `load_ply()` only |
-
-Neither path is on CAGE's route: we export GLB, never PLY, and hole filling is
-optional. So `setup-workers.sh` runs `python/patch_trellis_licence.py` after
-cloning, which rewrites those three imports to load on first use, and the
-worker passes `fill_holes=False`. **A deployment can then run TRELLIS with none
-of the three installed.**
-
-That claim is tested rather than asserted: importing
-`trellis.pipelines`, `trellis.utils.postprocessing_utils` and
-`trellis.representations.gaussian.gaussian_model` all succeed with the three
-packages blocked at the import hook, and the same test fails on an unpatched
-checkout — which is what makes it a test and not a hope.
-
-The patch is idempotent, so re-run it after updating the clone. It changes no
-behaviour and relicenses nothing; if upstream moves those usage sites it stops
-with an error rather than silently patching the wrong thing.
-
-**If you want hole filling back**, install `pymeshfix` and `igraph` and pass
-`fill_holes: true` in the request. That is a licensing decision, not only a
-quality one: it pulls AGPL-3.0 code into the worker process, and **AGPL §13
-triggers on users interacting with the program over a network** — which is
-exactly what offering mesh generation as a service is. Without it, meshes may
-have holes where the model saw no geometry.
 
 ### mesh-instantmesh is disabled
 
@@ -231,14 +177,12 @@ decoupled — it is the better-licensed backend and the better model.
 | Family | Installed |
 |---|---|
 | `llm` | 1.9 GB |
-| `audio` | 5.1 GB |
-| `mesh-trellis` | 5.0 GB (before upstream setup.sh) |
-| `image` | 5.7 GB |
-| `tts`, `mesh-hy3d` | 6.1 GB |
+| `mesh-hy3d` | 6.1 GB |
 | `mesh-instantmesh` | 6.3 GB |
 | `llm-hf` | 9.5 GB |
 
-All of them together, plus the cloned repositories, is roughly 46 GB.
+(Measured before the 2026-09-05 removal below; the families that are left
+come to roughly 18 GB.)
 
 ## A trap worth knowing: auto GPU layers
 
@@ -305,7 +249,7 @@ environment is sound:
 
 ```bash
 venvs/llm/bin/python python/unsloth_worker.py --help
-venvs/image/bin/python python/sd3_worker.py --help
+venvs/mesh-hy3d/bin/python python/hy3d_worker.py --help
 ```
 
 If the imports are wrong you get a traceback immediately, with the missing
