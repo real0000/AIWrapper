@@ -121,7 +121,7 @@ The pack has the same layout as the server package, so it merges into it:
 ```bash
 tar -xzf cage-backend-cuda-sm89_sm90-0.1.2-linux-x64.tar.gz
 cd cage-backend-cuda-sm89_sm90-0.1.2-linux-x64
-cp bin/libcage-llama-*.so  /opt/cage/bin/
+cp bin/libcage-backend-*.so  /opt/cage/bin/
 cp lib/*                   /opt/cage/lib/
 ```
 

@@ -103,6 +103,9 @@ anyone assuming "open weights" means "do what you like":
 | **User-count threshold** | Llama 3/4 Community Licence | Free commercially until a monthly-active-user count, then a separate grant from Meta |
 | **Territorial exclusion** | Hunyuan3D-2 (Tencent Community Licence) | Excludes the European Union, the United Kingdom and South Korea — *including the outputs*, not only the model |
 | **Output restrictions** | Various | Limits on training other models on the outputs, or on the use of the outputs themselves |
+| **Required attribution** | Llama 3/4 Community Licence | A service built on the weights must display a set string — "Built with Llama" — on its UI, about page or product documentation. Costs nothing, but it binds the *operator running the service*, not the software, so it is easy to miss entirely |
+| **Terms that can change under you** | DINOv3 (Meta) | The licensor may amend the agreement at any time, effective immediately, with continued use counting as acceptance. What you audited is not necessarily what binds you next quarter — pin the licence text you actually accepted alongside the weights |
+| **No reverse engineering** | DINOv3 (Meta) | Bars discovering the underlying components of the weights. Worth reading before building tooling that inspects or extracts from them |
 
 The territorial one is the least expected and the easiest to breach without
 noticing: it is not enough to avoid distributing the model in those regions,

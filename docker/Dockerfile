@@ -71,7 +71,7 @@ RUN mkdir -p /opt/cage \
            tar -xzf "$b" --strip-components=1 -C /opt/cage; \
        done \
     && rm -rf /tmp/pkgs \
-    && ls /opt/cage/bin/libcage-llama-*.so >/dev/null 2>&1 \
+    && ls /opt/cage/bin/libcage-backend-*.so >/dev/null 2>&1 \
        || echo "WARNING: no backend pack — backend=\"llama\" models will not load" \
     && chmod 755 /opt/cage/bin/* /opt/cage/*.sh
 

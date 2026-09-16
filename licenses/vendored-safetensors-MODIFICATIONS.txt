@@ -1,0 +1,49 @@
+Modifications to the vendored vllm.cpp sources
+==============================================
+
+Apache License 2.0 §4(b) requires that modified files carry prominent notices
+stating that we changed them. This file is that notice.
+
+Upstream:  https://github.com/mudler/vllm.cpp
+Revision:  96c5e4719dcb1f859cb9e59573309f16c026b523  (2026-09-09)
+Copyright: 2026 Ettore Di Giacinto, licensed under Apache License 2.0
+
+The following files were taken from the upstream tree and modified only as
+listed. No logic was changed: the parsing, bounds checking and dequantisation
+arithmetic are byte-for-byte upstream's.
+
+  include/cage_safetensors/safetensors_reader.h
+  include/cage_safetensors/read_only_file_mapping.h
+  include/cage_safetensors/platform_compat.h
+  include/cage_safetensors/awq_gptq_dequant.h
+  include/cage_safetensors/mxfp4_dequant.h
+  include/cage_safetensors/nvfp4_dequant.h
+  include/vt/dtype.h                          (未修改，原樣保留)
+  src/safetensors_reader.cpp
+  src/read_only_file_mapping.cpp
+  src/awq_gptq_dequant.cpp
+  src/mxfp4_dequant.cpp
+  src/nvfp4_dequant.cpp
+
+Changes
+-------
+
+1. Include paths rewritten.
+     "vllm/model_executor/model_loader/<name>.h"  ->  "cage_safetensors/<name>.h"
+     "vllm/support/platform_compat.h"             ->  "cage_safetensors/platform_compat.h"
+   The upstream layout nests these under a model_executor/model_loader tree that
+   does not exist here; flattening them keeps the vendored copy self-contained.
+
+2. Files relocated.
+   Upstream keeps headers under include/vllm/... and sources under src/vllm/...;
+   here they are include/cage_safetensors/ and src/. platform_compat.h lives
+   under src/vllm/support/ upstream and is a header, so it moved to include/.
+
+Not changed
+-----------
+
+  * The C++ namespace is still `vllm` / `vllm::detail` / `vllm::support`.
+    Renaming it would make every future re-sync a manual diff, and the symbols
+    are internal to this static library anyway.
+  * No functional edits. If that ever changes, the change must be listed above
+    together with the reason.

@@ -80,11 +80,17 @@ Old glob-style rows are still read, and the editor warns you to rewrite them.
 
 ### Editing it
 
-The **Memory → Map** tab in the Logic Editor sidebar edits the table — one row
-is three fields: `when`, `file`, `write`. Saving writes
-`.cage/memory-map.json`; a watcher pushes it to the server, which sends back any
-parse warnings. Rows it had to skip are reported rather than dropped
-quietly — a row that vanishes takes a whole category of memory with it.
+**Chat → 🧠 Memory** edits the table — one row is three fields: `when`, `file`,
+`write`. Saving writes `.cage/memory-map.json`; a watcher pushes it to the
+server, which sends back any parse warnings.
+
+It sits next to Settings rather than inside the Logic Editor because it belongs
+to the **project**, not to a graph: every graph in this project reads the same
+table. What a graph does own is which model does the judging — the Memory AI
+Config in the Logic Editor's Memory section.
+
+Rows the server had to skip are reported rather than dropped quietly — a row that
+vanishes takes a whole category of memory with it.
 
 You can equally edit the JSON by hand. If the file does not exist, a built-in
 default applies, so memory works before you configure anything.

@@ -35,7 +35,7 @@ name**, so renaming one updates every node that uses it.
 | Format | Output shapes: JSON, required keys, regex, non-empty | [Format Configs →](format-config.md) |
 | Variables | Named state that lives for one run of the graph | [Variables →](variables.md) |
 | RAG | Which config embeds your project, enabling retrieval | [RAG →](rag.md) |
-| Memory | Which rule files load when, and the config that judges it | [Project Memory →](memory.md) |
+| Memory | Which AI Config judges memory, and which embedding model retrieves (the routing table itself is per-project, in Chat → Memory) | [Project Memory →](memory.md) |
 
 **Test All** runs every AI config's connectivity test at once. Each config also
 has its own ▶ test button, which validates the settings and then actually loads
