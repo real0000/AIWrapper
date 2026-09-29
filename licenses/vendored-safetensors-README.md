@@ -1,7 +1,7 @@
 # cage_safetensors — safetensors 容器讀取 + 非 GGUF 的反量化
 
 **這是 vendored 的第三方程式碼，不是 submodule。** 來源、授權與我們的改動全部
-記在這裡；`dev.sh licenses` 會把它列進聲明。
+記在這裡；`dev.ps1 licenses` 會把它列進聲明。
 
 | | |
 |---|---|
