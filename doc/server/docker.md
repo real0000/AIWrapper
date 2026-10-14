@@ -101,10 +101,10 @@ matter:
 
 - **ubuntu24.04** — the server binary needs `GLIBC_2.38`. Ubuntu 22.04 ships 2.35
   and the binary will not start on it.
-- **-devel** — kept from when the image built Python worker environments with
-  the container, which is the normal way to use this. If you build them
-  `nvcc`. Nothing in the image needs `nvcc` any more, so `-runtime` should give a
-  much smaller image; that swap has not been tested yet.
+- **-devel** — a leftover. It was chosen because `nvcc` was needed to build the
+  Python worker environments inside the container. Nothing in the image needs
+  `nvcc` any more, so `-runtime` should give a much smaller image; that swap has
+  not been tested yet.
 
 CUDA 12.x containers work with any 12.x driver, so the image's CUDA version does
 not have to match your host toolkit.

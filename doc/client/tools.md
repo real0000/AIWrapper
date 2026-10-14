@@ -10,6 +10,12 @@ editable in the same place and in the same way.
 
 Open it with **CAGE: Tools**, or the 🔧 **Tools** button under the chat box.
 
+![The Tools page](../images/tools.png)
+
+*One table, split by source. `grep_repo` under **Added by you** is a tool defined
+entirely on this page — a name, a description, one required parameter and the
+command line that runs when the model calls it.*
+
 Which tools a node may use is set on the node — see **Enable Tool Calls** and
 **Allowed Tools** in [Send To AI](nodes.md#send-to-ai).
 
