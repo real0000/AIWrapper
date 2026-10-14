@@ -135,9 +135,8 @@ The embedder is a separate config only because it is a separate model; it is nam
 model — set it, or the embedder loads on whatever card comes first, which on a mixed
 machine is usually the display card.
 
-`nemotron-3-embed-1b` ships as safetensors. If no vLLM environment starts, the server
-converts it to GGUF in `/dev/shm` and runs it in-process; that conversion takes about
-70 seconds and happens once, on the first retrieval of a session.
+`nemotron-3-embed-1b` ships as safetensors, which the in-process backend reads
+directly — no conversion step, and the quantization is applied as it loads.
 
 ---
 

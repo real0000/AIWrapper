@@ -37,13 +37,13 @@ model, and they select GPUs per device the same way a text config does — there
 is no separate GPU whitelist to keep in step.
 
 **Local** configs name an alias from the server's `config.xml`. The server
-starts the corresponding Python worker on first use and talks to it over a
-pipe. All five types work this way — the server does not care what a worker
-produces.
+loads it in-process on first use, on the same backend the language models use.
+All the generative types work this way; there is no separate service and no
+Python.
 
 | Field | Meaning |
 |---|---|
-| Modality Alias | The `<modality alias="…">` entry on the server |
+| Modality Alias | The `<model alias="…">` entry on the server |
 
 **Remote** configs call a hosted provider directly. Only `image` and `tts` are
 available remotely, since those are the ones with standard endpoints.

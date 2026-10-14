@@ -113,10 +113,11 @@ reduced.
 Auto Fit needs Split Mode `layer` or `none`, and it overrides GPU Layers and
 CPU MoE Layers.
 
-**GPU Visibility only applies to the Python worker backend**, because it is an
-environment variable set when the worker process starts. The in-process
-llama.cpp backend fixes its device list when the server starts, so use Split
-Mode to control placement there.
+**GPU Visibility picks the cards this model may use.** It is honoured by the
+in-process backend: the chosen cards become the device list the model is loaded
+onto, so a card you leave out is never touched. Leave it empty and placement
+chooses for you. Use it to keep a model off a display card, or off one another
+model is holding.
 
 ## Sampling
 

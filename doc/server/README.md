@@ -62,9 +62,9 @@ The process that actually loads models and answers clients.
 | Page | Contents |
 |---|---|
 | [Overview](server/README.md) | Ports, startup sequence, working directory, logs |
-| [Python workers](server/workers.md) | Worker environments: what a fresh machine needs, and the script that builds them |
+| [Safetensors models](server/safetensors.md) | Running Hugging Face weights: no conversion, and why every quantization is available |
 | [Models](server/models.md) | Model directories, quantization discovery, vision models, licence metadata |
-| [Backends](server/backends.md) | In-process llama.cpp vs Python workers, the RAM/VRAM budget, eviction |
+| [Backends](server/backends.md) | The two backends, the RAM/VRAM budget, eviction, and what forces a model reload |
 | [Backend Packs](server/backend-packs.md) | **The separate GPU download** — choosing one, installing it, verifying it, running several |
 | [Modalities](server/modalities.md) | Image, speech, audio, music and 3D workers |
 | [Retrieval](server/rag.md) | Chunking, embedding, the vector store |

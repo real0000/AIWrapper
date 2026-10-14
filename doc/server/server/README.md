@@ -14,9 +14,9 @@ its own.
 | Page | Covers |
 |---|---|
 | [Models](models.md) | Model directories, how quantizations are discovered, vision models, licence metadata |
-| [Backends](backends.md) | In-process llama.cpp vs Python workers, the RAM/VRAM budget and eviction |
+| [Backends](backends.md) | The two backends, the RAM/VRAM budget, eviction, and what forces a model reload |
 | [Backend Packs](backend-packs.md) | **The separate GPU download** — choosing one, installing it, verifying it, running several |
-| [Python workers](workers.md) | Setting up the worker environments — the part a fresh machine actually needs |
+| [Safetensors models](safetensors.md) | Running Hugging Face weights: no conversion, and why every quantization is available |
 | [Modalities](modalities.md) | Image, speech, audio, music and 3D generation workers |
 | [Retrieval](rag.md) | Chunking, embedding, the vector store |
 | [API](api.md) | HTTP endpoints and WebSocket messages |
@@ -53,8 +53,6 @@ MySQL pool: 127.0.0.1:3306/cage (pool=4)
 [auth] auth DISABLED (dev-open) (users=0, masterKey=no)
 [BackendBudget] RAM cap=815483 MB, VRAM cap=129018 MB, eviction=lru
 LlamaWorkerPool ready (lazy)
-VllmWorkerPool ready (lazy, python_exe=…)
-SafetensorsConverter ready (lazy, python_exe=…, tmp_dir=/dev/shm/cage-convert)
 RAG VectorStore persist dir: data/vectors
 Listening on port 15963
 ```

@@ -379,7 +379,7 @@ output, so `fields` is worth filling in.
 ```json
 { "name": "sd35", "type": "image",      // image | tts
   "isRemote": false,
-  "modalityAlias": "sd35",              // <modality alias> in the server config
+  "modalityAlias": "sd35",              // <model alias> in the server config
   "cudaVisibleDevices": "",
   "defaults": {} }
 ```

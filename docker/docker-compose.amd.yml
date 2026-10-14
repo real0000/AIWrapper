@@ -69,7 +69,8 @@ services:
       PUID: ${PUID:-}
       PGID: ${PGID:-}
       # safetensors models only; empty = vLLM backend disabled.
-      # See doc/server/server/vllm.md for how to build it into /venvs.
+      # Unused since the Python worker environments were removed; kept so an existing
+      # .env does not break. Safe to delete along with the /venvs mount below.
       VLLM_PYTHON: ${VLLM_PYTHON:-}
     ports:
       # AI API — this is what the VSCode extension connects to.

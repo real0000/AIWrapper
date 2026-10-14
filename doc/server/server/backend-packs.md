@@ -5,7 +5,7 @@ carries the compiled GPU code for your hardware. The server package does not
 contain any.
 
 This is not an optional extra for most installations. Without a pack the server
-starts and runs, but only the `vllm` and `remote` backends work; anything with
+starts and runs, but only the `remote` backend works; anything with
 `backend="llama"` fails to load with a message naming the pack to fetch.
 
 > **The pack must match the server version.** A pack built before 0.1.2 is
@@ -184,7 +184,7 @@ config.
 
 ## Without a pack
 
-The server starts normally. `vllm` and `remote` models work as usual. A model
+The server starts normally. `remote` models work as usual. A model
 with `backend="llama"` fails at load time with a message naming the pack to
 download — it does not fail silently, and it does not fall back to CPU without
 telling you.

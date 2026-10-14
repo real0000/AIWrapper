@@ -11,17 +11,16 @@ Two ways to install, both from the same package on Linux x86-64:
 |---|---|---|
 | Installs on the host | Nothing but Docker | The binaries, and a MySQL server if you want accounts |
 | Database | Comes with it, as a container | You install and configure MySQL yourself |
-| Python worker environments | Built inside the container; the image already carries every system dependency | Built on the host; some families need `apt` packages and root |
-| The `music` family | Works | Needs FFmpeg development headers installed as root |
+| Dependencies | None beyond Docker | The binaries, and a backend pack |
 | Upgrading | Replace the package, rebuild, restart | Re-run the installer |
 | Uninstalling | `docker compose down` and delete a folder | Remove the service units and the install directory |
-| Disk | 13 GB image on top of the rest | Just the package and the worker environments |
+| Disk | The image on top of the rest | Just the package and a backend pack |
 | Runs as | root inside the container | A user account you choose |
 
-**Take Docker unless you have a reason not to.** It exists because the awkward
-part of this product is not the server — that is one static binary — but the
-Python worker environments and their system dependencies. The image has those
-solved.
+**Docker is the shorter path if you do not already run MySQL.** It brings the
+database with it and leaves nothing on the host. The server itself is one
+static binary either way; since the Python worker environments were removed
+there is much less to provision than there used to be.
 
 Reasons to go native: you already run MySQL, you want the server under systemd
 alongside other services, you need it to run as a specific user, or Docker is not
@@ -39,7 +38,7 @@ cp .env.example .env      # models directory, state directory, passwords
 docker compose up -d --build
 ```
 
-Everything stateful — database, config, logic graphs, worker environments — is a
+Everything stateful — database, config, logic graphs, models — is a
 host folder you choose, and the ports are yours to map. The full page covers
 what is mounted where, GPU requirements and the traps.
 
@@ -59,8 +58,7 @@ From here on this page is the **native** install. For containers see
 | OS | Linux x86-64, glibc 2.38+ | Ubuntu 24.04 or newer. The binary needs `GLIBC_2.38`, so Ubuntu 22.04 (2.35) will not run it |
 | GPU | A driver, plus a [backend pack](server/server/backend-packs.md) | NVIDIA needs only the driver — the CUDA packs carry their own `libcudart`/`libcublas`. No CUDA toolkit to install. See [supported GPUs](#supported-gpus) |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
-| MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §8 |
-| Python | 3.10+, optional | Needed for the multimodal workers, and — if you run safetensors models — for either vLLM or the GGUF conversion fallback. A GGUF-only text deployment needs none |
+| MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §7 |
 
 Check the driver:
 
@@ -97,7 +95,7 @@ nvidia-smi --query-gpu=name,compute_cap --format=csv   # NVIDIA
 vulkaninfo --summary | head -30                        # anything else
 ```
 
-Without a pack the server still starts, and `vllm` and `remote` models still
+Without a pack the server still starts, and `remote` models still
 work — but a `backend="llama"` model fails at load with a message naming the
 pack to download.
 
@@ -120,13 +118,10 @@ bin/cage-backend-probe  reports which backend pack you have and which of your
 bin/cage-llama-fit      asks where a model would go, without loading it
                         (see server/server/backends.md)
 lib/                    runtime libraries the server needs
-share/cage/             safetensors → GGUF conversion script
-python/                 workers for the multimodal families
 sql/schema.sql          database schema
 config.example.xml      server configuration template
 control.example.xml     control-plane configuration template
 install.sh              installer
-setup-workers.sh        builds the Python worker environments
 LICENSE                 end user licence agreement
 THIRD-PARTY-NOTICES.md  open-source components and their licences
 ```
@@ -198,22 +193,18 @@ first run:
 </mysql>
 
 <ai>
-  <!-- Both are only for safetensors models, and both are optional: vLLM runs
-       them as-is, <convert> turns them into GGUF for the built-in backend.
-       Leave both empty for a GGUF-only deployment. -->
-  <vllm>
-    <python_exe></python_exe>
-  </vllm>
-  <convert>
-    <python_exe></python_exe>
-  </convert>
+  <!-- Optional. Leave the whole block out and the defaults apply. -->
+  <default_model>my-coder</default_model>
+  <!-- Keep generation and inference off a card you want left alone -->
+  <cuda_visible_devices></cuda_visible_devices>
 </ai>
 
 <models>
-  <model alias="my-coder" backend="llama">
+  <model alias="my-coder">
     <!-- A DIRECTORY, not a file. Every *.gguf inside it becomes a
-         selectable quantization. A safetensors directory needs
-         backend="vllm" instead, and is quantized at load time. -->
+         selectable quantization. A Hugging Face safetensors directory
+         works here too, and is quantized when it loads. No backend= needed:
+         the scan decides. -->
     <path>/path/to/models/Qwen3-Coder-Next</path>
   </model>
 </models>
@@ -236,44 +227,7 @@ both of which rewrite the `<models>` section for you:
 ./bin/cage-model-dl Qwen/Qwen3-Coder-Next --dir models --config config.xml
 ```
 
-## 5. Python environments
-
-Two separate things, both optional:
-
-- **Multimodal workers** (image, audio, 3D) — `setup-workers.sh`, below.
-- **Safetensors models** need one of two environments, and you pick whichever
-  suits the machine: `pip install vllm` for the vLLM backend, or a CPU `torch`
-  environment that converts those models to GGUF on first use. See
-  [Safetensors models](server/server/vllm.md). Give either its own venv — do
-  not put them in a `setup-workers.sh` venv, they pin their own torch.
-
-A GGUF-only text deployment needs neither: the `llama` backend runs inside the
-server process.
-
-```bash
-cd /opt/cage
-./setup-workers.sh --list          # the families and what each needs
-./setup-workers.sh                 # llm only — the text/code path
-./setup-workers.sh --families all  # everything, tens of GB
-```
-
-It creates one virtualenv per family and prints the `config.xml` lines to
-paste.
-
-Prerequisites it checks first: an interpreter that can create virtualenvs
-(**Debian/Ubuntu need `apt install python3.x-venv` — the stock `python3` cannot,
-and this is the most common first-run failure**), `nvcc` for GPU builds, and
-`git` for the 3D families. The `music` family additionally needs the FFmpeg
-development headers, and `tts` needs the `ffmpeg` binary at runtime.
-
-Eight of the nine families install unattended; `mesh-trellis` needs one
-interactive upstream step afterwards. Sizes, results and every failure mode are
-in [Python workers](server/server/workers.md).
-
-Full detail, including why each family gets its own environment and what to do
-when a worker will not start: **[Python workers](server/server/workers.md)**.
-
-## 6. Database (optional)
+## 5. Database (optional)
 
 ```bash
 mysql -u root -p < /opt/cage/sql/schema.sql
@@ -284,7 +238,7 @@ database — the server and the control plane share the `users` / `api_keys` /
 `sessions` tables. If they differ, accounts created in the web UI will not be
 visible to the server and clients cannot log in.
 
-## 7. Start
+## 6. Start
 
 With systemd:
 
@@ -318,7 +272,7 @@ The web UI is at `http://<host>:8088/`.
 | 15972 | `config.xml` `<node><agent_port>` | Node agent API, called by the control plane |
 | 8088 | `control.xml` `<web_port>` | Control-plane web UI |
 
-## 8. Running without a database
+## 7. Running without a database
 
 Leave `<mysql>` pointing at nothing reachable and the server logs:
 
@@ -335,7 +289,7 @@ It then serves every request without authentication. That is fine for a local
 single-user trial and **not** appropriate for anything reachable from another
 machine.
 
-## 9. TLS
+## 8. TLS
 
 Set both fields in `config.xml` to serve https/wss on the same port:
 
@@ -358,7 +312,7 @@ told to accept it — see [extension-install.md](extension-install.md) §4.
 Bearer tokens are sent on every request, so plaintext is only appropriate on
 localhost.
 
-## 10. Troubleshooting
+## 9. Troubleshooting
 
 | Symptom | Cause |
 |---|---|
@@ -367,11 +321,11 @@ localhost.
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
 | A `backend="llama"` model fails to load | No backend pack installed, or the wrong one. Run `bin/cage-backend-probe` — it names the backend and says which of your cards it can drive |
 | Server starts but no GPU is listed | Driver missing, or the pack cannot see the cards; check `nvidia-smi` and `bin/cage-backend-probe` |
-| A safetensors model never loads | Neither `<ai><vllm><python_exe>` nor `<ai><convert><python_exe>` is usable; the error names both reasons — see [Safetensors models](server/server/vllm.md) |
-| A modality worker fails immediately | Its `<python_exe>` is not a venv built by `setup-workers.sh` — see [Python workers](server/server/workers.md) |
+| A safetensors model never loads | Same causes as any local model: no [backend pack](server/server/backend-packs.md), or not enough VRAM for the quantization you picked — see [Safetensors models](server/server/safetensors.md) |
+| A generative model fails immediately | It needs a [backend pack](server/server/backend-packs.md) like every other local model, and competes for the same VRAM — see [Modalities](server/server/modalities.md) |
 | Port already in use | Another instance is running, or `<port>` collides with `<agent_port>` |
 
-## 11. Uninstall
+## 10. Uninstall
 
 ```bash
 sudo systemctl disable --now cage-agent cage-control

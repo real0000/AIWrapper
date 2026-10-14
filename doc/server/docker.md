@@ -60,7 +60,7 @@ cards, or when one image serves several machines. There is no cost beyond image
 size, and no configuration: an AI config binds to whichever backend can drive
 the GPUs it selected.
 
-Build with none and the image still runs — `vllm` and `remote` models work,
+Build with none and the image still runs — `remote` models work,
 `backend="llama"` ones fail to load. The build prints a warning saying so.
 
 Three things must be set in `.env`:
@@ -68,7 +68,7 @@ Three things must be set in `.env`:
 | Variable | Meaning |
 |---|---|
 | `MODELS_DIR` | Host directory holding your models — mounted read-only at `/models` |
-| `STATE_DIR` | Where the database, config, data and worker environments live. **Must be on ext4/xfs — a bind mount onto exFAT or NTFS fails**, so it is kept separate from wherever you unpacked this |
+| `STATE_DIR` | Where the database, config and data live. **Must be on ext4/xfs — a bind mount onto exFAT or NTFS fails**, so it is kept separate from wherever you unpacked this |
 | `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` | Any non-empty values; only these two containers use them |
 | `ADMIN_PASSWORD` | Control-plane web UI login. Empty disables authentication |
 
@@ -94,16 +94,17 @@ folders would otherwise belong to root.
 | GPU access | **NVIDIA**: nvidia-container-toolkit on the host (`docker-compose.yml`). **AMD**: the amdgpu driver, so that `/dev/kfd` exists (`docker-compose.amd.yml`). With neither, everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
 | GPU | Whatever your [backend pack](server/backend-packs.md) covers — CUDA from compute capability 7.0, AMD through the HIP packs, anything else through Vulkan |
-| Disk | 13.1 GB image before the backend pack, and a CUDA pack adds ~1.6 GB unpacked (Vulkan and CPU packs, ~50 MB). Plus the worker environments (1.9 GB for `llm`) and your models |
+| Disk | The image before the backend pack, plus ~1.6 GB unpacked for a CUDA pack (Vulkan and CPU packs, ~50 MB), plus your models |
 
 The base image is `nvidia/cuda:12.6.3-devel-ubuntu24.04`, and both halves of that
 matter:
 
 - **ubuntu24.04** — the server binary needs `GLIBC_2.38`. Ubuntu 22.04 ships 2.35
   and the binary will not start on it.
-- **-devel** — `nvcc` is needed to build the Python worker environments inside
+- **-devel** — kept from when the image built Python worker environments with
   the container, which is the normal way to use this. If you build them
-  elsewhere and mount `/venvs`, `-runtime` gives a much smaller image.
+  `nvcc`. Nothing in the image needs `nvcc` any more, so `-runtime` should give a
+  much smaller image; that swap has not been tested yet.
 
 CUDA 12.x containers work with any 12.x driver, so the image's CUDA version does
 not have to match your host toolkit.
@@ -118,7 +119,6 @@ Everything that matters is a host folder, so containers stay disposable.
 | `${STATE_DIR}/server` | `/opt/cage/data` | Logic graphs, retrieval vectors, the server log |
 | `${STATE_DIR}/mysql` | `/var/lib/mysql` | The database |
 | `${STATE_DIR}/output` | `/tmp/cage` | Generated images, audio, meshes |
-| `${STATE_DIR}/venvs` | `/venvs` | Python environments: multimodal workers, and vLLM if you use it |
 | `${MODELS_DIR}` | `/models` (read-only) | Your models |
 
 **The server data mount is `/opt/cage/data`, not `/data`.** The server
@@ -127,9 +127,10 @@ working directory, so a volume anywhere else is silently ignored and the graphs
 disappear the next time the container is recreated. This cost one round of
 testing to find.
 
-**`/venvs` is a volume for a reason.** Building every worker family is about
-46 GB and recompiles CUDA extensions; keeping it outside the image means a
-rebuild does not repeat that.
+> The image still declares a `/venvs` volume and installs `python3-venv` and
+> `ffmpeg`. Nothing uses them any more — they provisioned the Python worker
+> environments, which were removed. They are harmless, and are on the list to
+> drop from the image.
 
 ## Ports
 
@@ -149,72 +150,13 @@ host-side, so the container's own ports stay as the config expects.
 
 ## Safetensors models
 
-The image ships neither engine for unquantized Hugging Face weights. GGUF
-models use the in-process backend and need nothing installed; safetensors need
-one of two environments, built into the `/venvs` volume so they survive image
-upgrades.
+Nothing to do. A Hugging Face directory of `*.safetensors` is read by the
+in-process backend exactly as a GGUF directory is, and quantized when it loads.
+Point a `<model>` at it and pick the quantization on the AI config — see
+[Safetensors models](server/safetensors.md).
 
-**vLLM** — several GB of wheels on top of a pinned torch build:
-
-```bash
-docker compose exec cage python3 -m venv /venvs/vllm
-docker compose exec cage /venvs/vllm/bin/pip install vllm
-```
-
-```
-VLLM_PYTHON=/venvs/vllm/bin/python
-```
-
-**Or the conversion fallback** — a CPU torch wheel, no CUDA matching. The model
-is converted to GGUF in memory on first use and served by the in-process
-backend:
-
-```bash
-docker compose exec cage python3 -m venv /venvs/convert
-docker compose exec cage /venvs/convert/bin/pip install torch \
-    --index-url https://download.pytorch.org/whl/cpu
-docker compose exec cage /venvs/convert/bin/pip install numpy \
-    transformers sentencepiece protobuf
-```
-
-Set `<ai><convert><python_exe>` to `/venvs/convert/bin/python`. If both are
-configured, vLLM is tried first and conversion is the fallback.
-
-The entrypoint substitutes `VLLM_PYTHON` into `config.xml` — but **only when
-generating it for the first time**. If `${STATE_DIR}/config.xml` already exists,
-edit `<ai><vllm><python_exe>` (or `<ai><convert><python_exe>`) in it directly.
-
-Container specifics: the **`-devel`** image variant is required if you build
-vLLM (some dependencies compile against `nvcc`; the conversion environment does
-not need it), and `/venvs` must be on **ext4/xfs** like the rest of `STATE_DIR`
-— pip installs fail on symlinks over exFAT or NTFS. `shm_size` is already set in
-the bundled compose file: tensor-parallel vLLM needs it, and conversion writes
-its GGUF to `/dev/shm`.
-
-Full details, including the Volta bfloat16 trap and what conversion costs, are
-in [Safetensors models](server/vllm.md).
-
-## Building the worker environments
-
-The image has no worker environments; they are too large and too
-hardware-specific to bake in. Build them once into the volume:
-
-```bash
-docker compose exec cage ./setup-workers.sh --list
-docker compose exec cage ./setup-workers.sh --prefix /venvs
-docker compose exec cage ./setup-workers.sh --prefix /venvs --families all
-```
-
-The default (`llm`) is the text and code path and is what most deployments need.
-See [Python workers](server/workers.md) for what each family needs and what has
-been tested.
-
-`config.xml` already points at `/venvs/llm/bin/python`, so the `llm` family works
-with no config change. Other families need their `<python_exe>` set per modality.
-
-**The image includes the FFmpeg development headers**, so the `music` family —
-which cannot be installed on a stock host without them — builds here without
-extra steps.
+This used to need a Python environment in `/venvs` — either vLLM or a `torch`
+build that converted the weights to GGUF. Both are gone.
 
 ## Adding models
 
@@ -249,9 +191,8 @@ only you can reach; not otherwise. See [Accounts](control/accounts.md).
 | Stack start | MySQL healthy, then the server; bootstrap admin seeded, `auth ENABLED` |
 | Model scan | GGUF found through the read-only `/models` mount |
 | Web UI | Serves on 8088 |
-| Worker build in-container | `setup-workers.sh --prefix /venvs` built `llm` against nvcc 12.6 |
 | Inference | 7.5 GB Q8_0 loaded on one V100, generated in **2.9 s** |
-| Persistence | After `down` + `up`: config, vectors and the worker venv all survived — no CUDA recompile |
+| Persistence | After `down` + `up`: config and vectors survived |
 
 Three things broke while testing, and are fixed in these files:
 
@@ -282,7 +223,7 @@ three.
 ## If something does not come up
 
 The entrypoint prints a warning for each of the common mistakes before starting
-— no database password, no admin password, no worker environment, empty
+— no database password, no admin password, empty
 `/models`. Read those first.
 
 | Symptom | Likely cause |
@@ -291,7 +232,7 @@ The entrypoint prints a warning for each of the common mistakes before starting
 | `could not select device driver` at start | NVIDIA Container Toolkit is not installed, or the daemon was not restarted after installing it |
 | Server starts, no GPU in the log | Same, or the `deploy.resources` block was removed |
 | GGUF models never load | Check the model path is under a mounted directory; `backend` should be `llama` |
-| safetensors models never load | Neither `VLLM_PYTHON` nor `<ai><convert><python_exe>` is usable — see [Safetensors models](server/vllm.md) |
+| safetensors models never load | Same causes as any local model — no backend pack, or not enough VRAM. See [Safetensors models](server/safetensors.md) |
 | Worker dies with no error while loading | Raise `SHM_SIZE`; the 64 MB Docker default is far too small |
 | Clients cannot log in | `<mysql>` differs between `config.xml` and `control.xml`. The entrypoint fills both from the same variables, so this only happens after hand-editing |
 | Web UI unreachable from another machine | It is bound to `127.0.0.1` on purpose |
@@ -303,4 +244,4 @@ tested route.
 
 ---
 
-[← Server Guide](README.md) · [Python workers](server/workers.md) · [Manual install](../server-install.md)
+[← Server Guide](README.md) · [Manual install](../server-install.md)

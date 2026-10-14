@@ -1,52 +1,56 @@
 # Backends
 
 Every model runs through one adapter interface. Which implementation a model
-uses is an attribute on its entry; everything above that line — logic graphs,
+uses follows from the weights on disk; everything above that line — logic graphs,
 tools, retrieval — is identical either way.
 
 ---
 
-The server binary carries **no GPU code at all**. In-process GGUF inference
-needs a [backend pack](backend-packs.md) — a separate download matching your
-hardware. Without one, `vllm` and `remote` still work and `llama` does not.
+The server binary carries **no GPU code at all**. Running anything locally needs
+a [backend pack](backend-packs.md) — a separate download matching your hardware.
+Without one the server still starts, and `remote` models still work.
 
-## The three
+## The two
 
-| | `llama` | `vllm` | `remote` |
-|---|---|---|---|
-| What | llama.cpp, in the server process | vLLM in a subprocess | Somebody else's endpoint |
-| Formats | GGUF | safetensors (HF directory) | n/a |
-| Multimodal | Yes, via `<mmproj>` | Model-dependent | Provider-dependent |
-| GPU visibility | Fixed at server start | Per model | n/a |
-| Needs | A [backend pack](backend-packs.md) for your GPU | A Python environment with `vllm` — **or** one with `torch`, and the model is converted to GGUF instead | Network + an API key |
+| | `llama` | `remote` |
+|---|---|---|
+| What | ik_llama.cpp, inside the server process | Somebody else's endpoint |
+| Formats | GGUF **and** Hugging Face safetensors directories | n/a |
+| Multimodal | Yes — text, vision and the generative types all run here | Provider-dependent |
+| Needs | A [backend pack](backend-packs.md) for your GPU | Network + an API key |
 
 ```xml
-<model alias="a" backend="llama">…</model>
-<model alias="b" backend="vllm">…</model>
-<model alias="c" backend="remote">…</model>
+<model alias="a">…</model>                     <!-- local weights, either format -->
+<model alias="c" backend="remote">…</model>    <!-- or give it a <remote_url> -->
 ```
 
-`<ai><default_backend>` sets the default for entries that do not say.
+**You do not normally pick.** `backend` is derived from what the scan found on
+disk: a directory of `*.gguf` and a directory of safetensors both resolve to
+`llama`; anything with a `<remote_url>` resolves to `remote`. A declared
+`backend` is treated as a hint — if it disagrees with the scan, the server warns
+and uses what it found. `<ai><default_backend>` is the fallback for entries that
+give nothing to go on.
 
-**Pick by format, not preference.** GGUF goes to `llama`, which runs inside the
-server process and needs only a backend pack — no Python, no separate service. Unquantized Hugging Face weights
-cannot be loaded by llama.cpp at all, so they go to `vllm`.
+Safetensors are **read directly** by the in-process backend; there is no
+conversion step and no second engine. Because the weights arrive unquantized,
+every quantization is available at load time — see
+[Safetensors models](safetensors.md).
 
-`backend="vllm"` names the *format*, not a hard dependency on vLLM. Both engines
-for that format are optional and you install whichever suits the machine: vLLM
-itself, or a `torch` environment, in which case the weights are converted to
-GGUF in memory on first use and run on the `llama` backend. The server picks —
-vLLM when its environment works, conversion otherwise. See
-[Safetensors models](vllm.md).
+Vision and the generative types are on the same side: a model with an `<mmproj>`
+projector loads it alongside the weights, and image / audio / music / 3D models
+run through in-process adapters that share this backend's ggml, CUDA context and
+VRAM accounting. No separate service, no Python. See
+[Modalities](modalities.md).
 
-Vision is on the `llama` side: a model with an `<mmproj>` projector loads it
-alongside the weights, and requests carrying images are tokenized and evaluated
-through it. No separate vision service.
-
-> **Upgrading from an older release:** the `unsloth` backend is gone. Entries
-> that said `backend="unsloth"` with a `.gguf` directory become `backend="llama"`;
-> ones pointing at a safetensors directory become `backend="vllm"`. The
-> `<ai><unsloth>` block and its Python worker environment are no longer read.
+> **Upgrading from an older release.** The `vllm` and `unsloth` backends are both
+> gone, along with the GGUF conversion fallback and every Python worker
+> environment. Entries that named them keep working — `backend` is a hint and the
+> scan decides — so the usual migration is to delete the attribute. The
+> `<ai><vllm>`, `<ai><convert>` and `<ai><unsloth>` blocks are no longer read.
+> A `<modalities>` block is the one exception: the server **refuses to start** and
+> tells you how to move those entries into `<models>`, because parsing it and
+> ignoring it would show up as "the config is still there but the models are
+> gone".
 
 ## Remote
 
@@ -148,19 +152,31 @@ server does — the placement logic asks the backend what the cards are.
 **Use it before a long load.** Asking a 400 GB model to load and watching it
 fail after eight minutes tells you the same thing this tells you immediately.
 
-## Worker parameter conflicts
+## Two AI configs, one model, different parameters
 
-Two AI configs naming the same model with different **load-time** parameters
-cannot share a worker: context size, quantization, GPU layers and the rest are
-fixed when the model loads.
+It depends which parameters differ.
 
-Both configs still work — but switching between them forces a worker restart
-and a model reload, which for a large model means minutes. The Logic Editor
-console warns when it sees that combination.
+**Context size and batch size** cost nothing. A request whose context parameters
+do not match the loaded slot's gets a context of its own for that request, built
+and freed around it. The model stays put.
 
-If you need two context sizes for one model, expect to pay for the switch, or
-give one of them a different model.
+**Quantization, which GPUs, split mode, GPU layers, lookahead, MTP** are fixed at
+load time. A request that wants different ones waits for the model to go idle,
+unloads it, and loads it again its way. For a large model that is minutes.
+
+A turn already running finishes on the settings it started with — the switch
+happens between turns, not under one.
+
+> This used to behave differently and worse: the mismatch was logged as *ignored
+> (release + reload to apply)* and the already-loaded model was used anyway. Since
+> `release` had no button anywhere, editing an AI config — new quantization, other
+> cards, MTP on — meant restarting the server before it took effect, and until you
+> did, runs silently used the old settings. **Editing a graph is now enough.**
+
+If you need two quantizations of one model at once, give them separate aliases
+pointing at the same directory. They load as separate slots and both stay
+resident, at the cost of the VRAM for both.
 
 ---
 
-[← Inference Server](README.md) · [Backend Packs](backend-packs.md) · [Models](models.md) · [vLLM](vllm.md) · [Server Guide](../README.md)
+[← Inference Server](README.md) · [Backend Packs](backend-packs.md) · [Models](models.md) · [Safetensors models](safetensors.md) · [Server Guide](../README.md)

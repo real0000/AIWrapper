@@ -27,7 +27,7 @@ Three ways, all ending in the same place — a `<model>` entry in the local
 | `--rev` | Branch or revision (default `main`) |
 | `--config` | The `config.xml` to update |
 | `--alias` | Name the model will have in configs. Derived from the repo name if omitted |
-| `--backend` | `llama` (GGUF) or `vllm` (safetensors); otherwise the configured default |
+| `--backend` | Written into the entry it adds. Rarely useful: the server derives the backend from the weights it finds, and warns if a declared value disagrees |
 | `--list` | List the downloadable groups and exit |
 | `-y` | Skip the confirmation, still asks which group |
 
@@ -74,7 +74,7 @@ Two traps it handles, both found in real files:
   rather than a side being picked.
 
 It also refuses what does not belong in `<models>`, with the reason: embedding
-models in safetensors, diffusers pipelines (those need a `<modalities>` entry),
+models in safetensors, and diffusion pipelines (a `<model>` entry with a `<type>`),
 and GGUFs with no `block_count` — image and 3D weights are `.gguf` too, and all
 three would otherwise become aliases that appear in the list and fail on first
 use.

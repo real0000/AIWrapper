@@ -19,7 +19,7 @@ into something it can load.
 | Element | Meaning |
 |---|---|
 | `alias` | The name everywhere else — in AI configs, in the API, in logs |
-| `backend` | `llama` (GGUF, in-process), `vllm` (safetensors — served by vLLM, or converted to GGUF when vLLM is not installed) or `remote` (cloud API). See [Backends](backends.md) |
+| `backend` | Usually omitted — it is derived from the weights found on disk. `llama` (GGUF or safetensors, in-process) or `remote` (cloud API). A declared value that disagrees with the scan is warned about and overridden. See [Backends](backends.md) |
 | `<path>` | A **directory**. See below |
 | `<quant>` | Default quantization for this alias. Optional |
 | `<mmproj>` | Vision projector, for vision models |
@@ -120,9 +120,9 @@ Two things follow for anyone running this commercially:
    place that knowledge survives; the alternative is rediscovering it during
    diligence.
 
-The same reasoning applies to the third-party Python workers, some of which
-carry copyleft or non-commercial terms of their own — see
-[Python workers](workers.md).
+The same reasoning applies to the generative models, some of which
+carry non-commercial or revenue-capped terms of their own — see
+[Modalities](modalities.md).
 
 ## Licence metadata
 
