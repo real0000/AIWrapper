@@ -148,4 +148,4 @@ before the real work.
 
 ---
 
-[← Logic Editor](logic-editor.md) · [Tools & Approval](tools.md) · [RAG](rag.md) · [Client Guide](README.md)
+[← Logic Editor](logic-editor.md) · [Tools](tools.md) · [RAG](rag.md) · [Client Guide](README.md)

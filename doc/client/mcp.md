@@ -1,77 +1,104 @@
-# MCP Servers
+# MCP programs
 
-Every tool the model can see arrives over MCP. The server keeps no fixed tool
-list of its own — what a model is offered is exactly what the connected client
-declares. That includes the built-in tools, and it means adding a capability is
-a matter of attaching a server rather than changing the product.
+An **MCP program** is a ready-made set of tools you attach. Attaching one is the
+way to give the model a capability the product does not ship — web search, an
+issue tracker, documentation lookup, a database — without changing the product.
 
-Manage them with **CAGE: Manage MCP Servers**, or by editing
-`cage.mcp.servers` in settings.
+Its tools join the same table as everything else and are configured the same way.
+This page is only about the connection; for what you can then set on each tool,
+see [Tools](tools.md).
 
-![The MCP servers page](../images/mcp-tools.png)
+Attach one with **+ Tools from an MCP program** on the Tools page
+(**CAGE: Tools**), or by editing `cage.mcp.servers` in settings.
 
-*The MCP page. Third-party servers are configured at the top; the built-in tools
-are listed read-only below, exactly as the model receives them.*
+> The page does not use the word "server" for these. It is the term MCP itself
+> uses for the thing at the other end of the connection, and it reads as if it
+> were something you have to run and administer. You attach a program; its tools
+> appear under its name.
 
 ---
 
-## Where tools come from
+## Attaching one
 
-| Source | Named | Why it lives there |
-|---|---|---|
-| The client itself | plain (`read_file`, `apply_patch`, …) | Needs the editor: your workspace, your selection, your terminal |
-| The server | plain (`run_code`, …) | Needs the server's own sandbox rather than your editor |
-| Third-party MCP servers | `mcp__<server>__<tool>` | Yours to add. The prefix marks them as external |
+| Field | |
+|---|---|
+| **Name** | How its tools are prefixed: `mcp__<name>__<tool>`. Must be unique, and cannot be `built-in` or `cage-server` — those name the two sources that are always there |
+| **Enabled** | A disabled program is not connected and its tools are not offered |
+| **How to connect** | A child process over stdio, or Streamable HTTP |
 
-The prefix is also how a call is routed back to the right server.
+For a child process: **command**, **args**, **env**, **cwd**.
+For HTTP: **URL** and **headers**.
 
-## Adding a server
+**List its tools** actually starts it and asks. What comes back is added to the
+table under that program's heading, and stays listed between sessions — so you
+can set them up before the next connection.
 
-Each entry needs a name, a command, and optionally arguments and environment:
+## In settings
 
 ```jsonc
 "cage.mcp.servers": [
   {
     "name": "filesystem",
+    "transport": "stdio",
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"]
   },
   {
     "name": "search",
+    "transport": "stdio",
     "command": "/usr/local/bin/my-search-mcp",
-    "args": [],
-    "env": { "API_KEY": "…" }
+    "env": { "API_KEY": "…" },
+    "cwd": "/opt/search"
+  },
+  {
+    "name": "docs",
+    "transport": "http",
+    "url": "https://example.internal/mcp",
+    "headers": { "Authorization": "Bearer …" }
   }
 ]
 ```
 
-Servers are launched as child processes and spoken to over stdio. The client
-connects on startup, asks each one for its tool list, and forwards the combined
-list to the CAGE server.
+`"disabled": true` keeps an entry without connecting it.
 
-**Only stdio transport is supported.** SSE and streamable-HTTP entries are
-rejected rather than silently ignored.
+**Two transports: `stdio` and `http`.** `http` is Streamable HTTP — each JSON-RPC
+message is POSTed to the URL. `sse` is reported as unsupported rather than
+silently ignored.
+
+## What happens on connection
+
+The client connects each enabled program, asks it for its tool list, and declares
+the combined list — built-in, yours, and every program's — to the CAGE server.
+That declaration is filtered through the tool table first: a disabled tool is not
+declared, and one with a custom description is declared with yours.
+
+MCP connections live across turns and are reused. The declaration is sent on
+every connection, so a change to the table takes effect on the next exchange.
+
+**There is no request timeout.** A request ends when the reply arrives, when the
+program exits (stdio), or when the connection drops (HTTP, noticed by TCP
+keepalive). A tool that takes ten minutes is a tool that takes ten minutes.
 
 ## Approval
 
-Third-party tools go through the same approval flow as the built-in ones — see
-[Tools & Approval](tools.md). They have no preset risk level, so they follow
-your default mode. A server you did not write is a good reason to leave the
-default at `ask`.
+An MCP program's tools go through the same approval flow as everything else, and
+are set in the same table — see [Tools](tools.md). They carry no preset risk
+level, so they follow your default mode. A program you did not write is a good
+reason to leave that at `ask`.
 
-## Capabilities worth attaching
-
-The product ships no web search on purpose — that kind of stateless capability
-is exactly what MCP is for. Web search, issue trackers, documentation lookup and
-database access are all things to attach rather than build in.
+You can also give one **custom behaviour**: keep the name and parameters the
+model sees, but run your own command line instead of calling the program.
 
 ## When something does not appear
 
-- The client sends its tool list once per connection. Add a server, then start a
-  new exchange for the model to see it.
-- A server that fails to start is reported in the extension's output channel.
-- The tool list the model actually received is visible in the server's log.
+- **The tool list is declared once per connection.** Attach a program, then start
+  a new exchange for the model to see it.
+- **Check it is enabled** — in the entry itself, and for the tool in the table.
+  A tool that is off appears under *Not currently provided*.
+- **A program that fails to start** is reported in the extension's output channel.
+  **List its tools** is the quickest way to find out why.
+- **The list the model actually received** is in the server's log.
 
 ---
 
-[← Tools & Approval](tools.md) · [Settings](settings.md) · [Client Guide](README.md)
+[← Tools](tools.md) · [Settings](settings.md) · [Client Guide](README.md)

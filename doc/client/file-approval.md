@@ -72,4 +72,4 @@ The model's picture of the workspace is now simply true.
 
 ---
 
-[← Tools & Approval](tools.md) · [Chat Panel](chat-panel.md) · [Client Guide](README.md)
+[← Tools](tools.md) · [Chat Panel](chat-panel.md) · [Client Guide](README.md)

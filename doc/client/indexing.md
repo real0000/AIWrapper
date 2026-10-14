@@ -43,7 +43,6 @@ describing the difference. A branch switch usually crosses it.
 |---|---|---|
 | `cage.index.enabled` | `true` | Turn indexing off entirely |
 | `cage.index.excludePatterns` | `**/node_modules/**`, `**/.git/**`, `**/build/**`, `**/dist/**` | Globs never walked |
-| `cage.index.maxDepth` | 8 | Directory depth limit |
 | `cage.index.debounceMs` | 2000 | Quiet period after a save |
 | `cage.index.deltaFullThreshold` | 0.4 | Change ratio above which a full index is sent |
 

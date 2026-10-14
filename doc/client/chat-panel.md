@@ -63,7 +63,7 @@ A session is one conversation with its own message history and its own
 approval state.
 
 - **New Session** clears the conversation and resets session-level tool
-  approvals (see [Tools & Approval](tools.md)).
+  approvals (see [Tools](tools.md)).
 - Each completed exchange is saved to history automatically.
 - The history panel lists past conversations grouped by date, with search and
   import/export. Its title is the opening words of your first message.
@@ -76,7 +76,7 @@ its own session records for token accounting when it has a database.
 When the model asks to run a tool, the request appears inline in the
 conversation with four choices: allow once, allow this tool for the session,
 allow everything for the session, or deny. Approval is covered in
-[Tools & Approval](tools.md).
+[Tools](tools.md).
 
 ## Reviewing changes
 
@@ -101,6 +101,6 @@ chip and in the panel.
 
 ---
 
-Next: [Logic Editor](logic-editor.md) · [Tools & Approval](tools.md) · [Settings](settings.md)
+Next: [Logic Editor](logic-editor.md) · [Tools](tools.md) · [Settings](settings.md)
 
 [← Client Guide](README.md)

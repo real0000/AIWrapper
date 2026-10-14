@@ -82,7 +82,6 @@ pulls the contents it needs.
 |---|---|---|
 | `cage.index.enabled` | on | Index at all |
 | `cage.index.excludePatterns` | `node_modules`, `.git`, `build`, `dist` | Globs never indexed |
-| `cage.index.maxDepth` | 8 | How deep to walk |
 | `cage.index.debounceMs` | 2000 | Quiet period after an edit before re-indexing |
 
 The first sync sends everything; later ones send only what changed, unless too

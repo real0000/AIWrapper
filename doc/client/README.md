@@ -45,9 +45,9 @@ a normal chat extension: the agent loop is data you edit, not code you accept.
 | [Worked example](example-graph.md) | `DemoCoder` end to end: every parameter it sets, why, and the three settings that fail silently when they are wrong |
 | [Project Memory](memory.md) | History written automatically per file, plus your own rules and when they load |
 | [RAG](rag.md) | Retrieval over your project: what gets indexed, how a node uses it |
-| [Tools & Approval](tools.md) | The tools the model can run in your editor, and how approval works |
+| [Tools](tools.md) | One table of every tool the model can call — built-in, ones you write, MCP programs, the server's own; groups, approval, custom behaviour |
 | [File Approval](file-approval.md) | How every file write is approved individually, before it is written |
-| [MCP Servers](mcp.md) | Attaching third-party tool servers |
+| [MCP programs](mcp.md) | Attaching a ready-made tool set: transports, config, troubleshooting |
 | [Project Indexing](indexing.md) | What the client sends to the server and when |
 | [Settings](settings.md) | Every `cage.*` setting |
 

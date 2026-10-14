@@ -100,7 +100,7 @@ Command Palette entries:
 | `CAGE: New Session` | Start a fresh conversation |
 | `CAGE: Open Logic Editor` | Visual editor for the logic graph that drives the agent |
 | `CAGE: Rebuild Index` | Re-index the workspace for retrieval |
-| `CAGE: Manage MCP Servers` | Add / remove MCP servers |
+| `CAGE: Tools` | The tool table: built-in, your own, MCP programs, groups |
 | `CAGE: Open Logic Debug` | Inspect a graph run |
 | `CAGE: Login` / `Logout` | Account session |
 
@@ -111,8 +111,7 @@ Approval behaviour is configurable:
 | Setting | Default |
 |---|---|
 | `cage.toolApproval.mode` | `ask` |
-| `cage.toolApproval.perTool` | `run_terminal`, `write_file`, `build_project` → `ask` |
-| `cage.toolApproval.timeoutSeconds` | `30` |
+| `cage.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask`. `write_file` and `apply_patch` are not here — every file they touch is approved individually |
 
 ## 7. Troubleshooting
 
