@@ -41,7 +41,6 @@
   </mysql>
 
   <ai>
-    <default_backend>llama</default_backend>
     <default_model></default_model>
     <default_vision_model></default_vision_model>
 
