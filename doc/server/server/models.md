@@ -8,7 +8,7 @@ into something it can load.
 ## An entry
 
 ```xml
-<model alias="my-coder" backend="llama">
+<model alias="my-coder">
   <path>/mnt/models/Qwen3-Coder-Next</path>
   <quant>MXFP4_MOE</quant>
   <license name="Apache-2.0" commercial="free"
@@ -69,7 +69,7 @@ that is not mounted.
 Two extra elements:
 
 ```xml
-<model alias="my-vision" backend="llama">
+<model alias="my-vision">
   <path>/mnt/models/llava-llama-3-8b-v1_1</path>
   <mmproj>/mnt/models/llava-llama-3-8b-v1_1/mmproj-f16.gguf</mmproj>
   <vision handler="llava"/>

@@ -27,7 +27,6 @@ Three ways, all ending in the same place — a `<model>` entry in the local
 | `--rev` | Branch or revision (default `main`) |
 | `--config` | The `config.xml` to update |
 | `--alias` | Name the model will have in configs. Derived from the repo name if omitted |
-| `--backend` | Written into the entry it adds. Rarely useful: the server derives the backend from the weights it finds, and warns if a declared value disagrees |
 | `--list` | List the downloadable groups and exit |
 | `-y` | Skip the confirmation, still asks which group |
 

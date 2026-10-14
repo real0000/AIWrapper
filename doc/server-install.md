@@ -96,7 +96,7 @@ vulkaninfo --summary | head -30                        # anything else
 ```
 
 Without a pack the server still starts, and `remote` models still
-work — but a `backend="llama"` model fails at load with a message naming the
+work — but a local model fails at load with a message naming the
 pack to download.
 
 ## 2. Unpack
@@ -319,7 +319,7 @@ localhost.
 | `Fatal error: config.xml: cannot open file` | Started from a directory without `config.xml`. Use `CONFIG_FILE=…` or `cd` to the install directory first |
 | `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
-| A `backend="llama"` model fails to load | No backend pack installed, or the wrong one. Run `bin/cage-backend-probe` — it names the backend and says which of your cards it can drive |
+| A local model fails to load | No backend pack installed, or the wrong one. Run `bin/cage-backend-probe` — it names the backend and says which of your cards it can drive |
 | Server starts but no GPU is listed | Driver missing, or the pack cannot see the cards; check `nvidia-smi` and `bin/cage-backend-probe` |
 | A safetensors model never loads | Same causes as any local model: no [backend pack](server/server/backend-packs.md), or not enough VRAM for the quantization you picked — see [Safetensors models](server/server/safetensors.md) |
 | A generative model fails immediately | It needs a [backend pack](server/server/backend-packs.md) like every other local model, and competes for the same VRAM — see [Modalities](server/server/modalities.md) |

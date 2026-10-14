@@ -20,16 +20,13 @@ Without one the server still starts, and `remote` models still work.
 | Needs | A [backend pack](backend-packs.md) for your GPU | Network + an API key |
 
 ```xml
-<model alias="a">…</model>                     <!-- local weights, either format -->
-<model alias="c" backend="remote">…</model>    <!-- or give it a <remote_url> -->
+<model alias="a"><path>/models/…</path></model>          <!-- local weights -->
+<model alias="c"><remote_url>https://…</remote_url></model>   <!-- somebody else -->
 ```
 
-**You do not normally pick.** `backend` is derived from what the scan found on
-disk: a directory of `*.gguf` and a directory of safetensors both resolve to
-`llama`; anything with a `<remote_url>` resolves to `remote`. A declared
-`backend` is treated as a hint — if it disagrees with the scan, the server warns
-and uses what it found. `<ai><default_backend>` is the fallback for entries that
-give nothing to go on.
+**There is nothing to choose.** A `<path>` to weights is local; a `<remote_url>`
+is remote. Which of the two adapters runs follows from that, and from what the
+scan finds in the directory.
 
 Safetensors are **read directly** by the in-process backend; there is no
 conversion step and no second engine. Because the weights arrive unquantized,
@@ -44,8 +41,8 @@ VRAM accounting. No separate service, no Python. See
 
 > **Upgrading from an older release.** The `vllm` and `unsloth` backends are both
 > gone, along with the GGUF conversion fallback and every Python worker
-> environment. Entries that named them keep working — `backend` is a hint and the
-> scan decides — so the usual migration is to delete the attribute. The
+> environment. Entries that still carry a `backend` attribute keep working: it is
+> ignored, and the server says so at startup and tells you to delete it. The
 > `<ai><vllm>`, `<ai><convert>` and `<ai><unsloth>` blocks are no longer read.
 > A `<modalities>` block is the one exception: the server **refuses to start** and
 > tells you how to move those entries into `<models>`, because parsing it and
@@ -54,11 +51,11 @@ VRAM accounting. No separate service, no Python. See
 
 ## Remote
 
-`backend="remote"` targets a cloud chat API. Nothing loads locally and every
+A `<remote_url>` targets a cloud chat API. Nothing loads locally and every
 load-time parameter is ignored.
 
 ```xml
-<model alias="c" backend="remote">
+<model alias="c">
   <remote_family>anthropic</remote_family>   <!-- openai | anthropic | gemini -->
   <remote_url>https://api.anthropic.com</remote_url>
   <remote_model>claude-sonnet-4-5</remote_model>

@@ -61,7 +61,7 @@ size, and no configuration: an AI config binds to whichever backend can drive
 the GPUs it selected.
 
 Build with none and the image still runs — `remote` models work,
-`backend="llama"` ones fail to load. The build prints a warning saying so.
+local ones fail to load. The build prints a warning saying so.
 
 Three things must be set in `.env`:
 
@@ -163,7 +163,7 @@ build that converted the weights to GGUF. Both are gone.
 Mount the host directory holding them and refer to it as `/models`:
 
 ```xml
-<model alias="my-coder" backend="llama">
+<model alias="my-coder">
   <path>/models/Qwen3-Coder-Next</path>
 </model>
 ```

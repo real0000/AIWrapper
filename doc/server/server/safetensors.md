@@ -10,9 +10,6 @@ There is nothing to install and nothing to convert.
 </model>
 ```
 
-No `backend` attribute is needed. The scan sees safetensors, and that resolves to
-the in-process backend — the same one GGUF uses.
-
 ---
 
 ## Quantization is chosen when the model loads
@@ -55,8 +52,8 @@ rules; it is the same slot with a different reader in front of it.
 > two Python environments — vLLM serving the weights over HTTP, or a `torch`
 > environment converting them to GGUF in memory on first use, with the server
 > picking whichever worked. Both paths and both environments are gone: the
-> backend reads the directory itself. `backend="vllm"` entries still load (the
-> attribute is a hint and the scan decides), and the `<ai><vllm>` and
+> backend reads the directory itself. Entries that still carry a `backend`
+> attribute keep working — it is ignored — and the `<ai><vllm>` and
 > `<ai><convert>` blocks are no longer read, so the tidy-up is to delete them.
 
 ---
