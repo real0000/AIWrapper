@@ -3,51 +3,46 @@
 # Build it yourself; nothing is published to a registry. The server package and
 # the backend pack for your GPUs both go in the build context next to this file:
 #
-#   cp cage-server-0.1.1-linux-x64.tar.gz  release/docker/
+#   cp cage-server-0.1.2-linux-x64.tar.gz  release/docker/
 #   cp cage-backend-cuda-sm89_sm90-*.tar.gz release/docker/   # one or more
 #   cp cage-backend-vulkan-*.tar.gz         release/docker/
-#   docker build -t cage:0.1.1 release/docker
+#   docker build -t cage:0.1.2 release/docker
 #
 # The server package carries no GPU code. Without a backend pack the image still
-# runs, but only the vllm and remote backends work — in-process GGUF inference
-# is unavailable. Copy in as many packs as you want covered; every
+# runs, but only remote models work — all in-process inference is unavailable.
+# Copy in as many packs as you want covered; every
 # cage-backend-*.tar.gz in the context is unpacked.
 #
 # Base image notes, both load-bearing:
 #   * ubuntu24.04 — the server binary needs GLIBC_2.38. Ubuntu 22.04 ships 2.35
 #     and the binary will not start on it.
-#   * -devel, not -runtime — `nvcc` is needed if you build the Python worker
-#     environments inside the container, which is the normal way to use this.
-#     Swap to -runtime for a smaller image if you build the venvs elsewhere and
-#     mount them.
+#   * -runtime, not -devel — nothing in the image compiles any more. `-devel`
+#     was needed to build the Python worker environments in the container; those
+#     were removed. The backend pack carries its own libcudart/libcublas, so in
+#     principle a plain ubuntu:24.04 base would also do — not tried.
 #
 # CUDA 12.x containers run on any driver from the 12.x series (>= 525.60.13)
 # thanks to minor-version compatibility, so this does not have to match the
 # host's CUDA toolkit exactly.
 # BASE_IMAGE 讓同一份 Dockerfile 服務兩種硬體：
-#   NVIDIA → nvidia/cuda:*-devel（預設；需要 nvcc 才能在容器內建 Python worker）
+#   NVIDIA → nvidia/cuda:*-runtime（預設）
 #   AMD    → ubuntu:24.04（HIP 後端包自帶 ROCm 的執行期函式庫，不需要 CUDA base）
 # 見 docker-compose.yml 與 docker-compose.amd.yml。
-ARG BASE_IMAGE=nvidia/cuda:12.6.3-devel-ubuntu24.04
+ARG BASE_IMAGE=nvidia/cuda:12.6.3-runtime-ubuntu24.04
 FROM ${BASE_IMAGE}
 
-ARG PACKAGE=cage-server-0.1.1-linux-x64.tar.gz
+ARG PACKAGE=cage-server-0.1.2-linux-x64.tar.gz
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Runtime libraries the server links against, plus what setup-workers.sh needs:
+# What the server needs at runtime:
 #   libgomp1 libquadmath0   — linked by the server binary
-#   python3-venv            — Ubuntu splits venv out; without it the worker
-#                             setup cannot create an environment at all
-#   pkg-config libav*-dev   — audiocraft pins av==11.0.0, which has no wheel and
-#                             must compile against the FFmpeg headers
-#   ffmpeg                  — needed at runtime by the tts family
+#   ffmpeg                  — RemoteModalityClient shells out to it to join audio
+#                             segments; it probes for it once and degrades without
+#   libnuma1 libelf1 libdrm* — needed by the HIP backend pack
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl git tini \
         libgomp1 libquadmath0 \
-        python3 python3-venv python3-dev \
-        pkg-config ffmpeg \
-        libavformat-dev libavcodec-dev libavdevice-dev \
-        libavutil-dev libavfilter-dev libswscale-dev libswresample-dev \
+        ffmpeg \
         default-mysql-client \
         libnuma1 libelf1 libdrm2 libdrm-amdgpu1 \
     && rm -rf /var/lib/apt/lists/*
@@ -55,7 +50,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ── The package ─────────────────────────────────────────────────────────────
 # To pull from a GitHub Release instead of the build context, replace the COPY
 # with:
-#   ADD https://github.com/real0000/AIWrapper/releases/download/v0.1.1/${PACKAGE} /tmp/
+#   ADD https://github.com/real0000/AIWrapper/releases/download/v0.1.2/${PACKAGE} /tmp/
 #
 # The backend glob is in the same COPY as the server package on purpose: a glob
 # that matches nothing is tolerated as long as another source matched, so the
@@ -88,9 +83,7 @@ RUN chmod 755 /usr/local/bin/entrypoint.sh
 #   /opt/cage/data  logic graphs and retrieval vectors — the server resolves
 #                        these relative to its working directory, so this exact
 #                        path is what has to be persisted
-#   /venvs               Python worker environments  (~46 GB for every family,
-#                        and rebuilding them recompiles CUDA)
-VOLUME ["/config", "/opt/cage/data", "/venvs"]
+VOLUME ["/config", "/opt/cage/data"]
 
 #   15963  AI API — HTTP + WebSocket, what the editor connects to
 #   15972  node agent API

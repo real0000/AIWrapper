@@ -11,7 +11,7 @@ TEMPLATES=/opt/cage/templates
 
 log() { printf '[entrypoint] %s\n' "$*"; }
 
-mkdir -p "${CFG_DIR}" /opt/cage/data /venvs /tmp/cage/modality
+mkdir -p "${CFG_DIR}" /opt/cage/data /tmp/cage/modality
 
 # ── First run: seed configs ─────────────────────────────────────────────────
 # Substituted from the environment so a compose file can set the database
@@ -40,8 +40,8 @@ seed "${TEMPLATES}/control.xml.template" "${CONTROL_CONFIG}"
 # host without sudo, even though the docs tell you to. Set PUID/PGID to your own
 # ids (id -u / id -g) and the folders become yours.
 if [[ -n "${PUID:-}" && -n "${PGID:-}" ]]; then
-    log "chown ${PUID}:${PGID} on /config, /opt/cage/data, /venvs, /tmp/cage"
-    chown -R "${PUID}:${PGID}" "${CFG_DIR}" /opt/cage/data /venvs /tmp/cage 2>/dev/null || \
+    log "chown ${PUID}:${PGID} on /config, /opt/cage/data, /tmp/cage"
+    chown -R "${PUID}:${PGID}" "${CFG_DIR}" /opt/cage/data /tmp/cage 2>/dev/null || \
         log "chown failed (continuing)"
 fi
 

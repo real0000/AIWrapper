@@ -5,7 +5,6 @@
 #   ① base image 用 ubuntu:24.04 而不是 nvidia/cuda。HIP 後端包自帶 ROCm 的
 #      執行期函式庫（libamdhip64 / librocblas / rocBLAS 的 Tensile kernel…），
 #      所以不需要 CUDA base —— 那會白白多背十幾 GB。
-#      代價：容器裡沒有 nvcc，所以不能在容器內建 Python worker 的 venv。
 #      AMD 的 worker 本來就要 ROCm 版的 torch，那條路另外處理。
 #
 #   ② GPU 的給法。NVIDIA 走 nvidia-container-toolkit（deploy.resources），
@@ -68,10 +67,6 @@ services:
       # host; see .env.example.
       PUID: ${PUID:-}
       PGID: ${PGID:-}
-      # safetensors models only; empty = vLLM backend disabled.
-      # Unused since the Python worker environments were removed; kept so an existing
-      # .env does not break. Safe to delete along with the /venvs mount below.
-      VLLM_PYTHON: ${VLLM_PYTHON:-}
     ports:
       # AI API — this is what the VSCode extension connects to.
       - "${API_PORT:-15963}:15963"
@@ -88,7 +83,6 @@ services:
       # to its working directory, so anything mounted elsewhere is ignored
       # and the graphs are lost when the container is recreated.
       - ${STATE_DIR:-./data}/server:/opt/cage/data
-      - ${STATE_DIR:-./data}/venvs:/venvs
       - ${MODELS_DIR:?set MODELS_DIR in .env}:/models:ro
       # Generated images, audio and meshes are written here.
       - ${STATE_DIR:-./data}/output:/tmp/cage
