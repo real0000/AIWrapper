@@ -72,10 +72,23 @@ Two traps it handles, both found in real files:
   (TinyLlama really is Apache-2.0), `commercial` is cleared with a reason
   rather than a side being picked.
 
-It also refuses what does not belong in `<models>`, with the reason: embedding
-models in safetensors, and diffusion pipelines (a `<model>` entry with a `<type>`),
-and GGUFs with no `block_count` — image and 3D weights are `.gguf` too, and all
-three would otherwise become aliases that appear in the list and fail on first
+The scan itself refuses only one thing: a directory with no weights it
+recognises — no `*.gguf`, and no `model*.safetensors`. It does not try to judge
+whether something is a language model, because that is not a question you can
+answer from a directory listing. `.pt`, `.bin` and `.ckpt` do not count as
+weights at all: those are Python pickles, and nothing in the server reads them.
+
+Deciding what a set of weights actually *is* happens when the server starts, and
+it refuses two more things there, each with the reason in the log:
+
+- **Weights whose architecture this backend has no graph for.** Image, audio and
+  3D models ship as `.gguf` too, and declare their own architecture name — a
+  Hunyuan3D file says `pig`. Those used to register as chat models and fail only
+  when someone selected them.
+- **Component weights.** A feature extractor or a background remover that
+  belongs to some larger pipeline is not a model you can point a config at.
+
+Both would otherwise become aliases that appear in the list and fail on first
 use.
 
 The same scan is available in the control plane's Models tab, under "Import

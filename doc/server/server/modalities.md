@@ -15,8 +15,6 @@ loads.
 
 ```xml
 <model alias="sd3.5-large">
-  <type>image</type>
-  <family>sd</family>
   <path>/mnt/models/stable-diffusion-3.5-large</path>
   <defaults>
     <steps>28</steps>
@@ -32,21 +30,28 @@ loads.
 |---|---|
 | `alias` | The name a modality config in a graph references |
 | `<path>` | The weights — a file or a directory, as that family expects |
-| `<type>` | `image`, `tts`, `audio`, `music`, `mesh`, `motion`. Decides the pin type in the editor |
-| `<family>` | Which adapter handles it |
 | `<dtype>` | Weight type. Read by the image adapter only |
 | `<defaults>` | Generation knobs, overridden by whatever the graph node sends |
 | `<extra>` | Extra loader settings for that family |
 | `auto_start` | Load at boot instead of on first use. Costs VRAM from startup |
 | `<license>` | Same meaning as for [models](models.md#licence-metadata) |
 
-**`<type>` and `<family>` are hints.** What a model can actually do is probed at
-startup; a declared value is used only when the probe cannot tell, and is
-respected when it falls inside what the probe found. That last part is the point
-of still writing it: a model that can do both TTS and ASR takes `<type>tts</type>`
-as "this alias is for TTS", which is a preference, not a correction.
+**You do not say what kind of model it is.** There is no `<type>` and no
+`<family>` field — writing them does nothing. At startup the server asks each
+model what it is: every adapter in the backend pack is handed the path and
+answers whether those weights are its own and what it can drive them for. The
+test lives in the code that understands the format, so there is no table here to
+fall out of date.
 
-Many entries need neither. `<path>` and `<license>` are often the whole thing.
+For most entries `<path>` and `<license>` are the whole thing.
+
+This is why the fields are gone rather than optional. A declared kind that is
+wrong has nothing to contradict it, and one that is *right* is worse: an SD 3.5
+entry carried `<family>sd</family>` for months, and it quietly covered for a
+probe that had never once recognised that model. Everything looked fine until
+the line was deleted. If you want one alias of a multi-task model pinned to a
+particular task, that is a runtime preference and belongs in the modality config,
+not here.
 
 ## They share one process, one context and one ledger
 
