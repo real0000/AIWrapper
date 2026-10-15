@@ -80,9 +80,5 @@
   <models>
   </models>
 
-  <modalities python_exe="python3" script_dir="/opt/cage/python"
-              cuda_visible_devices="">
-  </modalities>
-
   <api_key></api_key>
 </config>

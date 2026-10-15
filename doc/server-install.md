@@ -195,8 +195,6 @@ first run:
 <ai>
   <!-- Optional. Leave the whole block out and the defaults apply. -->
   <default_model>my-coder</default_model>
-  <!-- Keep generation and inference off a card you want left alone -->
-  <cuda_visible_devices></cuda_visible_devices>
 </ai>
 
 <models>

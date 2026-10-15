@@ -62,13 +62,17 @@ It also means a generative model is subject to the same lazy loading and
 eviction as everything else: loaded on first use, unloaded when something else
 needs the room.
 
-## GPU visibility
+## Which GPUs it may use
 
-`<ai><cuda_visible_devices>` sets the server-wide default; an entry can override
-it. Indices (`0,1,3`) or UUIDs (`GPU-xxxx`).
+Per entry, the same way a language model picks cards: indices (`0,1,3`) or UUIDs
+(`GPU-xxxx`). Leave it empty and placement chooses.
 
-Use it to keep generation off a card you want left alone — a display card, or
-one holding part of a large language model.
+Set it to keep generation off a card you want left alone — a display card, or one
+holding part of a large language model.
+
+There is no server-wide version of this. `<ai><cuda_visible_devices>` used to be
+one, and it was removed: it could only decide for the whole machine, while "this
+model must not touch that card" is per model by nature.
 
 ## Generation parameters
 
