@@ -47,7 +47,7 @@ directly:
 {
   // Host only — no http:// or ws:// prefix. The protocol is derived from
   // cage.server.tls.
-  "cage.server.host": "192.168.1.10",
+  "cage.server.host": "cage.example.lan",
   "cage.server.port": 15963,
   "cage.server.tls": false
 }

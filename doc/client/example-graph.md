@@ -16,7 +16,7 @@ The machine-specific fields, so they are easy to spot as you read:
 | Field | Here | On your machine |
 |---|---|---|
 | `aiConfigs[].model` | `qwen-coder-next`, `nemotron-3-embed-1b` | Whatever aliases your server's `config.xml` defines. The AI Config panel lists them |
-| `aiConfigs[].cudaVisibleDevices` | four V100 UUIDs | Your cards, or empty to let the placer choose |
+| `aiConfigs[].cudaVisibleDevices` | placeholder UUIDs | Your own cards (`nvidia-smi --query-gpu=uuid --format=csv`), or empty to let the placer choose |
 | `aiConfigs[].ctxSize` | `262144` | As much as your card and model allow — this graph needs headroom, see below |
 | `ragEmbeddingConfig` | `rag` | Only if you have an embedding model. Leave empty and retrieval is off, which costs this graph nothing structural |
 
@@ -104,7 +104,7 @@ which field matters and why, not as settings to copy. What to do instead is in
   "nCpuMoe": 0,
   "autoFit": false,
   "lookahead": false,
-  "cudaVisibleDevices": "GPU-ec956411-…,GPU-3143bcec-…,GPU-506e4d68-…,GPU-f73702e1-…",
+  "cudaVisibleDevices": "GPU-<uuid-1>,GPU-<uuid-2>,GPU-<uuid-3>,GPU-<uuid-4>",
   "temperature": 0.7, "topK": 40, "topP": 0.9
 }
 ```
@@ -112,7 +112,7 @@ which field matters and why, not as settings to copy. What to do instead is in
 | Field | Why this value |
 |---|---|
 | `ctxSize: 262144` | Every node shares one conversation (see `memory_mode` below), so the context grows with each round. 16K and 80K were both tried first and both overflowed — the failure is an explicit `Input tokens (…) exceed` error, not a silent truncation |
-| `cudaVisibleDevices` | Four V100s, by UUID. **The 4070 in the same machine is deliberately excluded** — it is the display card. UUIDs that do not exist on the machine loading the graph resolve to nothing, and the model then loads without a device restriction (with a warning); they are not an error |
+| `cudaVisibleDevices` | **Your own card UUIDs** — `nvidia-smi --query-gpu=uuid --format=csv`. The placeholders above are not real; a UUID that does not exist on the machine loading the graph resolves to nothing, and the model then loads with no device restriction (with a warning) rather than failing. The graph this example came from listed four compute cards and left out the display card on purpose, which is the usual reason to set this field at all |
 | `autoFit: false` | The card list is explicit, so the placer is not asked to choose |
 | `splitMode: "layer"` | Layer-split across the four cards. `graph` (tensor parallel) needs a healthy NVLink clique |
 | `lookahead: false` | Measured slower than plain decoding on Volta for every parameter set tried |
@@ -125,7 +125,7 @@ which field matters and why, not as settings to copy. What to do instead is in
   "ctxSize": 65536,
   "autoFit": true,
   "nGpuLayers": -1,
-  "cudaVisibleDevices": "GPU-ec956411-…,GPU-3143bcec-…,GPU-506e4d68-…,GPU-f73702e1-…",
+  "cudaVisibleDevices": "GPU-<uuid-1>,GPU-<uuid-2>,GPU-<uuid-3>,GPU-<uuid-4>",
   "…": "remaining fields as above"
 }
 ```
