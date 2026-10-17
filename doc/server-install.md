@@ -1,7 +1,7 @@
 # Server Installation
 
 Two ways to install, both from the same package on Linux x86-64:
-[`dist/cage-server-0.1.2-linux-x64.tar.gz`](../dist/).
+[`dist/cage-server-0.2.0-linux-x64.tar.gz`](../dist/).
 
 ---
 
@@ -33,7 +33,7 @@ through the server.
 
 ```bash
 cd release/docker
-cp ../dist/cage-server-0.1.2-linux-x64.tar.gz .
+cp ../dist/cage-server-0.2.0-linux-x64.tar.gz .
 cp .env.example .env      # models directory, state directory, passwords
 docker compose up -d --build
 ```
@@ -74,6 +74,7 @@ at all; you also fetch the backend pack matching your hardware. Full detail in
 
 | Pack | Hardware | Compute capability |
 |---|---|---|
+| `cage-backend-cuda-sm60_sm61` | P40, P100, P4, GTX 10xx | 6.0, 6.1 |
 | `cage-backend-cuda-sm70_sm75` | V100, Titan V, T4, RTX 20xx, GTX 16xx | 7.0, 7.5 |
 | `cage-backend-cuda-sm80_sm86` | A100, A30, A40, A10, RTX 30xx | 8.0, 8.6 |
 | `cage-backend-cuda-sm89_sm90` | L40, L40S, L4, RTX 40xx, H100, H200 | 8.9, 9.0 |
@@ -82,11 +83,15 @@ at all; you also fetch the backend pack matching your hardware. Full detail in
 | `cage-backend-vulkan` | Any Vulkan 1.2 GPU — AMD, Intel, or NVIDIA | n/a |
 | `cage-backend-cpu` | No GPU | n/a |
 
-NVIDIA compute capability **6.x and older** (GTX 10xx, P100) is not covered by
-any CUDA pack; the Vulkan pack may still drive those cards.
+NVIDIA compute capability **5.x and older** (Maxwell: GTX 9xx, M40) is not
+covered by any CUDA pack; the Vulkan pack may still drive those cards.
 
-You can install more than one pack — the server probes each one per device and
-an AI config binds to whichever backend can drive the GPUs it selected.
+You can install more than one pack — a P40 next to a V100 is the usual case.
+Each pack's library is named after the pack, so they sit side by side in `bin/`;
+the server probes each one per device and an AI config binds to whichever
+backend can drive the GPUs it selected. See
+[more than one pack](server/server/backend-packs.md#more-than-one-pack) for the
+one ordering rule.
 
 Check what you have:
 
@@ -102,8 +107,8 @@ pack to download.
 ## 2. Unpack
 
 ```bash
-tar -xzf cage-server-0.1.2-linux-x64.tar.gz
-cd cage-server-0.1.2-linux-x64
+tar -xzf cage-server-0.2.0-linux-x64.tar.gz
+cd cage-server-0.2.0-linux-x64
 ```
 
 Contents:
@@ -130,18 +135,18 @@ THIRD-PARTY-NOTICES.md  open-source components and their licences
 over the same directory before installing, so the installer picks it up:
 
 ```bash
-tar -xzf cage-backend-cuda-sm89_sm90-0.1.2-linux-x64.tar.gz
-cp cage-backend-cuda-sm89_sm90-0.1.2-linux-x64/bin/* bin/
-cp cage-backend-cuda-sm89_sm90-0.1.2-linux-x64/lib/* lib/
+tar -xzf cage-backend-cuda-sm89_sm90-0.2.0-linux-x64.tar.gz
+cp cage-backend-cuda-sm89_sm90-0.2.0-linux-x64/bin/* bin/
+cp cage-backend-cuda-sm89_sm90-0.2.0-linux-x64/lib/* lib/
 ```
 
 You can add more than one pack. `./install.sh` lists the packs it found, and
 warns if there are none.
 
-**Use a pack of the same version as the server.** From 0.1.2 the server refuses
-a pack built before 0.1.2 (`missing chat-template symbols …`) rather than
-silently losing tool calls — see [backend packs](server/server/backend-packs.md).
-Upgrading the server means re-downloading the pack.
+**Use a pack of the same version as the server.** The server refuses a pack
+from an earlier release rather than silently losing tool calls — see
+[backend packs](server/server/backend-packs.md). Upgrading the server means
+re-downloading the pack.
 
 ## 3. Install
 

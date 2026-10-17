@@ -1,6 +1,6 @@
 # What has been verified
 
-CAGE 0.1.2 is an evaluation build. This page says exactly how far each piece has
+CAGE 0.2.0 is an evaluation build. This page says exactly how far each piece has
 been tested, so that a field report can go where it is actually useful.
 
 Three levels are used, and the difference between the first two matters more
@@ -12,10 +12,14 @@ than it sounds:
 | **Loads** | The pack `dlopen`s in a clean environment, every symbol resolves, the ABI fingerprint matches and it reports its own identity — but no such GPU was present, so nothing was computed |
 | **Not built** | No package exists |
 
-**"Loads" is a real bar, not a formality.** It found four separate cases during
-this release where a pack compiled with zero errors and then failed to load,
-because a template that is never instantiated produces no compile error and no
-symbol. But it says nothing about whether the arithmetic is right.
+**"Loads" is a real bar, not a formality.** It has caught packs that compiled
+with zero errors and then failed to load, because a template that is never
+instantiated produces no compile error and no symbol. But it says nothing about
+whether the arithmetic is right.
+
+Unless a row says otherwise, everything below was checked **against the 0.2.0
+packages themselves** — unpacked into a fresh directory the way the install
+guide describes, not against a development build.
 
 ---
 
@@ -26,28 +30,46 @@ Tesla V100-SXM2 (7.0), NVLink between the V100s.
 
 | Pack | Level | Detail |
 |---|---|---|
-| `cuda-sm70_sm75` | **Runs** | Drives all four V100s. Correctly refuses the 4070 and says why — the mixed-architecture path works |
-| `cuda-sm80_sm86` | **Runs** | Drives the 4070 (sm_86 SASS is forward-compatible within compute capability 8) |
+| `cuda-sm70_sm75` | **Runs** | Drives all four V100s and correctly refuses the 4070, saying why. The 0.2.0 server with this pack answered a prompt on a V100 at 177 tok/s (Qwen3-0.6B) |
+| `cuda-sm80_sm86` | **Runs** | Drives the 4070 (sm_86 code is forward-compatible within compute capability 8) |
 | `cuda-sm89_sm90` | **Runs** | Drives the 4070 |
-| `vulkan` | **Runs** | Drives the 4070. **Not tried on AMD or Intel**, which is the case it exists for |
 | `cpu` | **Runs** | Self-test passes |
-| `cuda-sm120_sm121` | **Loads** | No Blackwell hardware here. 227 kernels present for each of sm_120 and sm_121, no PTX; correctly refused by this machine's cards |
-| `hip-*` (all five) | **Loads** | No AMD hardware here. Checked in a container with no ROCm and no AMD driver installed |
+| `vulkan` | **Runs** | Drives the 4070. On AMD see below |
+| `cuda-sm60_sm61` | **Loads** | **New in 0.2.0**, for the P40 and the rest of Pascal. No Pascal card here. 236 kernels present for each of sm_60 and sm_61, no PTX; correctly refused by every card in this machine |
+| `cuda-sm120_sm121` | **Loads** | No Blackwell hardware here. Correctly refused by every card in this machine |
+| `hip-*` (all five) | **Loads** | No AMD hardware here. Checked in a clean Ubuntu 24.04 container — no ROCm, no AMD driver — with only the four host packages the install guide lists |
+
+**Packs side by side.** `cuda-sm60_sm61` and `cuda-sm70_sm75` were installed
+into the same `bin/` together, as a machine with a P40 next to V100s would have
+them. Both load; the V100 pack takes the four V100s, the Pascal pack is left
+with nothing to drive here, and neither disturbs the other. The prompt above was
+answered from that two-pack install. What could not be checked is the Pascal
+pack actually driving a P40 — there is none in this machine.
+
+**AMD, on a different machine.** On 2026-09-28 a Windows build of the gfx1150
+pack ran on a Radeon 890M, installed the way a user would: a 0.6B chat model at
+about 91 tok/s, SD 1.5 images, speech, motion and a full TRELLIS mesh. The
+Vulkan pack ran the chat model at about 23 tok/s on the same card, but crashed on
+the first SD step, and its speech output was NaN. That was the Windows build of
+an earlier tree; **the Linux AMD packs in this release have not run on AMD.**
 
 ## What runs end to end
 
 | | Level | Detail |
 |---|---|---|
-| Chat, tools, file approval | **Runs** | Against `glm-4.5-air` across the V100s |
-| Multi-GPU placement | **Runs** | Topology and NVLink reported; placement across four V100s |
-| Retrieval, project memory | **Runs** | Workspace indexed and queried through `nemotron-3-embed-1b`, a safetensors model read in-process; the embedder honours the GPUs chosen on its AI config |
-| Multi-model logic graph with a feedback loop | **Runs** | DemoCoder: plan → code → verify → format check → gate, with the failure path re-entering the coder. One-line request converged on the first iteration in 15m23s across four V100s, with retrieval and shared memory active |
-| Multimodal workers | **Loads** | Environments build; not exercised this release |
+| Chat | **Runs** | Local models answering on the V100s, including from the packaged 0.2.0 build above |
+| Tools, file approval | **Runs** | As in 0.1.2 — against `glm-4.5-air` across the V100s. Not re-run for this release |
+| Multi-GPU placement | **Runs** | Topology and NVLink reported; placement across four V100s, a chosen subset, or one card |
+| A hybrid Mamba2 model | **Runs** | **New in 0.2.0.** NVIDIA-Nemotron-3-Ultra-550B-A55B: 12 attention, 48 MoE and 48 Mamba2 layers. Correct answers at temperature 0, on four V100s with the experts in host memory, 2.8 tok/s. Checked on a development build of the exact backend commit the packs carry |
+| Image and 3D | **Runs** | SD 3.5 Large images and TRELLIS.2 meshes (the mesh on a V100), in-process, on development builds during this release. TRELLIS's three borrowed components were found from the model's own `components/` folder with no paths in the config |
+| Retrieval, project memory | **Runs** | As in 0.1.2 — `nemotron-3-embed-1b`, read in-process from safetensors, on the GPUs its AI config chose. Not re-run for this release |
+| Multi-model logic graph with a feedback loop | **Runs** | As in 0.1.2 — DemoCoder converged on the first iteration. Not re-run for this release |
 
-## Not built for 0.1.2
+## Not built for 0.2.0
 
 | | Why |
 |---|---|
+| **Windows** | Builds and runs (see the AMD note above), but on a different machine; no Windows packages were produced with this release |
 | **aarch64** (DGX Spark, GH200) | nvcc's frontend cannot parse the aarch64 system headers when cross-compiling, and no native aarch64 machine was available. See [cross-building](https://github.com/real0000/AIWrapper/blob/main/server/cross/README.md) |
 | **macOS** | Xcode SDK licence, the Metal compiler and codesigning all require a Mac |
 | **`cage-rpc-worker`** (multi-node) | It is the one executable still linking CUDA statically, so it is GPU-architecture-specific. It belongs in the backend packs; that move has not been made, and the path was never verified anyway |
@@ -56,13 +78,16 @@ Tesla V100-SXM2 (7.0), NVLink between the V100s.
 
 Ranked by how much they would tell us:
 
-1. **Any AMD card.** Does a model load, and are the answers right? Everything
-   about the AMD path beyond "it loads" is unknown. Include the pack name and
-   `bin/cage-backend-probe` output.
-2. **Blackwell (RTX 50xx).** Same question, same reason.
-3. **Vulkan on AMD or Intel.** The pack exists so that non-NVIDIA hardware works
-   without ROCm, and that is exactly the case never tried.
-4. **Anything where `cage-backend-probe` disagrees with reality** — it says a
+1. **A P40, or any Pascal card.** The Pascal pack is new and has never driven
+   one. Does an embedding model load, and does retrieval return sensible
+   matches? Include `bin/cage-backend-probe` output.
+2. **Any AMD card on Linux.** Does a model load, and are the answers right? The
+   Windows build has run on one AMD card; the Linux packs never have.
+3. **Blackwell (RTX 50xx).** Same question, same reason.
+4. **Vulkan on AMD or Intel.** The pack exists so that non-NVIDIA hardware works
+   without ROCm. On the one AMD card it has met, chat worked and image and speech
+   did not.
+5. **Anything where `cage-backend-probe` disagrees with reality** — it says a
    card is usable and loading fails, or the reverse. The probe is what the
    server trusts; if it is wrong, everything downstream is.
 

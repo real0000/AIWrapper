@@ -18,7 +18,7 @@ Files are in [`docker/`](../../docker/).
 
 ```bash
 cd release/docker
-cp ../dist/cage-server-0.1.2-linux-x64.tar.gz .   # the server, always
+cp ../dist/cage-server-0.2.0-linux-x64.tar.gz .   # the server, always
 
 # then every backend pack you want the image to cover — one, or several
 cp ../dist/cage-backend-cuda-sm89_sm90-*.tar.gz .

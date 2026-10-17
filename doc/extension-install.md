@@ -2,7 +2,7 @@
 
 Installing the CAGE client and connecting it to a server.
 
-Package: [`dist/cage-0.1.2.vsix`](../dist/)
+Package: [`dist/cage-0.2.0.vsix`](../dist/)
 
 ---
 
@@ -21,7 +21,7 @@ server.
 From the command line:
 
 ```bash
-code --install-extension cage-0.1.2.vsix
+code --install-extension cage-0.2.0.vsix
 ```
 
 Or in VSCode: **Extensions** view → **⋯** menu (top right of the panel) →
@@ -31,7 +31,7 @@ Verify:
 
 ```bash
 $ code --list-extensions --show-versions
-real0000.cage@0.1.2
+real0000.cage@0.2.0
 ```
 
 Installing a newer `.vsix` over the old one is the upgrade path. A side-loaded

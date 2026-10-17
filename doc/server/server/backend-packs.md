@@ -8,11 +8,11 @@ This is not an optional extra for most installations. Without a pack the server
 starts and runs, but only the `remote` backend works; anything with
 a local model fails to load with a message naming the pack to fetch.
 
-> **The pack must match the server version.** A pack built before 0.1.2 is
-> refused at load time with
-> `missing chat-template symbols […]. This backend pack predates the
-> chat-template shim (0.1.1 or earlier). Download the backend pack that matches
-> this server.`
+> **The pack must match the server version.** A pack from an earlier release is
+> refused at load time. The message depends on how old it is — a 0.1.1 pack
+> reports `missing chat-template symbols […]`, a 0.1.2 pack
+> `Missing the CAGE backend identity symbols […]` — and either way the fix is to
+> download the backend pack that matches this server.
 >
 > This is deliberate. From 0.1.2 the tool-call format is taken from each model's
 > own chat template, and the code that reads it lives **inside the pack**. An
@@ -46,6 +46,7 @@ roughly 50 MB and 30 MB.
 
 | Pack | Hardware | Compute capability |
 |---|---|---|
+| `cage-backend-cuda-sm60_sm61` | P40, P100, P4, GTX 10xx | 6.0, 6.1 |
 | `cage-backend-cuda-sm70_sm75` | V100, Titan V, T4, RTX 20xx, GTX 16xx, Quadro RTX | 7.0, 7.5 |
 | `cage-backend-cuda-sm80_sm86` | A100, A30, A40, A10, RTX 30xx | 8.0, 8.6 |
 | `cage-backend-cuda-sm89_sm90` | L40, L40S, L4, RTX 40xx, H100, H200 | 8.9, 9.0 |
@@ -106,8 +107,28 @@ nvidia-smi --query-gpu=name,compute_cap --format=csv   # NVIDIA
 vulkaninfo --summary | head -30                        # anything else
 ```
 
-NVIDIA cards of compute capability **6.x and older** (GTX 10xx, P100) are not
-supported by any CUDA pack. The Vulkan pack may still drive them.
+NVIDIA cards of compute capability **5.x and older** (Maxwell: GTX 9xx, M40) are
+not supported by any CUDA pack. The Vulkan pack may still drive them.
+
+### Pascal, and the P40 in particular
+
+A Tesla P40 is 24 GB for very little money, and its natural job here is **the
+embedding model behind retrieval, or the model that summarises shared memory** —
+not the chat model. Two properties of the card decide that:
+
+- **FP16 runs at 1/64 of FP32.** The kernels know this and keep a P40 on its FP32
+  and INT8 paths, so nothing breaks; but it rules out the half-precision tricks
+  that make the newer cards fast at large models.
+- **No tensor cores.** Same consequence, same handling.
+
+An embedding model is small, runs one forward pass per chunk, and is far more
+sensitive to having its own memory than to raw speed — which is what a P40 has.
+
+A P40 is usually a **second** card next to a newer one, so it usually means two
+packs installed side by side: this one, and the one for your main cards. That is
+supported. Each AI config is served by whichever installed pack drives the GPUs
+it selects; there is nothing to configure beyond picking the P40 on the AI
+config that should use it.
 
 **There is deliberately no catch-all pack.** A build carrying PTX for
 "everything newer" would be compiled by the driver on first load, which is slow,
@@ -119,11 +140,32 @@ watchdog. A pack that does not fit your card tells you so immediately instead.
 The pack has the same layout as the server package, so it merges into it:
 
 ```bash
-tar -xzf cage-backend-cuda-sm89_sm90-0.1.2-linux-x64.tar.gz
-cd cage-backend-cuda-sm89_sm90-0.1.2-linux-x64
+tar -xzf cage-backend-cuda-sm89_sm90-0.2.0-linux-x64.tar.gz
+cd cage-backend-cuda-sm89_sm90-0.2.0-linux-x64
 cp bin/libcage-backend-*.so  /opt/cage/bin/
 cp lib/*                   /opt/cage/lib/
 ```
+
+### More than one pack
+
+Install as many as the machine needs — a P40 next to a V100, two AMD
+generations, a CUDA pack next to the Vulkan one. **Each pack's library is named
+after the pack** (`libcage-backend-cuda-sm60_sm61.so`,
+`libcage-backend-cuda-sm70_sm75.so`, …), so they sit side by side in `bin/`. The
+server loads all of them and serves each AI config with whichever one drives the
+GPUs that config selects.
+
+The packs' `lib/` directories overlap by name. Every CUDA pack except the
+Blackwell one is built against the same CUDA runtime, so those files are
+identical and the order does not matter. **If `cuda-sm120_sm121` is one of the
+packs, copy its `lib/` last**: it carries a newer CUDA 12 runtime, which the
+older packs can use, while theirs has no kernels for Blackwell.
+
+**Upgrading from 0.1.x:** delete `bin/libcage-backend-cuda.so` and
+`bin/libcage-backend-hip.so` if they are there. 0.1.x named every CUDA pack the
+same, so a 0.2.0 pack no longer replaces that file. The server refuses it on its
+own — it predates the current backend interface — but it stays in the probe's
+report until it is removed.
 
 **Copy `lib/` as well as `bin/`.** The CUDA packs carry their own
 `libcudart.so.12`, `libcublas.so.12` and `libcublasLt.so.12`, and the AMD packs

@@ -1,11 +1,18 @@
-# What's New in CAGE 0.1.2
+# What's New in CAGE 0.2.0
 
-0.1.2 has one theme: **tool calls stop being a guessing game.** The format a
-model uses to call a tool is now taken from that model's own chat template, and
-the model is constrained at sampling time so it cannot produce anything else.
+0.2.0 is two months of work and has no single theme, but three changes shape it:
 
-It is a **breaking release for backend packs**: a pack built before 0.1.2 is
-refused. See below.
+- **There is no Python anywhere.** Hugging Face safetensors models are read
+  directly, and image, speech, music, motion and 3D models run inside the server
+  process. Nothing to install, no environments, no worker processes.
+- **Models say what they are.** You point the config at a folder; the server works
+  out whether it is a chat model, an embedding model or an image generator. The
+  separate `<modalities>` list is gone.
+- **More hardware.** A backend pack for Pascal — the Tesla P40 in particular — and
+  packs can now be installed side by side, so a P40 can sit next to your main
+  cards.
+
+It is a **breaking release for backend packs and for `config.xml`**. See below.
 
 ---
 
@@ -13,141 +20,157 @@ refused. See below.
 
 | What changed | What you have to do |
 |---|---|
-| Tool-call parsing moved into the backend pack | **Re-download the backend pack for your GPU.** A 0.1.1 pack will not load. |
-| Nothing else | The server configuration, database schema and extension settings are unchanged from 0.1.1. |
-
-The extension and server are compatible across this bump; the pack is the only
-mandatory download.
-
----
-
-## Tool calls now come from the model's own template
-
-Every model family writes tool calls differently — Qwen tags them, GLM tags them
-differently, Kimi uses its own control tokens, Llama-3 emits bare JSON. Until now
-CAGE told the model *its own* format in the system prompt and then tried to
-recognise whatever came back with five competing regular expressions.
-
-That was the wrong shape, and it produced exactly the failure you would expect:
-the model's chat template already declared a format, our prompt declared a
-different one, and the model drifted between them. When it drifted, one of the
-five parsers usually matched something — but not always the right thing.
-
-0.1.2 removes the guesswork in three steps:
-
-- **The prompt is generated from the chat template.** No hand-written
-  instructions about tool syntax, no invented example call ids.
-- **The reply is parsed by the parser that template ships with**, not by pattern
-  matching over prose.
-- **The model is constrained while sampling.** A GBNF grammar built from the
-  template means a malformed tool call is not merely detected, it is
-  *unrepresentable* — the tokens that would produce one are never candidates.
-
-The five hand-rolled parsers, the hold-back heuristic that guessed how many
-trailing bytes might be a partial tool marker, and the model-specific special
-casing are all deleted — about 1200 lines.
-
-**Measured, not assumed:** 14 of 14 local models are recognised by their
-template; 11 of 14 can additionally be grammar-constrained (the other three fall
-back to template-driven parsing without the grammar). Constrained decoding costs
-almost nothing — 33 tok/s against ~36 unconstrained — because sampling stays on
-the fast path until the unconstrained pick is rejected.
+| Backend packs are rebuilt for this server | **Re-download the backend pack(s) for your GPUs.** A 0.1.x pack is refused at load time. |
+| Each pack's library is now named after the pack (`libcage-backend-cuda-sm70_sm75.so`) | **Delete `bin/libcage-backend-cuda.so` and `bin/libcage-backend-hip.so`** if they are left from 0.1.x. The new pack no longer overwrites them. They are refused anyway, but they stay in the probe's report until removed. |
+| `<modalities>` merged into `<models>` | **Move every `<modality>` entry into `<models>` as a `<model>`, and rename `<model_path>` to `<path>`.** The server refuses to start while a `<modalities>` block is present, and says so. |
+| `<type>`, `<family>`, the `backend=` attribute, `<ai><default_backend>` and `<ai><cuda_visible_devices>` are no longer read | Nothing — they are ignored. Delete them when convenient. |
+| Python is not used | Nothing. Any `<vllm>` or `<convert>` block is ignored, and the Python environments of 0.1.x can be deleted. |
+| One new database table (`runs`, for resuming interrupted runs) | Nothing — the server creates it at startup. |
+| The extension and the server exchange tool settings in a new way | **Update the extension to 0.2.0** together with the server. |
 
 ---
 
-## Backend packs must match the server
+## No Python, anywhere
 
-The code that reads a chat template lives in the backend pack, next to the
-inference code it belongs with. A pack from 0.1.1 does not contain it, so the
-server refuses to load one:
+0.1.x needed Python for two things: converting a safetensors model to GGUF before
+it could be loaded, and running every image, speech and 3D model in a worker
+process. Both are gone.
 
-```
-missing chat-template symbols […]. This backend pack predates the
-chat-template shim (0.1.1 or earlier). Download the backend pack that
-matches this server.
-```
+- **Safetensors are read in place.** The backend builds the tensor table from
+  `config.json`, `tokenizer.json` and the shards directly, in memory, and writes
+  no intermediate file. The quantization you pick on the AI config is applied
+  while loading, using the same per-tensor rules as offline quantization — so a
+  safetensors model loaded at `4bit` is byte-for-byte the tensors a `4bit` GGUF
+  of it would contain.
+- **Image, speech, music, motion and 3D run in-process,** on the same GPU
+  context and the same VRAM budget as the language models. A busy image model is
+  visible to the loader deciding whether a chat model fits, and can be evicted by
+  it.
 
-This walks back a claim made in 0.1.1's notes — that the server and the pack
-version independently and upgrading one would not mean re-downloading the other.
-That holds for pure kernel updates. It does not hold here, because 0.1.2 moves a
-*capability* across that boundary. Loading an old pack would mean falling back to
-the guessing behaviour this release exists to remove, and a silent regression in
-tool calling is far harder to diagnose than a refused load.
+## Models say what they are
 
-All eleven packs are rebuilt for 0.1.2.
+Every `<model>` entry is just a folder and, optionally, a licence. At startup the
+server asks each model what it is — every adapter in the backend pack is handed
+the path and answers whether those weights are its own and what it can do. The
+test lives in the code that understands the format, so there is no table of model
+names to fall out of date.
 
----
+`<type>` and `<family>` used to be declarations. They are not read any more, and
+that is deliberate: a declaration that is wrong has nothing to contradict it, and
+one entry in our own test configuration had been carrying `<family>sd</family>`
+for months while the probe had never once recognised that model. It worked only
+because of the declaration — which also hid the bug.
 
-## Long generations are no longer cut off
+Two more things that used to reach the model list and fail when chosen are now
+caught at startup, with the reason in the log: weights whose architecture the
+backend has no graph for (3D and image generators ship as GGUF too), and
+directories whose only weights are `.pt` / `.bin` pickles, which nothing in CAGE
+reads.
 
-The generation timeout was a deadline for the whole turn: five minutes from the
-first token, no matter what. Any legitimately long reply hit it and was reported
-as a stall.
+## A backend pack for the P40, and packs side by side
 
-It is now a **stall timeout** — the clock resets on every token, and fires only
-when nothing has been produced for the timeout window. A 2894-token file that
-used to be truncated at the 300-second wall now completes in 88 seconds and is
-written out whole.
+New: `cage-backend-cuda-sm60_sm61`, covering the Pascal generation — P40, P100,
+P4 and the GTX 10xx cards.
 
-The same mistake was found on the way *in*: reading a long prompt had its own
-three-minute deadline, so a large context was reported as a stall even while every
-batch was making progress. That is now a stall timeout too, and the message says how
-far it got.
+A P40 is 24 GB for very little money, and its natural job is **the embedding
+model behind retrieval, or the summariser behind shared memory**, rather than the
+chat model. Its FP16 runs at 1/64 of FP32 and it has no tensor cores; the kernels
+know both and keep it on its FP32 and INT8 paths.
 
----
+A P40 is usually a second card next to newer ones, which means two packs at once.
+That works now: each pack's library is named after the pack, they sit side by side
+in `bin/`, and each AI config is served by whichever pack drives the GPUs it
+selected. There is nothing to configure beyond choosing the P40 on the AI config
+that should use it.
 
-## Retrieval no longer takes a GPU you did not give it
+**Verified:** the Pascal pack loads, identifies itself, and correctly refuses
+every non-Pascal card. Installed next to the V100 pack, both load, each takes only
+its own cards, and the V100 pack answered prompts from that two-pack install.
+**Not verified:** a P40 actually running a model — there was none to test on. A
+report from a P40 owner is the most useful one this release could get.
 
-If you enabled RAG, the embedding model ignored the GPUs you picked for it and
-loaded onto the first one it found. On a machine with a display card and compute
-cards, that is usually the display card — and nothing said so.
+## Hybrid Mamba2 models: Nemotron-3-Ultra
 
-Every other model in CAGE honours the GPU selection on its AI config. The embedder
-was the one that did not, on both the in-process and vLLM paths. It does now, and it
-says which devices it took.
+NVIDIA-Nemotron-3-Ultra-550B-A55B now runs. It is a hybrid: of its 108 layers, 12
+are attention, 48 are mixture-of-experts and 48 are Mamba2 state-space layers, and
+it needed a new state-space operation (with a CUDA kernel) because the existing one
+could not express Mamba2's grouped form.
 
----
+**Measured:** correct answers at temperature 0 on four V100s, with the 512 experts
+in host memory, at 2.8 tokens/s. That speed is set by the experts running on the
+CPU — the state-space scan itself is about 0.2% of the work.
 
-## Retrieved code is labelled as excerpts
+## Stopping and resuming a run
 
-Context retrieved for a prompt is a set of fragments chosen by similarity — not whole
-files, not in order. That was never stated in the prompt, and models drew conclusions
-from it that the fragments do not support: in one direction assuming a project was
-already finished, in the other reporting a snippet that ends mid-statement as broken
-code. The second one is worth naming because it is convincing: a reviewing step
-produced a list of compiler errors whose line numbers were exactly the chunk
-boundaries, for a program that compiled and ran correctly.
+- **Stop takes effect within milliseconds.** Pressing Stop on a local model used
+  to take 80 to 115 seconds to take effect, because the cancel signal never
+  reached the generation loop — the node only noticed after the whole generation
+  had finished. **Measured:** 7 to 13 ms, on one V100 and across two; the whole run
+  is cleaned up in 155 ms. The exception is a long prompt on a large model: a stop
+  pressed while the prompt is still being read waits for that to finish, which
+  can take seconds.
+- **An interrupted run can be resumed** from the last node boundary, whether it
+  was stopped by you, by a dropped connection, or by the server going down. A node
+  that failed outright is not offered for resuming; running it again unchanged
+  would fail the same way.
 
-The block now says what it is. If you are building a logic graph, also note the
-matching rule: **a node that judges a piece of text rather than the codebase should
-have RAG turned off on that node.** Retrieval helps the steps that act on code; it
-misleads the ones that grade an answer.
+## Faster decoding with MTP
+
+Models that ship multi-token-prediction heads can use them for speculative
+decoding — a switch on the AI config. Where the heads are published separately,
+as with Qwen3.8-Flash-Next, the file only has to be in the model's folder.
+**Measured:** Qwen3.8-Flash-Next is about 1.7× faster with 93% of drafted tokens
+accepted.
+
+## Context length is decided per model
+
+Whether a model's context can be extended, and by how much, now comes from the
+model: its architecture (some apply position scaling only to windowed layers, some
+not at all) and the limit its model card states. A model whose card says nothing is
+not extended. When no length is chosen, the default is **32K**.
+
+## One Tools page
+
+The MCP page became **Tools**: one table of everything the model can call — built-in
+tools, tools you define yourself, the server's own `run_code`, and the tools of each
+MCP program — grouped by where they come from. Every tool can be switched off or
+re-described; a **group** is a set of those settings you can switch as a whole. You
+can add a tool of your own with a name, a description, a parameter table and one
+command line. MCP requests no longer have a timeout.
+
+## Models that need someone else's weights
+
+Some models name parts of themselves by another repository — TRELLIS.2 points at
+a DINOv3 feature extractor, a background remover and a decoder from TRELLIS v1.
+The downloader now fetches those along with the model, into the model's own
+`components/` folder, and the loader finds them there. No paths to write into the
+config. One such part — TRELLIS's background remover, whose licence forbids
+commercial use — is replaced by an equivalent under MIT, and the reason is
+recorded with it.
 
 ---
 
 ## Fixes worth naming
 
-- **A backend pack that is too old fails at load, with the reason and the fix**,
-  instead of loading and then behaving incorrectly.
-- **Tool arguments that contain a JSON object are no longer mis-split** by a
-  parser looking for the next closing brace.
-- **Streaming no longer holds back trailing text** waiting to see whether it was
-  the start of a tool marker.
-
----
+- **The Linux AMD packs had not compiled since September.** Two CUDA names — one
+  in pinned-memory registration, one in out-of-memory reporting — had no ROCm
+  equivalent declared. The Windows AMD build happened not to reach either, which
+  is how it went unnoticed; nobody had built a Linux one since August.
+- **Running out of VRAM** no longer reports a failed computation as success, no
+  longer aborts in two places, and no longer places the output layer on a card
+  that was not selected.
 
 ## Known gaps
 
-Unchanged from 0.1.1 except where noted:
+- **The Pascal pack has never driven a Pascal card.** See above.
+- **The Linux AMD packs have never run on AMD.** A Windows build of the gfx1150
+  pack did, on a Radeon 890M — chat, images, speech, motion and 3D.
+- **Blackwell** (RTX 50xx) has never been tried.
+- **Vulkan on AMD** ran chat, but crashed on the first image step and produced NaN
+  for speech.
+- **No Windows packages** ship with this release, although Windows builds and runs.
+- **No aarch64 or macOS packages**, and `cage-rpc-worker` (multi-node) is still not
+  shipped.
 
-- Three of fourteen models expose a chat template but no usable grammar; they
-  run with template-driven parsing only.
-- The server binary still reports no version of its own; `/health` does not
-  return one.
-- The AMD detection path has not been exercised on real AMD hardware.
-- Multi-node exists in the control plane, but each client connects to a single
-  server — there is no scheduling across machines.
-- Server-side session history is recorded but not replayed into a conversation
-  resumed after a restart.
-- `mesh-trellis` still needs an upstream interactive setup step.
-- Pascal and older NVIDIA cards are not supported.
+The full list of what was and was not tested is in
+[What has been verified](doc/verification-status.md).
