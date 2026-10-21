@@ -1,6 +1,6 @@
 # What's New in CAGE 0.2.0
 
-0.2.0 is two months of work and has no single theme, but three changes shape it:
+0.2.0 is two months of work and has no single theme, but four changes shape it:
 
 - **There is no Python anywhere.** Hugging Face safetensors models are read
   directly, and image, speech, music, motion and 3D models run inside the server
@@ -11,6 +11,9 @@
 - **More hardware.** A backend pack for Pascal — the Tesla P40 in particular — and
   packs can now be installed side by side, so a P40 can sit next to your main
   cards.
+- **Memory that follows the conversation.** Every step's report goes into a
+  session record that the next attempt in a loop can read, and a small model —
+  not a fixed rule — chooses which notes each step reads.
 
 It is a **breaking release for backend packs and for `config.xml`**. See below.
 
@@ -27,6 +30,9 @@ It is a **breaking release for backend packs and for `config.xml`**. See below.
 | Python is not used | Nothing. Any `<vllm>` or `<convert>` block is ignored, and the Python environments of 0.1.x can be deleted. |
 | One new database table (`runs`, for resuming interrupted runs) | Nothing — the server creates it at startup. |
 | The extension and the server exchange tool settings in a new way | **Update the extension to 0.2.0** together with the server. |
+| The installer is now `install.ps1`, a PowerShell script | **Install PowerShell 7.4 or newer and run `pwsh ./install.ps1`.** The options are the ones `install.sh` had. |
+| File history is read only when the memory AI picks it | **Set a Memory AI Config on your graphs** if you rely on file history. Without one, a file's history is no longer read just because the message names the file. |
+| A session record is written to `.cage/sessions/` in your project | Add `.cage/sessions/` to `.gitignore` if you do not want it committed. |
 
 ---
 
@@ -138,6 +144,31 @@ re-described; a **group** is a set of those settings you can switch as a whole. 
 can add a tool of your own with a name, a description, a parameter table and one
 command line. MCP requests no longer have a timeout.
 
+## Memory that follows the conversation
+
+A graph that loops — a coder and a build check, say — used to start every
+attempt from nothing. In one test the coder ran three times and re-checked the
+same build environment each time, although its first summary already said what
+it had found; that summary had nowhere to go.
+
+- **The session record.** After each Send To AI step the server appends the
+  step's Summary to `.cage/sessions/<session id>.md` in your project, with the
+  files it wrote. When the message's run ends, the memory AI condenses that part
+  into a short list for the next message. Nothing is truncated.
+- **The memory AI chooses what to read.** Before a step runs it is shown every
+  rule row, every file history in the project and the session record, together
+  with the work at hand, and picks what bears on it. Whether the message happens
+  to name a file no longer decides whether its history is read.
+- **A conversation keeps its session across a server restart.** The session id
+  belongs to the conversation in your editor; only a new chat, or a server that
+  says it has no such session, starts a new one. The record follows it.
+
+**Tested** against the packaged server with a scripted model standing in for the
+LLM: a looping step reads its previous attempt's report, the record is condensed
+before the run reports done, a new chat is isolated, and a session is recalled
+from the database after a restart. **Not yet run** with a real model through a
+whole graph. See [Project memory](doc/client/memory.md).
+
 ## Models that need someone else's weights
 
 Some models name parts of themselves by another repository — TRELLIS.2 points at
@@ -152,6 +183,29 @@ recorded with it.
 
 ## Fixes worth naming
 
+- **A native install could not run local models**, for three reasons, each
+  enough on its own. The installer never copied `lib/`, so on a machine without
+  CUDA installed the server did not start and no pack loaded. The server looked
+  for backend packs only in its working directory, which under the agent — and
+  in Docker — is the install directory, not `bin/`. And the CUDA packs lacked
+  `libcufft`, which they have needed since speech models came in-process. The
+  build machine has CUDA installed system-wide and the tests started the server
+  from `bin/`, which hid all three. All three are fixed. The install was re-run
+  exactly as the guide describes and answered a prompt through the agent, and in
+  a container with no CUDA at all every library the server and the CUDA packs
+  need now resolves, except the driver's own `libcuda.so.1`.
+- **The Docker setup did not build.** The compose files still named the 0.1.1
+  package, the image build stopped at a `chmod` of an installer that is no longer
+  a shell script, and the seeded `config.xml` did not parse — the template had a
+  comment inside a comment. Fixed, and the quick start was run as written: the
+  stack comes up and a model answers on the GPU.
+- **Tool calls in two sessions at once could cross.** Stop, or a dropped
+  connection, in one session cancelled the tool calls every other session was
+  waiting on, and two sessions given the same call id could swap results or wait
+  forever. Waiting calls are now kept per session.
+- **A fast tool reply could hang the turn.** The server sent the call before it
+  was ready for the answer, so a client that answered at once had its reply
+  dropped.
 - **The Linux AMD packs had not compiled since September.** Two CUDA names — one
   in pinned-memory registration, one in out-of-memory reporting — had no ROCm
   equivalent declared. The Windows AMD build happened not to reach either, which
@@ -163,6 +217,8 @@ recorded with it.
 ## Known gaps
 
 - **The Pascal pack has never driven a Pascal card.** See above.
+- **The session record and the memory AI's choice** have been tested against a
+  scripted model, not yet in a real run through a whole graph.
 - **The Linux AMD packs have never run on AMD.** A Windows build of the gfx1150
   pack did, on a Radeon 890M — chat, images, speech, motion and 3D.
 - **Blackwell** (RTX 50xx) has never been tried.

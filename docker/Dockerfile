@@ -3,10 +3,10 @@
 # Build it yourself; nothing is published to a registry. The server package and
 # the backend pack for your GPUs both go in the build context next to this file:
 #
-#   cp cage-server-0.1.2-linux-x64.tar.gz  release/docker/
+#   cp cage-server-0.2.0-linux-x64.tar.gz  release/docker/
 #   cp cage-backend-cuda-sm89_sm90-*.tar.gz release/docker/   # one or more
 #   cp cage-backend-vulkan-*.tar.gz         release/docker/
-#   docker build -t cage:0.1.2 release/docker
+#   docker build -t cage:0.2.0 release/docker
 #
 # The server package carries no GPU code. Without a backend pack the image still
 # runs, but only remote models work — all in-process inference is unavailable.
@@ -31,7 +31,7 @@
 ARG BASE_IMAGE=nvidia/cuda:12.6.3-runtime-ubuntu24.04
 FROM ${BASE_IMAGE}
 
-ARG PACKAGE=cage-server-0.1.2-linux-x64.tar.gz
+ARG PACKAGE=cage-server-0.2.0-linux-x64.tar.gz
 ARG DEBIAN_FRONTEND=noninteractive
 
 # What the server needs at runtime:
@@ -50,7 +50,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ── The package ─────────────────────────────────────────────────────────────
 # To pull from a GitHub Release instead of the build context, replace the COPY
 # with:
-#   ADD https://github.com/real0000/AIWrapper/releases/download/v0.1.2/${PACKAGE} /tmp/
+#   ADD https://github.com/real0000/AIWrapper/releases/download/v0.2.0/${PACKAGE} /tmp/
 #
 # The backend glob is in the same COPY as the server package on purpose: a glob
 # that matches nothing is tolerated as long as another source matched, so the
@@ -68,7 +68,7 @@ RUN mkdir -p /opt/cage \
     && rm -rf /tmp/pkgs \
     && ls /opt/cage/bin/libcage-backend-*.so >/dev/null 2>&1 \
        || echo "WARNING: no backend pack — backend=\"llama\" models will not load" \
-    && chmod 755 /opt/cage/bin/* /opt/cage/*.sh
+    && chmod 755 /opt/cage/bin/*
 
 WORKDIR /opt/cage
 

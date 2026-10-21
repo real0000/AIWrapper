@@ -6,11 +6,11 @@ outside image is the official `mysql`.
 
 Files are in [`docker/`](../../docker/).
 
-> **Verified.** Built and run on Docker 29.6 with Compose v5.3 and the NVIDIA
-> Container Toolkit: the stack comes up, MySQL-backed accounts work, all five
-> GPUs are visible inside the container, and a 7.5 GB Q8_0 GGUF loads and
-> generates in 2.9 s through the containerised server. Details in
-> [What was tested](#what-was-tested).
+> **Verified for 0.2.0.** Built from the 0.2.0 server package and the
+> `cuda-sm70_sm75` pack exactly as the quick start below says, on Docker 29.8 with
+> Compose v5.5 and the NVIDIA Container Toolkit: MySQL comes up, the server finds
+> the pack, a model answers a prompt on a V100, the web UI serves, and the config
+> survives `down` and `up`. Details in [What was tested](#what-was-tested).
 
 ---
 
@@ -93,18 +93,18 @@ folders would otherwise belong to root.
 | Docker | With Compose v2 (`docker compose`, not `docker-compose`) |
 | GPU access | **NVIDIA**: nvidia-container-toolkit on the host (`docker-compose.yml`). **AMD**: the amdgpu driver, so that `/dev/kfd` exists (`docker-compose.amd.yml`). With neither, everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
-| GPU | Whatever your [backend pack](server/backend-packs.md) covers — CUDA from compute capability 7.0, AMD through the HIP packs, anything else through Vulkan |
-| Disk | The image before the backend pack, plus ~1.6 GB unpacked for a CUDA pack (Vulkan and CPU packs, ~50 MB), plus your models |
+| GPU | Whatever your [backend pack](server/backend-packs.md) covers — CUDA from compute capability 6.0 (Pascal), AMD through the HIP packs, anything else through Vulkan |
+| Disk | The image before the backend pack, plus 1.6–2.3 GB unpacked for a CUDA pack (Vulkan and CPU packs, ~150 MB), plus your models |
 
-The base image is `nvidia/cuda:12.6.3-devel-ubuntu24.04`, and both halves of that
-matter:
+The base image is `nvidia/cuda:12.6.3-runtime-ubuntu24.04`, and both halves of
+that matter:
 
 - **ubuntu24.04** — the server binary needs `GLIBC_2.38`. Ubuntu 22.04 ships 2.35
   and the binary will not start on it.
-- **-devel** — a leftover. It was chosen because `nvcc` was needed to build the
-  Python worker environments inside the container. Nothing in the image needs
-  `nvcc` any more, so `-runtime` should give a much smaller image; that swap has
-  not been tested yet.
+- **-runtime** — nothing in the image compiles anything. It used to be `-devel`,
+  for building the Python worker environments, which are gone. The CUDA packs
+  carry their own CUDA libraries, so a plain `ubuntu:24.04` base should do as
+  well; that has not been tried.
 
 CUDA 12.x containers work with any 12.x driver, so the image's CUDA version does
 not have to match your host toolkit.
@@ -127,10 +127,6 @@ working directory, so a volume anywhere else is silently ignored and the graphs
 disappear the next time the container is recreated. This cost one round of
 testing to find.
 
-> The image still declares a `/venvs` volume and installs `python3-venv` and
-> `ffmpeg`. Nothing uses them any more — they provisioned the Python worker
-> environments, which were removed. They are harmless, and are on the list to
-> drop from the image.
 
 ## Ports
 
@@ -184,17 +180,28 @@ only you can reach; not otherwise. See [Accounts](control/accounts.md).
 
 ## What was tested
 
+For 0.2.0, from the release packages, following the quick start:
+
 | Step | Result |
 |---|---|
-| GPU passthrough | All 5 GPUs visible via `--gpus all`, correct compute capabilities |
-| Image build | 13.1 GB from the CUDA 12.6.3 devel base, before any backend pack |
-| Stack start | MySQL healthy, then the server; bootstrap admin seeded, `auth ENABLED` |
-| Model scan | GGUF found through the read-only `/models` mount |
-| Web UI | Serves on 8088 |
-| Inference | 7.5 GB Q8_0 loaded on one V100, generated in **2.9 s** |
-| Persistence | After `down` + `up`: config and vectors survived |
+| Image build | `nvidia/cuda:12.6.3-runtime-ubuntu24.04`, the 0.2.0 server package and the `cuda-sm70_sm75` pack |
+| Stack start | MySQL healthy, then the server; `config.xml` seeded from the template |
+| Backend pack | Found in `/opt/cage/bin`; drives the four V100s and refuses the RTX 4070 |
+| Inference | Qwen3-0.6B, a safetensors directory under the read-only `/models`, answered on one V100: 138 tokens in 0.78 s |
+| Web UI | Serves on the published port |
+| Persistence | After `down` + `up`: config kept, model registered again |
 
-Three things broke while testing, and are fixed in these files:
+Four things stopped this from working until the 0.2.0 release was re-packaged.
+All are fixed in these files:
+
+| What broke | Why, and what changed |
+|---|---|
+| `docker compose up --build` could not find the package | The compose files still defaulted to `cage-server-0.1.1-…` and the Dockerfile to 0.1.2. All now say 0.2.0 |
+| The image build failed at `chmod` | The Dockerfile marked `/opt/cage/*.sh` executable. The installer became `install.ps1` in September, so nothing matched and `chmod` failed. Only `bin/` is touched now |
+| The container restarted in a loop: `config.xml(77): expected <` | The template had comments nested inside a comment, which XML does not allow — the first `-->` ended the outer one early. They are gone |
+| Local models could not load | The server looked for backend packs in its working directory, `/opt/cage`, rather than in `bin/`. It now looks next to its own executable first |
+
+The first round of testing, for 0.1.0, found three more, also fixed:
 
 | What broke | Why, and what changed |
 |---|---|

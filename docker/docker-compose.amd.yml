@@ -13,7 +13,7 @@
 #
 # 用法：
 #
-#   cp ../dist/cage-server-0.1.1-linux-x64.tar.gz  .
+#   cp ../dist/cage-server-0.2.0-linux-x64.tar.gz  .
 #   cp ../dist/cage-backend-hip-gfx1100_*.tar.gz   .    # 你的卡那一包
 #   cp .env.example .env                                # 然後編輯它
 #   docker compose -f docker-compose.amd.yml up -d --build
@@ -47,9 +47,9 @@ services:
     build:
       context: .
       args:
-        PACKAGE: ${PACKAGE:-cage-server-0.1.1-linux-x64.tar.gz}
+        PACKAGE: ${PACKAGE:-cage-server-0.2.0-linux-x64.tar.gz}
         BASE_IMAGE: ${BASE_IMAGE:-ubuntu:24.04}
-    image: cage-amd:${VERSION:-0.1.1}
+    image: cage-amd:${VERSION:-0.2.0}
     restart: unless-stopped
     depends_on:
       mysql:

@@ -65,13 +65,11 @@
 
   <!--
     One entry per model. <path> is a directory under /models — mount your model
-    folders there and point at them:
+    folders there and point at them. GGUF files and Hugging Face safetensors
+    directories are both loaded directly; the server works out what each one is:
 
-      <model alias="my-coder" backend="llama">          <!-- GGUF -->
+      <model alias="my-coder">
         <path>/models/Qwen3-Coder-Next</path>
-      </model>
-      <model alias="my-hf-model">                       <!-- safetensors: no backend= needed -->
-        <path>/models/Some-HF-Model</path>
       </model>
 
     Adding models through the control-plane web UI rewrites this section for you.

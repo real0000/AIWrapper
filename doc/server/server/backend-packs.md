@@ -143,7 +143,7 @@ The pack has the same layout as the server package, so it merges into it:
 tar -xzf cage-backend-cuda-sm89_sm90-0.2.0-linux-x64.tar.gz
 cd cage-backend-cuda-sm89_sm90-0.2.0-linux-x64
 cp bin/libcage-backend-*.so  /opt/cage/bin/
-cp lib/*                   /opt/cage/lib/
+cp -r lib/*                /opt/cage/lib/
 ```
 
 ### More than one pack
@@ -168,7 +168,7 @@ own — it predates the current backend interface — but it stays in the probe'
 report until it is removed.
 
 **Copy `lib/` as well as `bin/`.** The CUDA packs carry their own
-`libcudart.so.12`, `libcublas.so.12` and `libcublasLt.so.12`, and the AMD packs
+`libcudart.so.12`, `libcublas.so.12`, `libcublasLt.so.12` and `libcufft.so.11`, and the AMD packs
 their ROCm equivalents plus `lib/rocblas/library/`, all found through a
 `RUNPATH` of `$ORIGIN/../lib`. That is why no CUDA toolkit has to be installed
 on the machine — but it only works if the libraries land next to the `.so` in
@@ -192,8 +192,9 @@ path the server uses — what it reports is what the server will do.
 /opt/cage/bin/cage-backend-probe
 ```
 
-With no arguments it searches the usual locations; give it a path or directory
-to check a specific pack. For each `.so` it reports:
+With no arguments it looks in its own directory — the `bin/` the packs are
+installed into — and in the current directory; give it a path or directory to
+check a specific pack. For each `.so` it reports:
 
 | | |
 |---|---|

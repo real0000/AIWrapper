@@ -26,8 +26,9 @@ Reasons to go native: you already run MySQL, you want the server under systemd
 alongside other services, you need it to run as a specific user, or Docker is not
 an option on the machine.
 
-Both paths are tested, and both were used to load a 7.5 GB model and generate
-through the server.
+Both paths were run end to end for 0.2.0, from the release packages and exactly
+as written here and in the Docker page, and both answered a prompt on a GPU — see
+[What has been verified](verification-status.md#installing).
 
 ### → [Docker](server/docker.md)
 
@@ -56,9 +57,10 @@ From here on this page is the **native** install. For containers see
 | | Required | Notes |
 |---|---|---|
 | OS | Linux x86-64, glibc 2.38+ | Ubuntu 24.04 or newer. The binary needs `GLIBC_2.38`, so Ubuntu 22.04 (2.35) will not run it |
-| GPU | A driver, plus a [backend pack](server/server/backend-packs.md) | NVIDIA needs only the driver — the CUDA packs carry their own `libcudart`/`libcublas`. No CUDA toolkit to install. See [supported GPUs](#supported-gpus) |
+| GPU | A driver, plus a [backend pack](server/server/backend-packs.md) | NVIDIA needs only the driver — the CUDA packs carry their own `libcudart`, `libcublas` and `libcufft`. No CUDA toolkit to install. See [supported GPUs](#supported-gpus) |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
 | MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §7 |
+| PowerShell | 7.4 or newer (`pwsh`) | Only to run the installer, `install.ps1`. Microsoft publishes a `powershell` package for Ubuntu and Debian; `snap install powershell --classic` also works |
 
 Check the driver:
 
@@ -126,7 +128,7 @@ lib/                    runtime libraries the server needs
 sql/schema.sql          database schema
 config.example.xml      server configuration template
 control.example.xml     control-plane configuration template
-install.sh              installer
+install.ps1             installer (PowerShell)
 LICENSE                 end user licence agreement
 THIRD-PARTY-NOTICES.md  open-source components and their licences
 ```
@@ -137,10 +139,13 @@ over the same directory before installing, so the installer picks it up:
 ```bash
 tar -xzf cage-backend-cuda-sm89_sm90-0.2.0-linux-x64.tar.gz
 cp cage-backend-cuda-sm89_sm90-0.2.0-linux-x64/bin/* bin/
-cp cage-backend-cuda-sm89_sm90-0.2.0-linux-x64/lib/* lib/
+cp -r cage-backend-cuda-sm89_sm90-0.2.0-linux-x64/lib/* lib/
 ```
 
-You can add more than one pack. `./install.sh` lists the packs it found, and
+Keep the `-r`: an AMD pack's `lib/` has a `rocblas/library/` folder of GPU
+kernels, and without it the first matrix multiplication fails.
+
+You can add more than one pack. The installer lists the packs it found, and
 warns if there are none.
 
 **Use a pack of the same version as the server.** The server refuses a pack
@@ -151,7 +156,7 @@ re-downloading the pack.
 ## 3. Install
 
 ```bash
-./install.sh                       # to /opt/cage, with systemd services
+pwsh ./install.ps1                 # to /opt/cage, with systemd services
 ```
 
 | Option | Meaning |
@@ -162,7 +167,7 @@ re-downloading the pack.
 | `--force` | Overwrite an existing `config.xml` / `control.xml` |
 
 The installer reports which backend packs it found and checks that every shared
-library the server needs resolves, copies the files, creates `config.xml` and `control.xml` from
+library the server needs resolves, copies `bin/`, `lib/` and `sql/`, creates `config.xml` and `control.xml` from
 the templates (mode 600 — they hold database credentials), and creates
 `data/`, `models/` and `/tmp/cage`.
 
@@ -170,7 +175,7 @@ the templates (mode 600 — they hold database credentials), and creates
 without root:
 
 ```bash
-./install.sh --prefix ~/cage --no-service
+pwsh ./install.ps1 --prefix ~/cage --no-service
 ```
 
 Two systemd units are installed unless `--no-service` is given:

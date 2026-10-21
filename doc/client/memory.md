@@ -1,22 +1,26 @@
 # Project Memory
 
-CAGE keeps notes about your project between sessions, and injects the relevant
-ones into a run. Two kinds, with different rules about who writes them.
+CAGE keeps notes about your project, and injects the relevant ones into a run.
+Three kinds, with different rules about who writes them.
 
 **History** is written for you: one file per source file, recording what was
-changed and why. **Rules** are written by you: standing instructions, loaded
-when they apply — and, if you ask for it, added to by the AI on your terms.
+changed and why. **The session record** is written for you too: what each step
+of the current conversation did, so a step that runs again in a loop can see
+what the last attempt found. **Rules** are written by you: standing
+instructions, loaded when they apply — and, if you ask for it, added to by the
+AI on your terms.
 
-Both live in `.cage/` in your project, as plain Markdown you can read, edit and
-commit.
+All three live in `.cage/` in your project, as plain Markdown you can read, edit
+and commit. Which of them a run reads is decided by the memory AI — see
+[What gets read](#what-gets-read).
 
 ---
 
 ## History, written automatically
 
 At the end of a turn the server records one entry per file that was actually
-written, into `.cage/files/<path>.md`. When that file is in play again in a
-later session, its history comes back with it.
+written, into `.cage/files/<path>.md`. A later run reads it when the memory AI
+picks it — see [What gets read](#what-gets-read).
 
 - **Which files** comes from what `write_file` and `apply_patch` actually
   touched — not from the model's own account of the turn. Models routinely
@@ -34,6 +38,38 @@ on it: the server writes regardless.
 This is deliberate. Earlier, `remember` was the only writer, and across three
 test runs the model never once decided to call it. `.cage/files/` was never
 created and every turn loaded nothing.
+
+## The session record, written automatically
+
+Every conversation has its own file, `.cage/sessions/<session id>.md`, which the
+server writes as the graph runs:
+
+- **After each Send To AI step**, one entry: the time, the node's title, and its
+  Summary output as written — or its whole output, for a node without a
+  Summary — plus the files that step wrote. Steps that produce images, audio or
+  meshes record the files they produced.
+- **Each message is one section**, headed by its start time and the first line
+  of the message. When the run finishes, before the answer is marked done, the
+  memory AI condenses that section into a short list, and the next message reads
+  the condensed version. Without a memory AI config, or if condensing fails or is
+  stopped, the section stays as written. An interrupted run is not condensed;
+  resuming it writes into the same section, which is condensed when it finishes.
+- **It follows the conversation, not the server.** The session id belongs to the
+  conversation in your editor and survives a server restart, so the record does
+  too. Starting a new chat starts a new file; the old one stays.
+
+The point is loops. A graph that sends a step back to try again — a coder and a
+build check, say — used to start every attempt from nothing: in one test the
+coder ran three times and re-checked the same build environment each time,
+although the first attempt's own summary already said what it had found. The
+session record is where that summary goes.
+
+Nothing is cut: a record longer than the node's memory budget is reported in the
+debug pane, not truncated. Every read, write and condense is reported there too,
+including an older extension that cannot write the record.
+
+`.cage/sessions/` sits in your project folder, so it goes into git unless you
+ignore it.
 
 ## Rules, and when they apply
 
@@ -136,12 +172,37 @@ Every decision is reported in the debug pane — which files were offered as
 writable, what was written, and, when nothing was, why not. A row you filled in
 that silently does nothing is the failure this feature has to avoid.
 
+## What gets read
+
+Before a step runs, the memory AI is given every candidate at once — every row
+of the routing table, every history file in the project, and this
+conversation's session record — together with the work the step is about to do,
+and picks the ones that bear on it. Only those are read.
+
+- **Rows with an empty `when` are always read**, whether or not the model picked
+  them.
+- **A row whose `when` could not be judged counts as applying** — missing a rule
+  you wrote is worse than one too many.
+- **History and the session record are read only when picked.** Whether the
+  message names a file has no bearing on whether its history is read; what the
+  step is doing does.
+- **Without a memory AI config, no history and no session record are read.** The
+  record is still written; rule rows are read as described above.
+
+The debug pane lists everything that was not read, and why: not picked for this
+task, no memory AI config, or the memory AI's pick failed.
+
+**This changed in 0.2.0.** Before, a file's history was read when the file was
+in play — named in the message, attached, or found by retrieval. A step that
+named no file, which is most steps inside a loop, read no history at all.
+
 ## The memory AI config
 
-Judging which rows apply — and what, if anything, to write back — is a model
-call, configured by **Memory AI Config** at graph level. Nodes inherit it and can
-override it. Leave it unset and every conditional row is treated as applying,
-and nothing is written automatically.
+Choosing what to read, condensing the session record and deciding what to write
+back are model calls, configured by **Memory AI Config** at graph level. Nodes
+inherit it and can override it. Leave it unset and every conditional row is
+treated as applying, no history or session record is read, the session record
+stays as written, and nothing is written to rule files automatically.
 
 A small fast model is the right choice — the judgement is short and it runs
 before the real work.

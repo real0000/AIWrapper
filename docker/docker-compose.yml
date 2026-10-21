@@ -1,6 +1,6 @@
 # CAGE — single-machine deployment.
 #
-#   cp cage-server-0.1.1-linux-x64.tar.gz .
+#   cp cage-server-0.2.0-linux-x64.tar.gz .
 #   cp .env.example .env      # then edit it: passwords and MODELS_DIR
 #   docker compose up -d --build
 #
@@ -45,8 +45,8 @@ services:
     build:
       context: .
       args:
-        PACKAGE: ${PACKAGE:-cage-server-0.1.1-linux-x64.tar.gz}
-    image: cage:${VERSION:-0.1.1}
+        PACKAGE: ${PACKAGE:-cage-server-0.2.0-linux-x64.tar.gz}
+    image: cage:${VERSION:-0.2.0}
     restart: unless-stopped
     depends_on:
       mysql:
