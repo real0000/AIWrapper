@@ -22,8 +22,8 @@ into something it can load.
 | `backend` | Usually omitted — it is derived from the weights found on disk. `llama` (GGUF or safetensors, in-process) or `remote` (cloud API). A declared value that disagrees with the scan is warned about and overridden. See [Backends](backends.md) |
 | `<path>` | A **directory**. See below |
 | `<quant>` | Default quantization for this alias. Optional |
-| `<mmproj>` | Vision projector, for vision models |
-| `<vision handler="…">` | Which chat handler a vision model needs |
+| `<mmproj>` | Vision projector, for vision models. Found automatically when it sits in the model directory |
+| `<source_repo>` | The Hugging Face repo the files came from. Written by the downloader; used to fetch the model card |
 | `<license>` | Upstream licence, surfaced to users. Optional but recommended |
 | `<pinned>` | Keep this model out of the eviction set |
 | `<est_ram_mb>` / `<est_vram_mb>` | Override the size estimate |
@@ -41,8 +41,9 @@ quantization that is actually present; to offer another, download that file
 into the same directory — no config change, just a server restart.
 
 **safetensors** — the directory holds one set of unquantized tensors, and
-quantization happens at load time. So every option is offered from the same
-files: 4bit (NF4), 4bit-fp4, 8bit, bf16, fp16, fp32.
+they are quantized while they load. So every option is offered from the same
+files: 4bit (Q4_K_M), 8bit (Q8_0), bf16, fp16, fp32. `4bit-fp4` is accepted from
+older configurations and loads as 4bit.
 
 A projector file is recognised as such and not offered as a quantization.
 
@@ -56,33 +57,32 @@ scans its parent directory and treats that file as the default.
 ## When a path is wrong
 
 ```
-[warning] Model 'my-coder' scan failed: path does not exist: /mnt/models/…
-[info]    Model registered: my-coder (…, quants=0, default=, …)
+[warning] Model 'my-coder' scan failed: path does not exist: /mnt/models/… - this model cannot load (…)
+[error]   Model skipped: my-coder — no weights recognised under /mnt/models/… (…)
 ```
 
-The alias is still registered and still appears in `/api/models` — it simply
-cannot load. `quants=0` in the registration line is the tell. Usually a disk
-that is not mounted.
+The alias is not registered and does not appear in `/api/models`, so it cannot
+be picked and fail later. Usually a disk that is not mounted; the log names the
+path it looked at.
 
 ## Vision models
 
-Two extra elements:
+One extra element:
 
 ```xml
 <model alias="my-vision">
   <path>/mnt/models/llava-llama-3-8b-v1_1</path>
   <mmproj>/mnt/models/llava-llama-3-8b-v1_1/mmproj-f16.gguf</mmproj>
-  <vision handler="llava"/>
 </model>
 ```
 
-`<mmproj>` is the CLIP projector — it is what makes the model able to see.
-`handler` selects the chat handler: `qwen2.5-vl`, `qwen2-vl`, `minicpmv`,
-`llava-1.6`, `llava`, `moondream`, `nanollava`, `llama3-vision`.
+`<mmproj>` is the CLIP projector — it is what makes the model able to see. When
+the projector sits in the model directory it is found without being named. The
+projector's own metadata says what kind it is, so there is nothing else to set;
+an older `<vision handler="…">` is ignored.
 
-Name one in `<ai><default_vision_model>` and it becomes the delegate: when a
-text-only model is working and an image is produced, the vision model describes
-it and the description is fed back into the conversation.
+A text-only model is never handed an image: it gets a short note of what was
+attached and where, so a node with file tools can still open it.
 
 ## Model licences are yours to check
 

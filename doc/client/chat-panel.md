@@ -19,9 +19,12 @@ palette.
 | 📎 Attach | Picks files to send with this message — see [below](#attaching-files) |
 | Graph selector | Which logic graph answers you — see [below](#the-two-selectors) |
 | Start selector | Which entry point in that graph the run begins at |
-| Settings | Opens the extension's settings — see [Settings](settings.md) |
+| 🧠 Memory | The project's memory routing table — see [Project Memory](memory.md) |
+| 🔧 Tools | What the model is offered and how each tool behaves — see [Tools](tools.md) |
+| ⚙ Settings | Opens the extension's settings — see [Settings](settings.md) |
+| ◇ Logic | Opens the [Logic Editor](logic-editor.md) |
 | Session buttons (top right) | History panel, and new session |
-| Status chip (status bar) | `CAGE: Idle` / `Connecting…` / `Generating` / an error |
+| Status chip (status bar) | `CAGE: Idle`, `Connecting...`, the model's name while it answers, `Disconnected`, or an error |
 
 ## Attaching files
 
@@ -43,11 +46,15 @@ You can send an attachment with no text at all.
 
 The pair of dropdowns at the bottom decides what actually runs.
 
-**Graph** picks the logic graph to run. Six ship built in — Text / Code,
-Speech-to-Text, Image / UI / 2D, Text-to-Speech, Music / Sound Effects, and
-3D Model / Texture / Animation. Your selection travels with the message itself,
-so it is what the server executes for that message; there is no separate session
-binding that can drift out of step with the dropdown.
+**Graph** picks the logic graph to run: any graph in this workspace, plus the
+ones on the server you are allowed to use. **None ship with CAGE** — create one in
+the [Logic Editor](logic-editor.md), or import one; the
+[worked example](example-graph.md) walks through a complete one. With no graph
+selected, a message is answered with an error rather than run some other way.
+
+Your selection travels with the message itself, so it is what the server
+executes for that message; there is no separate session binding that can drift
+out of step with the dropdown.
 
 **Start** picks the entry point. A graph always has a `Default` Start node, and
 may have more; each has a name. Choosing a different Start runs the same graph
@@ -62,14 +69,18 @@ this workspace; selecting it downloads it.
 A session is one conversation with its own message history and its own
 approval state.
 
-- **New Session** clears the conversation and resets session-level tool
-  approvals (see [Tools](tools.md)).
+- **New Session** clears the conversation, resets session-level tool
+  approvals (see [Tools](tools.md)) and starts a new
+  [session record](memory.md#the-session-record-written-automatically).
+- A session outlives a server restart: the conversation keeps its session, and
+  only a new chat — or a server that has no record of it — starts another.
 - Each completed exchange is saved to history automatically.
 - The history panel lists past conversations grouped by date, with search and
   import/export. Its title is the opening words of your first message.
 
-History is stored by VSCode on your machine, not on the server. The server keeps
-its own session records for token accounting when it has a database.
+The history in this panel is stored by VSCode on your machine. The server keeps
+its own record of each session when it has a database — for token accounting,
+and so that a session can be picked up again after a restart.
 
 ## Tool approval
 
@@ -95,8 +106,8 @@ expand, so a long tool-calling run does not bury the actual reply.
 ## Connection behaviour
 
 The client does not hold a socket open. It connects when you send a message,
-stays connected for the whole exchange including file transfers, and disconnects
-when the exchange ends. A dropped connection during a run surfaces on the status
+stays connected for the whole exchange, and disconnects when the exchange ends.
+Attachments are uploaded separately, over HTTP, when you pick them. A dropped connection during a run surfaces on the status
 chip and in the panel.
 
 ---

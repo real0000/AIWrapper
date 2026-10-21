@@ -17,8 +17,8 @@ writes).
 | | |
 |---|---|
 | Path | The server's graph store — `data/logic_graphs/` under the server's working directory |
-| Filename | `<graph id>.json`, where the id is the `id` field inside the file. They must match; the store renames the file if they do not |
-| Getting one in | Write the file and restart the server, `POST` it over the API, or use **Import** in the Logic Editor |
+| Filename | `<name>.json`. A graph's `name` is its identity: unique, compared without regard to case, and its file name. A file named anything else is renamed to match its `name` when the server starts |
+| Getting one in | Write the file and restart the server, `PUT` it to `/api/logic-graph`, or use **Import** in the Logic Editor |
 
 The editor's **Export** writes exactly this format, so an existing graph is the
 best reference for anything this page leaves ambiguous.
@@ -34,7 +34,6 @@ best reference for anything this page leaves ambiguous.
 
 ```json
 {
-  "id":                 "3c1f0b54-9e7a-4d02-8b61-5a2f7c0d91ae",
   "name":               "SimpleCoder",
   "projectId":          "",
   "owner":              "",
@@ -54,12 +53,11 @@ best reference for anything this page leaves ambiguous.
 
 | Field | Meaning |
 |---|---|
-| `id` | UUID. Must equal the filename stem |
-| `name` | Shown in the graph selector |
+| `name` | The graph's identity and file name, shown in the graph selector. Unique without regard to case. No `/`, no `..`, no trailing space or dot. Renaming is its own operation (`POST /api/logic-graph/rename`): saving under a new name creates a second graph |
 | `projectId` | Project folder this graph belongs to. Empty is fine |
 | `owner` | Owning user id. **Empty means unowned — readable and writable by anyone.** Set it if the server runs with accounts |
 | `ragEmbeddingConfig` | Name of an entry in `aiConfigs` to use for automatic retrieval. Empty disables it |
-| `memoryAiConfig` | Name of an entry in `aiConfigs` used to judge memory rules. Empty skips the model-judged parts |
+| `memoryAiConfig` | Name of an entry in `aiConfigs`: the memory AI, which chooses what memory each step reads, condenses the session record and decides what to write back. Empty treats every conditional rule as applying and reads no file history or session record — see [Project Memory](memory.md) |
 | `version` | Incremented by the editor on every save; the server rejects an update carrying a version older than its own. **Start at 1** |
 | `updatedAt` | Unix milliseconds. `0` is accepted |
 | `groups` | Visual grouping. `[]` unless you are reproducing an editor layout |
@@ -87,9 +85,9 @@ All eight list fields must be present, even when empty.
 | Field | Required | Notes |
 |---|---|---|
 | `id` | yes | UUID, unique in the graph. Connections reference it |
-| `type` | yes | One of the eleven types below |
+| `type` | yes | One of the twelve types below |
 | `title` | yes | Free text, shown on the node |
-| `category` | yes | Lowercase form of the type; used for colouring |
+| `category` | yes | Used for colouring: `start`, `ai` (Send To AI, Dispatch, Send Prompt, Ask User), `check`, `logic`, `variable`, `compose`, `memory`, `end` (Return, End) |
 | `position` | yes | Editor coordinates. Any numbers work; lay graphs out left to right, ~250 px apart, or they overlap |
 | `inputs` / `outputs` | yes | Pin arrays — see each type. Each pin needs `name`, `type`, `direction`; `id` is optional |
 | `config` | yes | Per-type settings. `{}` if the type has none |
@@ -170,11 +168,11 @@ named after keys of the structured output to have them split out for you.
   "prompt_template": "Plan: {{Task}}",
   "tools_enabled": true,
   "allowed_tools": "*",            // "*" or a comma-separated list
-  "max_tool_iters": 5,
+  "max_tool_iters": 0,             // 0 = no limit
   "rag_mode": "inherit",           // inherit | off | custom
   "rag_embedding_config": "",      // with rag_mode="custom"
   "memory_context": true,
-  "memory_history_top_k": 0,       // 0 = server default
+  "memory_history_top_k": 0,       // 0 = keep every file history
   "memory_filter_config": "",
   "chunking": false,
   "chunk_desc": ""
@@ -184,7 +182,9 @@ named after keys of the structured output to have them split out for you.
 Load and sampling parameters may be overridden per node with `ai_model`,
 `ai_ctx_size`, `ai_quantization`, `ai_n_gpu_layers`, `ai_split_mode`,
 `ai_kv_cache_type`, `ai_flash_attn`, `ai_auto_fit`, `ai_n_cpu_moe`,
-`ai_lookahead`, `temperature`, `top_k`, `top_p`. Omit them to use the AI config.
+`ai_n_batch`, `ai_threads`, `ai_lookahead`, `ai_mtp`, `ai_cuda_visible_devices`,
+`temperature`, `top_k`, `top_p`, `reasoning_budget`. Omit them to use the AI
+config.
 
 > Pointing `ai_config` at a `modalityConfigs` name instead turns the node into a
 > generation call — image, speech and so on. The reply is a file reference on the
@@ -241,7 +241,7 @@ Cases are tried in order; the first match wins, otherwise `Else`.
 "config": {
   "items": [
     { "variable": "counter", "op": "set",   // set | add
-      "source_type": "constant",            // constant | variable
+      "source_type": "constant",            // constant | node | variable
       "source_value": "0" }
   ]
 }
@@ -278,13 +278,25 @@ A splitter model turns the input into a list; `Step` fires once per item with
 ```json
 "config": {
   "splitter_ai_config": "planner",
-  "splitter_max_tokens": 4096,
   "parallel_enabled": false,
-  "max_parallel": 4
+  "max_parallel": 0               // 0 = no limit
 }
 ```
 
 **End each `Step` branch with `Return`, not `End`.**
+
+### `SendPrompt` — hand the work to another graph
+`in[Exec, Prompt, Asset]` → `out[Exec, Result, Asset]`
+
+Runs another graph once, in the same session, and takes back its result.
+
+```json
+"config": {
+  "graph_name": "Coder",          // the other graph's name — required
+  "entry": "",                    // its Start's start_name; empty = its first Start
+  "max_depth": 0                  // how deep SendPrompt calls may nest; 0 = no limit
+}
+```
 
 ### `AskUser` — ask the operator
 `in[Exec, Input]` → `out[Exec, Answers, Asked]`
@@ -293,9 +305,8 @@ A splitter model turns the input into a list; `Step` fires once per item with
 "config": {
   "ai_config": "",         // judges whether asking is warranted
   "criteria": "",
-  "max_questions": 3,
-  "allow_free_text": true,
-  "answer_timeout_s": 600
+  "max_questions": 0,      // 0 = no limit
+  "allow_free_text": true
 }
 ```
 
@@ -331,19 +342,22 @@ only** — never from a `Dispatch` branch.
   "model": "Qwen3-Coder-Next",
   "isRemote": false,
   "quantization": "",
-  "ctxSize": 0,          // 0 = the model's own maximum, clamped to VRAM
+  "ctxSize": 0,          // 0 = the default: 32K, or the model's maximum if shorter
   "nBatch": 0,
   "threads": 0,
   "flashAttn": true,
   "nGpuLayers": -1,      // -1 = auto
   "kvCacheType": "f16",
-  "splitMode": "layer",  // layer | graph | attn | none
+  "splitMode": "layer",  // layer | row | tensor | none — used only with autoFit off
   "nCpuMoe": 0,
-  "autoFit": false,
+  "autoFit": true,
   "lookahead": false,
+  "mtp": false,
+  "cudaVisibleDevices": "",   // GPU UUIDs, comma-separated; empty = every GPU
   "temperature": 0.7,
   "topK": 40,
-  "topP": 0.9
+  "topP": 0.9,
+  "reasoningBudget": -1       // -1 = no limit
 }
 ```
 
@@ -351,8 +365,8 @@ For a hosted endpoint set `"isRemote": true` with `remoteUrl`, `remoteApiKey`
 and `remoteFamily` (`openai` | `anthropic` | `gemini`); the load parameters are
 then ignored while the sampling ones still apply.
 
-`autoFit: true` is the easy choice for multi-GPU: it decides split mode, device
-order and expert offload from the machine's actual topology.
+`autoFit: true`, the default, decides split mode, device order and expert
+offload from the machine's actual topology.
 
 ### `variableConfigs`
 
@@ -377,7 +391,7 @@ output, so `fields` is worth filling in.
 ### `modalityConfigs`
 
 ```json
-{ "name": "sd35", "type": "image",      // image | tts
+{ "name": "sd35", "type": "image",      // image | tts | audio | music | mesh
   "isRemote": false,
   "modalityAlias": "sd35",              // <model alias> in the server config
   "cudaVisibleDevices": "",
@@ -398,7 +412,8 @@ output, so `fields` is worth filling in.
 5. **Pin names in connections must exist** on both nodes, spelled exactly.
 6. **A back edge re-runs its target** — the visited set is cleared, which is how
    loops work. Make sure something can end the loop.
-7. **`id`s must be unique** and the file's stem must equal the graph `id`.
+7. **Node and connection `id`s must be unique.** The graph's own identity is its
+   `name`, which is also its file name.
 
 ---
 
@@ -416,13 +431,12 @@ name a model you may not have, and a broken example is worse than none. This is
 the example.
 
 It is also the test: this graph was written from this page rather than drawn in
-the editor, then dropped into the server's graph store, where the server listed
-it, the editor opened it and it answered a question. That is the shortest proof
-the page is complete.
+the editor. For 0.2.0 the block below was read straight out of this page, sent
+to the server with `PUT /api/logic-graph`, and run: it answered, with one `done`
+and no errors. That is the shortest proof the page is complete.
 
 ```json
 {
-  "id": "11111111-2222-3333-4444-555555555555",
   "name": "Minimal",
   "projectId": "", "owner": "",
   "ragEmbeddingConfig": "", "memoryAiConfig": "",
@@ -446,7 +460,7 @@ the page is complete.
       "config": { "start_name": "Default" }, "singleton": true },
 
     { "id": "aaaaaaaa-0000-0000-0000-000000000002",
-      "type": "SendToAi", "title": "Answer", "category": "sendtoai",
+      "type": "SendToAi", "title": "Answer", "category": "ai",
       "position": { "x": 300, "y": 0 },
       "inputs": [
         { "name": "Exec",  "type": "exec",   "direction": "input" },
@@ -461,7 +475,7 @@ the page is complete.
       "config": {
         "ai_config": "main",
         "prompt_template": "{{Task}}",
-        "tools_enabled": true, "allowed_tools": "*", "max_tool_iters": 5,
+        "tools_enabled": true, "allowed_tools": "*", "max_tool_iters": 0,
         "rag_mode": "inherit", "memory_context": true
       } },
 
@@ -496,83 +510,24 @@ data gives an empty prompt, data without control never runs.
 
 ## Checking your work
 
-Most of the rules above are mechanically checkable. This script catches the
+Most of the rules above can be checked by reading the file, and these are the
 mistakes that otherwise surface as a graph that loads fine and then quietly does
 nothing:
 
-```python
-import json, sys
+- **A `Start` named `Default`** exists.
+- **Every connection's nodes and pins exist** — `fromNodeId` / `toNodeId` name
+  nodes in the file, and `fromPinId` / `toPinId` name a pin of that node, by
+  `name` or by `id`. A connection left behind by editing, pointing at a node or
+  pin that is gone, is silent at run time: the value simply never arrives.
+- **Every `ai_config`, `splitter_ai_config` and `format_config` names an entry**
+  of `aiConfigs` (or `modalityConfigs`) and `formatConfigs`.
+- **Every node except `Start` has an incoming connection from an `exec` pin.**
+  Without one it never runs.
 
-# Only pins that must exist. The editor adds more to a new node (SendToAi's
-# Asset, Start's ASSET, If's Input); graphs that do not wire them omit them.
-PINS = {
- 'Start': ([], ['Exec','PROMPT']),          'SendToAi': (['Exec'], ['Exec','ALL']),
- 'CheckFormat': (['Exec','Input'], ['True','False','Output']),
- 'If': (['Exec'], ['Else']),                'Variable': (['Exec'], ['Exec']),
- 'Compose': (['Exec'], ['Exec','Output']),  'Memory': (['Exec','Input'], ['Exec','Memory']),
- 'Dispatch': (['Exec','Input'], ['Step','Task','Index','Plan','End']),
- 'AskUser': (['Exec','Input'], ['Exec','Answers','Asked']),
- 'Return': (['Exec'], []),                  'End': (['Exec','Result'], []),
-}
-
-g = json.load(open(sys.argv[1], encoding='utf-8'))
-byid = {n['id']: n for n in g['nodes']}
-errs, warns = [], []
-
-if not any(n['type'] == 'Start' and n.get('config', {}).get('start_name') == 'Default'
-           for n in g['nodes']):
-    errs.append("no Start node named 'Default'")
-
-names = {k: {c['name'] for c in g.get(k, [])}
-         for k in ('aiConfigs', 'modalityConfigs', 'formatConfigs', 'variableConfigs')}
-for n in g['nodes']:
-    want_in, want_out = PINS[n['type']]
-    have = lambda side: {p['name'] for p in n.get(side, [])}
-    for w in want_in:
-        if w not in have('inputs'):  errs.append(f"{n['type']} {n['id'][:8]}: no input {w}")
-    for w in want_out:
-        if w not in have('outputs'): errs.append(f"{n['type']} {n['id'][:8]}: no output {w}")
-    c = n.get('config', {})
-    a = c.get('ai_config') or c.get('splitter_ai_config')
-    if a and a not in names['aiConfigs'] | names['modalityConfigs']:
-        errs.append(f"{n['id'][:8]}: ai_config '{a}' undefined")
-    if c.get('format_config') and c['format_config'] not in names['formatConfigs']:
-        errs.append(f"{n['id'][:8]}: format_config '{c['format_config']}' undefined")
-
-has_exec_in = set()
-for e in g['connections']:
-    for side, key in (('fromNodeId', 'fromPinId'), ('toNodeId', 'toPinId')):
-        if e[side] not in byid:
-            errs.append(f"connection to missing node {e[side][:8]}"); break
-    else:
-        # a pin reference may be the pin's name or its id
-        pins = lambda nid, s: {k for p in byid[nid].get(s, []) for k in (p['name'], p.get('id')) if k}
-        if e['fromPinId'] not in pins(e['fromNodeId'], 'outputs'):
-            errs.append(f"{byid[e['fromNodeId']]['type']}: no output pin '{e['fromPinId']}'")
-        if e['toPinId'] not in pins(e['toNodeId'], 'inputs'):
-            errs.append(f"{byid[e['toNodeId']]['type']}: no input pin '{e['toPinId']}'")
-        src = next((p for p in byid[e['fromNodeId']].get('outputs', [])
-                    if e['fromPinId'] in (p['name'], p.get('id'))), None)
-        if src and src.get('type') == 'exec':
-            has_exec_in.add(e['toNodeId'])
-
-for n in g['nodes']:
-    if n['type'] != 'Start' and n['id'] not in has_exec_in:
-        warns.append(f"{n['type']} {n['id'][:8]} has no incoming exec — it will never run")
-
-print('\n'.join('ERROR: ' + e for e in errs) or 'no errors')
-print('\n'.join('warn:  ' + w for w in warns))
-```
-
-Run against the four graphs that ship with the server, this reports nothing for
-two of them and finds dangling references in the other two — connections whose
-target node or pin no longer exists, left behind by editing. Those are silent at
-run time: the value simply never arrives.
-
-It does not catch the other silent class: a pin that exists and is simply never
-connected. `CheckFormat` with no edge into `Input` validates the empty string and
-fails every time; a `{{placeholder}}` with no producer expands to nothing. Both are
-structurally valid graphs. See
+One silent class passes every check above, because it is structurally valid: a
+pin that exists and is simply never connected. `CheckFormat` with no edge into
+`Input` validates the empty string and fails every time; a `{{placeholder}}` with
+no producer expands to nothing. See
 [the worked example](example-graph.md#three-settings-that-are-not-obvious) for what
 that looks like from the outside.
 

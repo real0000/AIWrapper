@@ -21,8 +21,8 @@ The machine-specific fields, so they are easy to spot as you read:
 | `ragEmbeddingConfig` | `rag` | Only if you have an embedding model. Leave empty and retrieval is off, which costs this graph nothing structural |
 
 See [AI Configs](ai-config.md) for what each of those fields does and what your options
-are. A fresh server also has no graphs at all — `server/data/logic_graphs/` fills up as
-clients upload them.
+are. A fresh server also has no graphs at all — `data/logic_graphs/`, under the server's
+working directory, fills up as clients upload them.
 
 This page lists every parameter and says why it is set that way. Three of them are not
 obvious, and each came from a run that failed silently; those are called out in
@@ -60,7 +60,6 @@ not, so that a run either converges or is stopped by you.
 
 ```json
 {
-  "id": "c07ab8b4-8d9b-428d-b4f9-3ee20c801d0c",
   "name": "DemoCoder",
   "projectId": "",
   "owner": "ian",
@@ -77,7 +76,7 @@ not, so that a run either converges or is stopped by you.
 | Field | Why |
 |---|---|
 | `ragEmbeddingConfig: "rag"` | Names the AI config used to embed. **Empty means RAG is off, not "use a default"** — both the indexing side and the query side read this one field, so they can never end up in different vector spaces |
-| `memoryAiConfig: ""` | No model assigned to the active-memory pipeline. Retrieval-based history filtering is therefore skipped; the graph relies on shared memory instead |
+| `memoryAiConfig: ""` | No memory AI. Conditional rules all apply, and no file history or [session record](memory.md#the-session-record-written-automatically) is read — the record is still written. The graph carries what the coder needs between rounds through shared memory instead (`memory_mode` below) |
 | `variableConfigs: []` | No graph state. Everything that crosses a node boundary does so on a pin |
 
 ---
@@ -113,8 +112,8 @@ which field matters and why, not as settings to copy. What to do instead is in
 |---|---|
 | `ctxSize: 262144` | Every node shares one conversation (see `memory_mode` below), so the context grows with each round. 16K and 80K were both tried first and both overflowed — the failure is an explicit `Input tokens (…) exceed` error, not a silent truncation |
 | `cudaVisibleDevices` | **Your own card UUIDs** — `nvidia-smi --query-gpu=uuid --format=csv`. The placeholders above are not real; a UUID that does not exist on the machine loading the graph resolves to nothing, and the model then loads with no device restriction (with a warning) rather than failing. The graph this example came from listed four compute cards and left out the display card on purpose, which is the usual reason to set this field at all |
-| `autoFit: false` | The card list is explicit, so the placer is not asked to choose |
-| `splitMode: "layer"` | Layer-split across the four cards. `graph` (tensor parallel) needs a healthy NVLink clique |
+| `autoFit: false` | Placement is set by hand here: a layer split across the four listed cards. With Auto Fit on — the default — the same card list would stand and the server would choose the split itself |
+| `splitMode: "layer"` | Layer-split across the four cards. Auto Fit would pick `graph` (tensor parallelism) across a fully NVLink-connected set of cards |
 | `lookahead: false` | Measured slower than plain decoding on Volta for every parameter set tried |
 
 ```json
@@ -226,7 +225,7 @@ Same config shape, with:
 | Field | Value | Why |
 |---|---|---|
 | `tools_enabled` | `true` | It writes files |
-| `max_tool_iters` | `20` | 5 is not enough to write a small program; the loop ends early and the node returns nothing |
+| `max_tool_iters` | `20` | Set when the default was 5, which is not enough to write a small program: the loop ended early and the node returned nothing. The default is now `0`, no limit |
 | `memory_mode` | `"shared"` | On the second and later rounds it needs to know what it already wrote |
 
 Two named input pins, both referenced in the template: `{{Request}}` (the original ask,

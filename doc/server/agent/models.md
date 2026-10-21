@@ -29,6 +29,17 @@ Three ways, all ending in the same place — a `<model>` entry in the local
 | `--alias` | Name the model will have in configs. Derived from the repo name if omitted |
 | `--list` | List the downloadable groups and exit |
 | `-y` | Skip the confirmation, still asks which group |
+| `--fetch-cards` | Fetch the model card for every configured model that has none — see below |
+
+## Model cards
+
+How far a model's context can be extended is stated only in its model card, and
+the server reads local files only. A download therefore brings the card
+(`README.md`) along with the weights. Models downloaded before that have none:
+`cage-model-dl --fetch-cards --config config.xml` fetches each one from the
+entry's `<source_repo>`. An entry with no recorded source repo is listed rather
+than guessed at — a card from the wrong repo would give the model another
+model's limit — so confirm its source in the control plane first.
 
 ## Models already on disk
 

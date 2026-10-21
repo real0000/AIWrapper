@@ -17,7 +17,8 @@ at all: see [When to turn it off](#when-to-turn-it-off).
 
 ## Turning it on
 
-One setting, in the **RAG** section of the Logic Editor sidebar:
+One setting, **Embedding Model** in the **Memory** section of the Logic Editor
+sidebar:
 
 | Field | Meaning |
 |---|---|
@@ -30,8 +31,9 @@ To AI node retrieves by default.
 comparable within one embedding space, so mixing models would silently return
 nonsense. There is one setting, not two, for that reason.
 
-The section shows *"Create an AI Config to enable RAG"* until at least one
-config exists.
+The section shows *"Create an AI Config to enable RAG."* until at least one
+config exists. The same config also ranks file histories when a node keeps only
+the top N of them — see [Project Memory](memory.md).
 
 ## Per-node control
 

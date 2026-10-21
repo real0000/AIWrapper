@@ -25,8 +25,11 @@ Installed as the `cage-agent` service — see
 | Edit the model list | Rewrites `<models>` in the local `config.xml` — see [Models & downloads](models.md) |
 | Download models | Fetches from Hugging Face onto the local disks, choosing between them by free space |
 
-Because the server is a child process, killing the agent takes the server with
-it — the systemd unit uses `KillMode=control-group` so the pair stops together.
+Under systemd the pair stops together: the unit uses `KillMode=control-group`, so
+stopping the agent stops the server it spawned. Outside systemd that is not
+automatic — a signal sent to the agent process alone leaves the server running.
+Stop the server through the agent first (`POST /node/server/stop`), or signal the
+whole process group, as Ctrl+C in a terminal does.
 
 ## Configuration
 

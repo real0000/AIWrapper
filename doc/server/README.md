@@ -66,7 +66,7 @@ The process that actually loads models and answers clients.
 | [Models](server/models.md) | Model directories, quantization discovery, vision models, licence metadata |
 | [Backends](server/backends.md) | The two backends, the RAM/VRAM budget, eviction, and what forces a model reload |
 | [Backend Packs](server/backend-packs.md) | **The separate GPU download** — choosing one, installing it, verifying it, running several |
-| [Modalities](server/modalities.md) | Image, speech, audio, music and 3D workers |
+| [Modalities](server/modalities.md) | Image, speech, audio, music, motion and 3D models, in-process |
 | [Retrieval](server/rag.md) | Chunking, embedding, the vector store |
 | [API](server/api.md) | HTTP endpoints and WebSocket messages |
 

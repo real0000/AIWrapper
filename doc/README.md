@@ -10,9 +10,9 @@
 | [extension-install.md](extension-install.md) | Installing the `.vsix`, connecting to a server, self-signed certificates, login, first use |
 
 Start with the server — the extension needs one to connect to. The server needs
-a backend pack before it can run GGUF models on your GPU.
+a backend pack before it can run any model on your GPU.
 
-Upgrading from 0.1.0? See [What's New](../WHATSNEW.md) for what changed and what
+Upgrading from 0.1.x? See [What's New](../WHATSNEW.md) for what changed and what
 needs action from you.
 
 ## Use

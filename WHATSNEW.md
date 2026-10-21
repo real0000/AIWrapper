@@ -26,7 +26,7 @@ It is a **breaking release for backend packs and for `config.xml`**. See below.
 | Backend packs are rebuilt for this server | **Re-download the backend pack(s) for your GPUs.** A 0.1.x pack is refused at load time. |
 | Each pack's library is now named after the pack (`libcage-backend-cuda-sm70_sm75.so`) | **Delete `bin/libcage-backend-cuda.so` and `bin/libcage-backend-hip.so`** if they are left from 0.1.x. The new pack no longer overwrites them. They are refused anyway, but they stay in the probe's report until removed. |
 | `<modalities>` merged into `<models>` | **Move every `<modality>` entry into `<models>` as a `<model>`, and rename `<model_path>` to `<path>`.** The server refuses to start while a `<modalities>` block is present, and says so. |
-| `<type>`, `<family>`, the `backend=` attribute, `<ai><default_backend>` and `<ai><cuda_visible_devices>` are no longer read | Nothing — they are ignored. Delete them when convenient. |
+| `<type>`, `<family>`, the `backend=` attribute, `<ai><default_backend>`, `<ai><cuda_visible_devices>`, `<ai><default_vision_model>`, `<vision handler="…">`, `<task_planning_enabled>`, and `<compressor>`'s `base_url`, `model` and `*_compress_tokens` are no longer read | Nothing — they are ignored. Delete them when convenient. |
 | Python is not used | Nothing. Any `<vllm>` or `<convert>` block is ignored, and the Python environments of 0.1.x can be deleted. |
 | One new database table (`runs`, for resuming interrupted runs) | Nothing — the server creates it at startup. |
 | The extension and the server exchange tool settings in a new way | **Update the extension to 0.2.0** together with the server. |

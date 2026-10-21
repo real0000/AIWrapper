@@ -26,8 +26,8 @@ picks it — see [What gets read](#what-gets-read).
   touched — not from the model's own account of the turn. Models routinely
   claim to have created files they never wrote, and recording those would
   invent history for files that do not exist.
-- **Why** comes from the node's Summary output, flattened to one line and
-  capped so the file stays readable by a person.
+- **Why** comes from the node's Summary output, flattened to one line so the
+  file stays readable by a person.
 - **Nodes with no Summary write nothing.** A build-verification pass that
   returns only a pass/fail report has no reason to record.
 

@@ -18,23 +18,32 @@ described on this page, each with the warning that applies to it.*
 
 ---
 
-## Load-time versus per-request
+## When a change takes effect
 
-The single most useful thing to understand here.
+The single most useful thing to understand here. There are three kinds of
+parameter, decided by what the server does with each.
 
-**Load-time** parameters are fixed when the model is loaded into the worker.
-The worker is long-lived and loads the model once, so changing one of these
-does not affect a running worker — the model has to be unloaded and loaded
-again before the new value means anything. The editor's console warns you when
-you change one.
+**Load-time** parameters are fixed the moment the model's weights are loaded.
+A model is loaded once, so requests that differ in one of these cannot share the
+loaded copy: the server waits until nothing is using it, unloads it and loads
+the model again with the new values. A change takes effect from the next run; a
+run already in progress finishes with the values it started with.
+
+**Per-context** parameters apply when a context is created, not when the
+weights load. Requests with different values each get their own context on the
+same loaded model, with no reload — unless a card cannot hold the context asked
+for, in which case the server plans the placement again.
 
 **Per-request** parameters go out with every inference call and take effect
 immediately.
 
 | Scope | Parameters |
 |---|---|
-| Load-time | Quantization, Context Size, Prompt Batch Size, Threads, Flash Attention, GPU Layers, KV Cache Type, Split Mode, CPU MoE Layers, Auto Fit, GPU Visibility |
-| Per-request | Temperature, Top K, Top P |
+| Load-time | Quantization, GPU Layers, Split Mode, CPU MoE Layers, Auto Fit, Lookahead Decoding, MTP Decoding, GPU Visibility |
+| Per-context | Context Size, Prompt Batch Size, Threads, Flash Attention, KV Cache Type |
+| Per-request | Temperature, Top K, Top P, Reasoning Budget |
+
+The editor's console says which kind a parameter is when you change it.
 
 ## Model
 
@@ -49,9 +58,9 @@ path as a *directory*:
 - **GGUF** — every `.gguf` file in the directory is one quantization. You can
   only choose one that is actually there; adding another means downloading that
   file into the same directory. No config change needed.
-- **safetensors** — the weights are one set and quantization happens at load
-  time, so the whole list is available: 4bit (NF4), 4bit-fp4, 8bit, bf16, fp16,
-  fp32.
+- **safetensors** — the weights are one set and are quantized while they load,
+  so the whole list is available: 4bit (Q4_K_M), 8bit (Q8_0), bf16, fp16, fp32.
+  `4bit-fp4` is accepted from older configurations and loads as 4bit.
 
 Leave it empty to use the model's default — the one named in the server's
 `config.xml`, or the smallest one found.
@@ -75,7 +84,7 @@ below is ignored. The test button checks `/v1/models`; inference posts to
 
 | Field | Default | Meaning |
 |---|---|---|
-| Context Size | — | Context window in tokens. Decides how large the KV cache is, so it cannot change without a reload |
+| Context Size | 0 | Context window in tokens. `0` means the default: 32K, or the longest the model allows if that is shorter. The editor offers 8K up to the longest the server reports for the model. It decides how large the KV cache is |
 | Prompt Batch Size | 0 | Tokens per prompt-processing batch. `0` uses the backend default (2048) |
 | Threads | 0 | CPU threads for inference. `0` lets the backend decide from the core count |
 | Flash Attention | on | Faster attention with a smaller KV cache footprint |
@@ -90,34 +99,48 @@ This is where a model that "does not fit" usually becomes one that does.
 
 | Field | Default | Meaning |
 |---|---|---|
-| Auto Fit | off | Let the server decide placement — see below |
-| GPU Layers | -1 | Layers to offload. `-1` estimates from free VRAM, `0` is CPU-only |
-| Split Mode | `layer` | How to spread across GPUs: `layer` splits by layer, `row` is tensor parallelism, `tensor` is the newer meta-device split (experimental, architecture-dependent), `none` keeps the whole model on one GPU |
-| CPU MoE Layers | 0 | For mixture-of-experts models, keep expert weights on the CPU: `0` off, `N` for the first N layers, `-1` for all. Non-MoE models ignore it |
-| GPU Visibility | inherit | Which GPUs this model may use — indices (`0,1`) or UUIDs. Empty inherits the server default |
+| Auto Fit | on | Let the server decide placement — see below |
+| GPU Visibility | empty | Which GPUs this config may use, ticked in the topology picker and stored as GPU UUIDs. Empty means every GPU the server sees |
+| GPU Layers | -1 | Only with Auto Fit off. Layers to put on the GPUs: `-1` places as many as fit and offloads the rest to the CPU, `0` is CPU-only |
+| Split Mode | `layer` | Only with Auto Fit off. `layer` splits by layer, `row` is the older row split (tensor parallelism where supported), `tensor` is the newer meta-device split (experimental, architecture-dependent), `none` keeps the whole model on one GPU |
+| CPU MoE Layers | 0 | Only with Auto Fit off. For mixture-of-experts models, keep expert weights on the CPU: `0` off, `N` for the first N layers, `-1` for all. Non-MoE models ignore it |
 
-**`-1` can silently mean CPU.** It is an estimate from free VRAM, and on a host
-where that reading fails it resolves to 0 — the model loads entirely on the CPU
-with no error, just an order of magnitude less speed. The server log shows the
-resolved value (`n_gpu_layers=-1->0`). Prefer Auto Fit, or set the count
-explicitly.
+**Auto Fit** is the default and the recommended setting. You choose which GPUs
+may be used; the server decides how. It groups those GPUs into NVLink islands,
+estimates the weights, KV cache and compute buffers, and then: the whole model
+fits one card → that card; one island → a `graph` split, tensor parallelism
+across every card; several equal-sized islands → tensor parallelism inside each
+island and a pipeline between them; otherwise → a `layer` split. Whatever does
+not fit is offloaded to the CPU by MoE expert.
 
-**Auto Fit** is the recommended starting point. It measures what the model
-actually needs with a dry run, reads the machine's NVLink topology, and picks
-the split mode, layer count, tensor split and MoE offload itself. You choose
-which GPUs to use; it decides how. Whole model fits one card → single GPU. The
-chosen cards form a fully connected NVLink island and it fits → `row`.
-Otherwise → `layer`. Context size is always honoured exactly and never quietly
-reduced.
+Compute buffers are measured when each context is created. If a card cannot hold
+one, idle models on it are evicted and busy ones are waited for; failing that,
+the model computes partly on the CPU, or is loaded again with less of it on the
+GPU. **Nothing is refused for lack of VRAM**, and Context Size is never quietly
+reduced. While Auto Fit is on, GPU Layers, Split Mode and CPU MoE Layers are
+decided by the server and hidden in the editor.
 
-Auto Fit needs Split Mode `layer` or `none`, and it overrides GPU Layers and
-CPU MoE Layers.
+**`-1` can quietly mean CPU.** With Auto Fit off, if the server finds no usable
+GPU for this config, `-1` resolves to 0 and the model loads entirely on the CPU —
+no error, just far slower. Auto Fit reports its plan in the console instead.
 
-**GPU Visibility picks the cards this model may use.** It is honoured by the
-in-process backend: the chosen cards become the device list the model is loaded
-onto, so a card you leave out is never touched. Leave it empty and placement
-chooses for you. Use it to keep a model off a display card, or off one another
-model is holding.
+**GPU Visibility picks the cards this config may use.** The restriction is applied
+where placement is decided, so a card you leave out is never touched. Use it to
+keep a model off a display card, or off one another model is holding. With Auto
+Fit on, the list is a set: the same cards in another order are the same placement
+and do not cause a reload.
+
+## Decoding
+
+| Field | Default | Meaning |
+|---|---|---|
+| Lookahead Decoding | off | Self-speculative decoding with no draft model. It trades extra computation for fewer steps, so it only takes effect while the whole model is on the GPU; otherwise the server decodes normally and logs why. Measure before relying on it — on the V100s it was slower in every configuration tried |
+| MTP Decoding | off | Uses the model's own multi-token-prediction head to draft several tokens per step. The model needs one: inside its GGUF, or published as a separate predictor-only GGUF in the model's directory (exactly one). Models without a head decode normally. Cannot be combined with Lookahead, which wins |
+| Reasoning Budget | -1 | For models that think before answering: `-1` no limit, `0` closes the reasoning block at once, `N` stops thinking after N tokens. The answer itself is never limited. Remote endpoints only receive it on the OpenAI family |
+
+Neither speculative method changes what the model would say in distribution, but
+neither guarantees identical text either, even at temperature 0: verifying several
+positions at once runs different GPU kernels, and near-ties can flip.
 
 ## Sampling
 
@@ -127,7 +150,8 @@ model is holding.
 | Top K | Sample only from the K most likely tokens |
 | Top P | Sample from the smallest set of tokens whose probability sums to P |
 
-These are per-request, so editing them affects the very next call.
+These are per-request, so editing them affects the very next call. Reasoning
+Budget, above, is too.
 
 ## Testing a config
 

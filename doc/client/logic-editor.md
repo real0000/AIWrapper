@@ -34,8 +34,7 @@ name**, so renaming one updates every node that uses it.
 | AI Configs | A model plus how to load and sample it — text models and the generative ones (image / speech / audio / music / 3D) in one list | [AI Configs →](ai-config.md) · [generative fields →](modality-config.md) |
 | Format | Output shapes: JSON, required keys, regex, non-empty | [Format Configs →](format-config.md) |
 | Variables | Named state that lives for one run of the graph | [Variables →](variables.md) |
-| RAG | Which config embeds your project, enabling retrieval | [RAG →](rag.md) |
-| Memory | Which AI Config judges memory, and which embedding model retrieves (the routing table itself is per-project, in Chat → Memory) | [Project Memory →](memory.md) |
+| Memory | **Memory AI Config** — the model that chooses what memory each step reads, condenses the session record and decides what to write back. **Embedding Model** — the config that embeds your project, which turns on retrieval and ranks file histories. The routing table itself belongs to the project, in Chat → 🧠 Memory | [Project Memory →](memory.md) · [RAG →](rag.md) |
 
 **Test All** runs every AI config's connectivity test at once. Each config also
 has its own ▶ test button, which validates the settings and then actually loads
@@ -80,7 +79,7 @@ changes behaviour.
 
 The editor syncs the graph to the server as you work. If the server's copy is
 newer than yours — someone else edited it, or another window did — a banner
-offers **Use server's** or **Push mine**.
+offers **Use server's** or **Keep mine and overwrite**.
 
 The toolbar covers the rest:
 
@@ -90,8 +89,8 @@ The toolbar covers the rest:
 | Open… | Switch to another graph stored on the server |
 | Export / Import | Write the graph to a JSON file, or read one back |
 
-Graphs are owned: yours are private unless shared. Shared graphs appear in the
-selector for everyone on that server.
+Graphs are owned: yours are private unless shared. Sharing grants particular
+users read or write access — see [Accounts](../server/control/accounts.md#per-user-accounting).
 
 ---
 

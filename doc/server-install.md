@@ -255,7 +255,8 @@ sudo systemctl start cage-agent cage-control
 journalctl -u cage-agent -f
 ```
 
-In the foreground (agent + control + server in one process, Ctrl+C stops all):
+In the foreground (agent and control in one process, the server as its child;
+Ctrl+C stops all three):
 
 ```bash
 cd /opt/cage && ./bin/cage-launcher --all
@@ -293,9 +294,10 @@ Leave `<mysql>` pointing at nothing reachable and the server logs:
 The control plane says the same thing in its Accounts tab — see
 [Accounts](server/control/accounts.md).
 
-It then serves every request without authentication. That is fine for a local
-single-user trial and **not** appropriate for anything reachable from another
-machine.
+With no `<api_key>` set either, it then serves every request without
+authentication. That is fine for a local single-user trial and **not**
+appropriate for anything reachable from another machine. Setting `<api_key>`
+keeps it closed: one shared token, no database.
 
 ## 8. TLS
 
@@ -325,7 +327,7 @@ localhost.
 | Symptom | Cause |
 |---|---|
 | `Fatal error: config.xml: cannot open file` | Started from a directory without `config.xml`. Use `CONFIG_FILE=…` or `cd` to the install directory first |
-| `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The alias is still registered but cannot load |
+| `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The model is skipped (`Model skipped: …`) and does not appear in the list |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
 | A local model fails to load | No backend pack installed, or the wrong one. Run `bin/cage-backend-probe` — it names the backend and says which of your cards it can drive |
 | Server starts but no GPU is listed | Driver missing, or the pack cannot see the cards; check `nvidia-smi` and `bin/cage-backend-probe` |

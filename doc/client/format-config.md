@@ -42,6 +42,9 @@ When a `json_keys` config is set on a Send To AI node, you can add output pins
 named after the keys. The answer arrives already split — each key on its own
 pin — instead of one JSON blob you have to take apart downstream.
 
+A Send To AI node with no Format does the same with whatever output pins you add:
+each one becomes a required key the model must fill.
+
 ## Validate and retry
 
 The standard arrangement:

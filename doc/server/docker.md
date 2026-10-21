@@ -240,7 +240,6 @@ The entrypoint prints a warning for each of the common mistakes before starting
 | Server starts, no GPU in the log | Same, or the `deploy.resources` block was removed |
 | GGUF models never load | Check the model path is under a mounted directory; `backend` should be `llama` |
 | safetensors models never load | Same causes as any local model — no backend pack, or not enough VRAM. See [Safetensors models](server/safetensors.md) |
-| Worker dies with no error while loading | Raise `SHM_SIZE`; the 64 MB Docker default is far too small |
 | Clients cannot log in | `<mysql>` differs between `config.xml` and `control.xml`. The entrypoint fills both from the same variables, so this only happens after hand-editing |
 | Web UI unreachable from another machine | It is bound to `127.0.0.1` on purpose |
 | `operation not permitted` mounting a folder | `STATE_DIR` is on exFAT/NTFS. Point it at an ext4/xfs path |

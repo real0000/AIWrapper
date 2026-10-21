@@ -82,7 +82,7 @@ from inside `bin/`, where the native problems disappear.
 | Multi-GPU placement | **Runs** | Topology and NVLink reported; placement across four V100s, a chosen subset, or one card |
 | A hybrid Mamba2 model | **Runs** | **New in 0.2.0.** NVIDIA-Nemotron-3-Ultra-550B-A55B: 12 attention, 48 MoE and 48 Mamba2 layers. Correct answers at temperature 0, on four V100s with the experts in host memory, 2.8 tok/s. Checked on a development build at ik `86e53daf5`; the packs carry `083bb2713`, which differs only in a HIP header that CUDA builds do not compile |
 | Image and 3D | **Runs** | SD 3.5 Large images and TRELLIS.2 meshes (the mesh on a V100), in-process, on development builds during this release. TRELLIS's three borrowed components were found from the model's own `components/` folder with no paths in the config |
-| Retrieval, project memory | **Runs** | As in 0.1.2 — `nemotron-3-embed-1b`, read in-process from safetensors, on the GPUs its AI config chose. Not re-run for this release |
+| Retrieval | **Runs** | End to end as in 0.1.2, not re-run for this release. The embedding model itself, `nemotron-3-embed-1b`, is now read in-process from safetensors: on a development build during this release it loaded and its vectors matched the reference scores its model card lists |
 | Multi-model logic graph with a feedback loop | **Runs** | As in 0.1.2 — DemoCoder converged on the first iteration. Not re-run for this release |
 
 ### New in 0.2.0, tested against a scripted model

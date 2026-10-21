@@ -1,8 +1,8 @@
 # Backend Packs
 
-In-process GGUF inference needs a **backend pack** — a second download that
-carries the compiled GPU code for your hardware. The server package does not
-contain any.
+Every local model — GGUF or safetensors, text or generative — needs a **backend
+pack**: a second download that carries the compiled GPU code for your hardware.
+The server package does not contain any.
 
 This is not an optional extra for most installations. Without a pack the server
 starts and runs, but only the `remote` backend works; anything with
@@ -39,8 +39,8 @@ Splitting it means:
 - updating the server does not re-download a gigabyte of kernels.
 
 The server is **49 MB** and has no CUDA dependency of its own. A CUDA pack is
-about 1.6 GB unpacked (two architectures' kernels); the Vulkan and CPU packs are
-roughly 50 MB and 30 MB.
+1.6–2.3 GB unpacked — two architectures' kernels plus the CUDA libraries it
+carries; the Vulkan and CPU packs are about 140 MB and 120 MB.
 
 ## Choosing one
 
@@ -76,10 +76,12 @@ build against, which has no 128-bit atomics for it. The Vulkan pack may still
 drive those cards.
 
 > **Verified as far as we can verify it, and no further.** These packs compile,
-> load, resolve every symbol and report their own identity correctly — all
-> checked on a machine with no AMD hardware. Whether they *compute correctly*
-> and how fast they run has not been tested, because we have no AMD GPU. Treat
-> them as a request for field reports, not as a supported configuration.
+> load, resolve every symbol and report their own identity correctly — checked
+> in a clean container on a machine with no AMD hardware. Whether the Linux packs
+> *compute correctly*, and how fast, has not been tested on AMD. A Windows build
+> of the gfx1150 pack has run on a Radeon 890M — see
+> [What has been verified](../../verification-status.md). Treat them as a request
+> for field reports, not as a supported configuration.
 
 **Host prerequisites for AMD.** Unlike the CUDA packs, which need only the
 NVIDIA driver, the HIP packs need a few libraries that are not theirs to ship:
@@ -207,8 +209,6 @@ check a specific pack. For each `.so` it reports:
 A card marked unusable is reported as *this `.so` has no device code for this
 card* — which is the answer to "I downloaded the wrong pack", delivered before
 you spend time loading a model.
-
-> The probe currently prints in Traditional Chinese.
 
 ## More than one pack
 

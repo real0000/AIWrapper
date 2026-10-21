@@ -42,7 +42,6 @@
 
   <ai>
     <default_model></default_model>
-    <default_vision_model></default_vision_model>
 
     <llama>
       <ctx_size>8192</ctx_size>

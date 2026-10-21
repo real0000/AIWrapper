@@ -38,12 +38,12 @@ a normal chat extension: the agent loop is data you edit, not code you accept.
 | [Logic Editor](logic-editor.md) | Canvas, node palette, inspector, toolbar, console, groups |
 | [Nodes](nodes.md) | Every node type: what it does, its pins, its settings |
 | [AI Configs](ai-config.md) | Model, quantization, GPU placement, context, sampling — every parameter and when it takes effect |
-| [Modality Configs](modality-config.md) | The generative half of the AI Configs list — image / speech / audio / music / 3D, local workers and remote providers |
+| [Modality Configs](modality-config.md) | The generative half of the AI Configs list — image / speech / audio / music / 3D, local models and remote providers |
 | [Format Configs](format-config.md) | Structured output schemas and output validation |
 | [Variables](variables.md) | Graph-level state that survives across nodes within a run |
 | [Graph file format](graph-format.md) | The JSON a graph is stored as — enough to write one without the editor |
 | [Worked example](example-graph.md) | `DemoCoder` end to end: every parameter it sets, why, and the three settings that fail silently when they are wrong |
-| [Project Memory](memory.md) | History written automatically per file, plus your own rules and when they load |
+| [Project Memory](memory.md) | History written automatically per file, a record of the current conversation, your own rules — and how the memory AI picks what a step reads |
 | [RAG](rag.md) | Retrieval over your project: what gets indexed, how a node uses it |
 | [Tools](tools.md) | One table of every tool the model can call — built-in, ones you write, MCP programs, the server's own; groups, approval, custom behaviour |
 | [File Approval](file-approval.md) | How every file write is approved individually, before it is written |
@@ -70,14 +70,12 @@ you type a message in the Chat Panel
                 └─ the model asks for a tool  ──►  the client runs it in VSCode
                    (read a file, apply a patch, run a command)  ──► result goes
                    back to the model, which continues
-                                                      │
-        at the end, anything the run wrote  ──────────┘
-        is shown to you for approval before it reaches disk
 ```
 
 The server executes the graph. The client supplies the prompt, answers tool
-calls, and renders whatever streams back. If no graph exists for the project,
-the server falls back to a plain agent loop.
+calls, and renders whatever streams back. Every message names the graph that
+runs it; with no graph selected, the server answers with an error rather than
+running something you did not choose.
 
 Every file a tool writes is approved individually, immediately before it is
 written to your workspace — see [File Approval](file-approval.md).

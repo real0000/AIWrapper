@@ -54,7 +54,7 @@ exactly what the connected client declares, which is what this table says.
 | `get_diagnostics` | auto | Errors and warnings from the language server |
 | `open_file` | auto | Opens a file, optionally at a line |
 | `get_project_info` | auto | Detected project type and metadata |
-| `remember` | auto | Records one durable note about a source file — why something was done, not what changed. Shown again in later sessions whenever that file is in play |
+| `remember` | auto | Records one durable note about a source file — why something was done, not what changed. Read again in later runs when the memory AI picks that file's history |
 | `build_project` | **ask** | Builds with the detected build system |
 | `run_tests` | **ask** | Runs the project's tests |
 
@@ -69,9 +69,11 @@ question would prompt twice for one interaction.
 job: launch a GUI with `run_terminal(background:true)`, have a vision model
 confirm the window shows what it should, then `process_stop`.
 
-The server also drives a hidden `scan_memory` tool as part of the project-memory
-pipeline. It is not offered to the model, never asks for approval, and this table
-does not govern it.
+The server also drives two hidden tools as part of [project memory](memory.md):
+`scan_memory`, which reads the memory files, and `write_session_record`, which
+appends to and condenses the session record. Neither is offered to the model,
+neither asks for approval, and this table does not govern them. They do show up
+as tool cards in the chat.
 
 ## Writing your own tool
 

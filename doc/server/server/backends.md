@@ -42,7 +42,8 @@ VRAM accounting. No separate service, no Python. See
 > **Upgrading from an older release.** The `vllm` and `unsloth` backends are both
 > gone, along with the GGUF conversion fallback and every Python worker
 > environment. Entries that still carry a `backend` attribute keep working: it is
-> ignored, and the server says so at startup and tells you to delete it. The
+> ignored, and where it disagrees with what the weights say the server logs that
+> at startup and tells you to delete it. The
 > `<ai><vllm>`, `<ai><convert>` and `<ai><unsloth>` blocks are no longer read.
 > A `<modalities>` block is the one exception: the server **refuses to start** and
 > tells you how to move those entries into `<models>`, because parsing it and
@@ -98,11 +99,15 @@ One ledger across the local backends caps how much can be resident at once.
 ```
 
 When a new model needs to load, the budget checks whether it fits alongside
-what is already resident. If not:
+what is already resident, card by card. If not:
 
-- `lru` — evict the least recently used unpinned worker, repeat until it fits.
-  If everything has been evicted and it still does not fit, the request fails.
-- `reject` — never evict; the request fails immediately.
+- `lru` — evict idle, unpinned models from the cards it needs, least recently
+  used first. If that is not enough, it **waits** for models in use on those
+  cards to finish, and a model that can run partly on the CPU keeps whatever
+  does not fit there. It fails only when host RAM is short and nothing is in use
+  that could free any — waiting would never help.
+- `reject` — never evict and never wait. Whatever can move to the CPU does; if
+  it still does not fit, the request fails at once.
 
 `<pinned>true</pinned>` on a model keeps it out of the eviction set. Worth it
 for a small model that many graph nodes use — a fast utility model being
@@ -117,7 +122,7 @@ detection sums every card it can see, including ones you did not intend to use.
 
 Detection is not NVIDIA-only: `nvidia-smi`, AMD's KFD interface, Apple's
 `sysctl` and a Vulkan fallback are tried in turn, and `CAGE_GPU_PROBE` forces
-one. Multimodal workers are on this same ledger.
+one. Modality models are on this same ledger.
 
 ## Asking where a model would go, without loading it
 
@@ -132,16 +137,17 @@ bin/cage-llama-fit --model /models/Qwen3-Coder-Next --ctx 32768
 | Option | |
 |---|---|
 | `--model PATH` | Model directory or file. Required |
+| `--quant 4bit\|8bit\|bf16\|fp16\|fp32` | The quantization, when the model is a safetensors directory |
 | `--ctx N` | Context size. **Required, and must be > 0** |
 | `--batch N` | Prompt batch size |
 | `--kv f16\|q8_0\|q4_0` | KV cache type |
 | `--flash on\|off` | Flash attention |
 | `--rpc host:port[,…]` | Include remote nodes in the placement |
+| `--gpus GPU-…[,…]` | Only these cards, by UUID — what an AI config's GPU Visibility holds |
 
 It reports the island split, the device order, `split_mode`, `max_gpu` and
-whether expert offload is needed. `CUDA_VISIBLE_DEVICES` is inherited, so
-restricting it to the cards an AI config selects answers the question for that
-config specifically.
+whether expert offload is needed. Pass the UUIDs an AI config selects with
+`--gpus` to answer the question for that config specifically.
 
 It needs a [backend pack](backend-packs.md) beside it, for the same reason the
 server does — the placement logic asks the backend what the cards are.

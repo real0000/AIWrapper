@@ -17,7 +17,7 @@ its own.
 | [Backends](backends.md) | The two backends, the RAM/VRAM budget, eviction, and what forces a model reload |
 | [Backend Packs](backend-packs.md) | **The separate GPU download** — choosing one, installing it, verifying it, running several |
 | [Safetensors models](safetensors.md) | Running Hugging Face weights: no conversion, and why every quantization is available |
-| [Modalities](modalities.md) | Image, speech, audio, music and 3D generation workers |
+| [Modalities](modalities.md) | Image, speech, audio, music, motion and 3D generation, in-process |
 | [Retrieval](rag.md) | Chunking, embedding, the vector store |
 | [API](api.md) | HTTP endpoints and WebSocket messages |
 
@@ -45,25 +45,30 @@ The log tells you what it decided, in order:
 
 ```
 Config loaded from: /opt/cage/config.xml
-Hardware topology: GPU0=…, GPU1=…; 6 NVLink pair(s); RAM 995 GiB
-CAGE Server starting on port 15963 (threads: 112)
-TLS disabled — traffic (including bearer tokens) is plaintext.
+Hardware topology [nvidia]: GPU0=…, GPU1=…; 1 nvlink link(s); RAM … GiB
+CAGE Server starting on port 15963 (threads: …)
+TLS disabled — traffic (including bearer tokens) is plaintext. …
+[CageBackendLib] loaded /opt/cage/bin/libcage-backend-cuda-sm89_sm90.so: backend=cuda, …
+[LlamaApi] selected /opt/cage/bin/libcage-backend-cuda-sm89_sm90.so (backend=cuda, drives 2/2 devices, …)
 Model registered: my-coder (backend=llama, format=gguf, quants=3, …)
 MySQL pool: 127.0.0.1:3306/cage (pool=4)
-[auth] auth DISABLED (dev-open) (users=0, masterKey=no)
-[BackendBudget] RAM cap=815483 MB, VRAM cap=129018 MB, eviction=lru
+[auth] auth ENABLED (users=…, masterKey=no)
+[BackendBudget] RAM cap=… MB, VRAM cap=… MB, eviction=lru
 LlamaWorkerPool ready (lazy)
 RAG VectorStore persist dir: data/vectors
 Listening on port 15963
 ```
 
-Four of those lines are worth reading every time:
+Five of those lines are worth reading every time:
 
 - **Hardware topology** — the GPUs it can see and which pairs are NVLink
   connected. Automatic placement is decided from this.
+- **[LlamaApi] selected** — which [backend pack](backend-packs.md) drives which
+  cards. `No backend library found` here means no local model can run.
 - **Model registered** — one per model, with the quantizations found. A model
-  whose path does not exist logs a warning here and is registered but
-  unloadable.
+  whose directory is missing, or holds no weights the server recognises, is
+  logged as `Model skipped` with the reason and does not appear in the model
+  list.
 - **auth** — `dev-open` means no authentication. See
   [Accounts](../control/accounts.md).
 - **ready (lazy)** — no model is loaded at startup. The first request that

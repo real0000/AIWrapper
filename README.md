@@ -45,9 +45,9 @@ terms: <https://github.com/real0000>
 
 | Package | Platform | Contents | Where |
 |---|---|---|---|
-| `cage-server-0.1.2-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader, Python workers | [Releases](../../releases) |
-| `cage-backend-*-0.1.2-linux-x64.tar.gz` | Linux x86-64 | **GPU support — one pack for your hardware.** See below | [Releases](../../releases) |
-| [`cage-0.1.2.vsix`](dist/cage-0.1.2.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
+| `cage-server-0.2.0-linux-x64.tar.gz` | Linux x86-64 | Inference server, node agent, control plane, model downloader | [Releases](../../releases) |
+| `cage-backend-*-0.2.0-linux-x64.tar.gz` | Linux x86-64 | **GPU support — one pack for your hardware.** See below | [Releases](../../releases) |
+| [`cage-0.2.0.vsix`](dist/cage-0.2.0.vsix) | VSCode ≥ 1.85 | The editor client | `dist/` in this repository |
 
 > **What is on GitHub is the evaluation build.** Releases here carry preview and
 > evaluation packages, for trying CAGE out and reporting what breaks. They are
@@ -58,12 +58,13 @@ terms: <https://github.com/real0000>
 > copy is delivered from there. A purchase carries perpetual updates for that
 > product; this repository is not the update channel for it.
 
-**The server package contains no GPU code.** In-process GGUF inference needs a
-backend pack as well — a second download carrying the compiled kernels for your
-cards. Pick by compute capability:
+**The server package contains no GPU code.** Every local model needs a backend
+pack as well — a second download carrying the compiled kernels for your cards.
+Pick by compute capability:
 
 | Pack | Hardware |
 |---|---|
+| `cage-backend-cuda-sm60_sm61` | P40, P100, P4, GTX 10xx |
 | `cage-backend-cuda-sm70_sm75` | V100, Titan V, T4, RTX 20xx, GTX 16xx |
 | `cage-backend-cuda-sm80_sm86` | A100, A30, A40, A10, RTX 30xx |
 | `cage-backend-cuda-sm89_sm90` | L40, L40S, L4, RTX 40xx, H100, H200 |
@@ -73,8 +74,8 @@ cards. Pick by compute capability:
 | `cage-backend-cpu` | No GPU |
 
 You can install several; the server probes each one per card. Without any, the
-server still runs — `vllm` and `remote` models work, `llama` ones do not. Full
-detail: **[Backend Packs](doc/server/server/backend-packs.md)**.
+server still runs, but only `remote` models work. Full detail:
+**[Backend Packs](doc/server/server/backend-packs.md)**.
 
 Installation: **[doc/server-install.md](doc/server-install.md)** — Docker or
 native — then **[doc/extension-install.md](doc/extension-install.md)** for the
@@ -88,9 +89,10 @@ editor client.
    VSCode extension ──┐
                       ├── WebSocket + HTTP ──► CAGE Server ──► local models / GPUs
    native client    ──┘                              │
-                                                     ├── llama.cpp (in-process)
-                                                     ├── Python workers (multimodal)
-                                                     └── multimodal workers
+                                                     ├── backend pack (in-process):
+                                                     │     text, vision, safetensors,
+                                                     │     image, speech, music, motion, 3D
+                                                     └── remote chat APIs
 ```
 
 The server owns everything expensive: model loading and placement, the agent
@@ -106,18 +108,17 @@ logic graph drives the conversation.*
 
 ### Local inference, multiple backends
 
-Models run through one adapter with three backends: in-process **llama.cpp**
-for GGUF (vision included, via an `mmproj` projector), a lazily spawned
-**vLLM** subprocess for safetensors — or, where vLLM is not installed, an
-automatic in-memory **conversion to GGUF** so those weights still run — and
-**remote** cloud endpoints (OpenAI, Anthropic, Gemini). Nothing loads until the
-first request that targets it, and
-a RAM/VRAM budget evicts the least recently used model when a new one does not
-fit.
+Models run through one adapter with two backends: in-process **ik_llama.cpp**,
+from the backend pack, for GGUF and Hugging Face safetensors alike (vision
+included, via an `mmproj` projector), and **remote** cloud endpoints (OpenAI,
+Anthropic, Gemini). There is no Python anywhere. Nothing loads until the first
+request that targets it, and one RAM/VRAM ledger across every local model evicts
+the least recently used idle one when a new one does not fit.
 
 A model's `<path>` is a *directory*: every `*.gguf` inside it becomes a
-selectable quantization, and safetensors directories can be quantized at load
-time (4bit NF4 / fp4, 8bit, bf16, fp16, fp32).
+selectable quantization, and a safetensors directory is quantized while it loads
+(4bit, 8bit, bf16, fp16, fp32). What kind of model it is — chat, embedding, image
+generator — is worked out from the weights, not declared.
 
 ### Multi-GPU placement
 
@@ -144,8 +145,9 @@ and parameters.*
 
 Reading and writing files, applying patches, running terminal commands,
 building projects and opening files all execute in VSCode, with per-tool
-approval. **MCP** servers (stdio, SSE, streamable-HTTP) can be attached, and
-their tools are offered to the model alongside the built-in ones.
+approval and per-file approval for writes. One **Tools** table holds every tool
+the model can call — built-in ones, tools you define with a command line, and
+the tools of attached **MCP** programs (stdio or Streamable HTTP).
 
 ### Retrieval over your project
 
@@ -156,9 +158,16 @@ the graph can retrieve top-k chunks for its prompt.
 
 ### Multimodal
 
-Image generation, text-to-speech, audio and music generation, and image-to-3D
-mesh pipelines, each isolated in its own Python worker process with its own
-environment and GPU visibility.
+Image generation, text-to-speech, audio and music generation, motion, and
+image-to-3D meshes run in-process too, through the backend pack, on the same GPU
+context and the same VRAM ledger as the language models.
+
+### Project memory
+
+Each file's history of what was changed and why, a record of what every step of
+the current conversation did — so a step that runs again in a loop sees what the
+last attempt found — and your own standing rules. A small model picks which of
+them each step actually reads.
 
 ### Multi-user
 
@@ -173,18 +182,18 @@ several machines.
 
 | | |
 |---|---|
-| Server, either way | Linux x86-64, plus a [backend pack](doc/server/server/backend-packs.md) for your GPU. NVIDIA needs only the driver — the packs carry their own CUDA runtime. AMD and Intel are reached through the Vulkan pack. CPU-only works, slowly |
+| Server, either way | Linux x86-64, plus a [backend pack](doc/server/server/backend-packs.md) for your GPU. NVIDIA needs only the driver — the packs carry their own CUDA libraries. AMD through the HIP packs or Vulkan, Intel through Vulkan. CPU-only works, slowly |
 | …via Docker | Docker with Compose v2, and the NVIDIA Container Toolkit for GPU access. Nothing else on the host |
-| …natively | glibc 2.38+ (Ubuntu 24.04 or newer), plus MySQL for accounts and Python 3.10+ for the workers |
+| …natively | glibc 2.38+ (Ubuntu 24.04 or newer), PowerShell 7.4+ to run the installer, and MySQL if you want accounts |
 | Client | VSCode 1.85+ |
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [WHATSNEW.md](WHATSNEW.md) | **Upgrading from 0.1.0?** What changed, and what needs action from you |
+| [WHATSNEW.md](WHATSNEW.md) | **Upgrading from 0.1.x?** What changed, and what needs action from you |
 | [doc/verification-status.md](doc/verification-status.md) | **How far each piece has been tested** — and which reports would help most |
-| [doc/server-install.md](doc/server-install.md) | **Start here** — Docker or native, then the native path in full: configuration, workers, database, TLS, troubleshooting |
+| [doc/server-install.md](doc/server-install.md) | **Start here** — Docker or native, then the native path in full: configuration, database, TLS, troubleshooting |
 | [doc/server/docker.md](doc/server/docker.md) | The Docker path — one `docker compose up`, with models, database and config as host folders |
 | [doc/extension-install.md](doc/extension-install.md) | Installing the `.vsix`, connecting to a server, logging in, first use |
 | [doc/server/](doc/server/README.md) | Server guide — node agent, inference server, control plane: what each owns, models, backends, modalities, retrieval, accounts, multi-node |
@@ -198,7 +207,7 @@ for the full terms, and [Licensing](#licensing) above for what a purchase covers
 
 CAGE incorporates open-source components, all under permissive licences; they
 are listed with their copyright notices in
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Model weights and the Python
-worker environments are **not** covered by either document — those are chosen
-and installed by the operator, and several carry commercial restrictions. See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Model weights are **not**
+covered by either document — they are chosen and installed by the operator, and
+several carry commercial restrictions. See
 [model licences](doc/server/server/models.md#model-licences-are-yours-to-check).

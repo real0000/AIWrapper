@@ -19,7 +19,7 @@ This is the real difference between the two formats.
 | | GGUF | Safetensors |
 |---|---|---|
 | What is on disk | One file per quantization, already quantized | The original unquantized tensors |
-| What you can pick | **Only the quantizations that exist in the directory** | **Any of them** — `4bit`, `4bit-fp4`, `8bit`, `bf16`, `fp16`, `fp32` |
+| What you can pick | **Only the quantizations that exist in the directory** | **Any of them** — `4bit` (Q4_K_M), `8bit` (Q8_0), `bf16`, `fp16`, `fp32`. `4bit-fp4` is accepted from older configurations and loads as `4bit` |
 | When it happens | Never; it was done when the file was made | At load time, every time |
 | Disk cost | One copy per quantization you keep | One copy, whatever you load it as |
 
@@ -42,9 +42,13 @@ the real file.
 ## What it does not change
 
 Everything downstream is identical: placement across GPUs, the VRAM ledger,
-context sizing, lazy loading and eviction, vision projectors, tool calling and
-chat templates. A safetensors model is not a second class of model with its own
-rules; it is the same slot with a different reader in front of it.
+context sizing, lazy loading and eviction, tool calling and chat templates. A
+safetensors model is not a second class of model with its own rules; it is the
+same slot with a different reader in front of it.
+
+Vision projectors are the exception. A projector is a GGUF file, and pairing one
+with a safetensors model has not been tried, so the control plane only offers a
+projector alongside a GGUF quantization.
 
 ---
 

@@ -27,7 +27,9 @@ described below. This one is a [Send To AI](#send-to-ai) node.*
 | [If](#if) | Multi-case switch on a value or a variable |
 | [Variable](#variable) | Reads and writes graph-level state |
 | [Compose](#compose) | Builds a string from a template |
+| [Memory](#memory) | Gathers the project memory that bears on a task, for Send To AI nodes to use |
 | [Dispatch](#dispatch) | Splits work into tasks and runs a subgraph per task |
+| [Send Prompt](#send-prompt) | Hands a prompt to another graph and takes back its result |
 | [Ask User](#ask-user) | Asks you a question — but only when the answer is genuinely yours |
 | [Return](#return) | Ends one branch deliberately |
 | [End](#end) | Ends the run and returns the result |
@@ -43,8 +45,8 @@ add more, each with its own name, and pick between them in the chat panel's
 Start selector — one graph, several ways in. A "plan only" entry and a "full
 build" entry can share all the nodes downstream.
 
-Start also synchronises the project index before the run begins, so retrieval
-and file tools see current files.
+If the server has no index of the project yet, Start asks the client for one
+before the run continues, so retrieval and memory see the project's files.
 
 | Pin | Type | Direction | Meaning |
 |---|---|---|---|
@@ -92,10 +94,12 @@ list, never to the raw reference.
 |---|---|---|---|
 | `Exec` | exec | in / out | |
 | `Asset` | asset | in | Files for this call — from Start's `ASSET`, or another node's output |
+| `Memory` | string | in | Optional, user-added. Wired from a [Memory](#memory) node, its value is placed before the prompt as the memory block instead of becoming part of the prompt text |
 | *user-defined* | string / asset | in | Values for `{{placeholders}}` in the template, or more files |
 | `ALL` | string | out | The whole answer. Becomes an image/audio/mesh path list under a modality config |
 | `Asset` | asset | out | Under a modality config, the generated files — wire straight into another node's asset input |
-| *user-defined* | string | out | With a `json_keys` format, one pin per key — the answer arrives already split |
+| `Summary` | string | out | Optional — an output pin you add, like any other. When present, it is what goes into the [session record](memory.md#the-session-record-written-automatically) and the file history for this step; without it, `ALL` does |
+| *user-defined* | string | out | Fields the model must fill. With no Format set, the answer is requested as JSON with one required key per output pin; with a `json_keys` Format, one key per field of that format. Either way it arrives already split |
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -105,9 +109,14 @@ list, never to the raw reference.
 | Prompt Template | — | The prompt. `{{pinName}}` inserts an input pin's value |
 | Enable Tool Calls | on | Whether the model may call tools in your editor |
 | Allowed Tools | `*` | Comma-separated allow-list; `*` means every tool the client offers |
-| Max Tool Iterations | 5 | How many tool round trips before the node gives up |
+| Max Tool Iterations | 0 | How many tool round trips before the node stops. `0` means no limit: the node runs until the model stops calling tools |
 | RAG | Inherit | `Inherit` uses the graph's setting, `Off` disables retrieval here, `Custom` picks a different embedding config. See [RAG](rag.md) |
 | RAG Embedding | — | The config used when RAG is set to Custom |
+| Use project memory | on | Whether this node reads [project memory](memory.md) at all |
+| Memory AI Config | inherit | The model that chooses what memory to read. Empty uses the graph's |
+| Memory: keep top-N history | 0 | Keep only the N file histories closest to the task, by similarity under the graph's RAG embedding config. `0` keeps all of them |
+| Split long input into chunks | off | When the prompt is far larger than the model's context, run it in pieces and join the answers. Structured output is not parsed in this mode |
+| Chunk preamble | — | Text placed before each piece when chunking |
 
 ---
 
@@ -215,6 +224,41 @@ are for.
 
 ---
 
+## Memory
+
+Gathers the [project memory](memory.md) that bears on a task, once, so that
+several Send To AI nodes can share it.
+
+Every Send To AI node assembles memory for itself before it runs: the memory AI
+looks at every rule row, file history and the session record next to the task,
+and picks what bears on it. In a graph with several of those nodes, that is one
+pick — one model call and one round trip to your editor — per node. A Memory node
+does it once. Wire its `Memory` output to an input pin named `Memory` on a Send
+To AI node, and that node uses the block it is given instead of assembling its
+own. An empty block is an answer too: it means nothing applied.
+
+The session record is the exception. It changes with every step, so a node fed
+by a Memory node re-reads the latest record itself whenever the memory AI picked
+it — a step inside a loop needs the previous attempt's report, not the one from
+before the loop began.
+
+| Pin | Type | Direction | Meaning |
+|---|---|---|---|
+| `Exec` | exec | in / out | |
+| `Input` | string | in | The task — usually Start's `PROMPT`. What the memory AI judges against |
+| `Memory` | string | out | The assembled memory block |
+
+| Setting | Default | Meaning |
+|---|---|---|
+| Memory AI Config | inherit | The model that chooses. Empty uses the graph's |
+| Token budget | 0 | Trim the block to this many tokens. `0` means no trimming. Rules are never dropped |
+| Keep top-N history | 0 | Keep only the N file histories closest to the task, by similarity under the graph's RAG embedding config. `0` keeps all of them |
+
+This node cannot see which model it feeds, so unlike Send To AI it cannot work
+out a budget for itself; that is why the budget is a setting here.
+
+---
+
 ## Dispatch
 
 Breaks a large request into a plan and then runs the subgraph hanging off `Step`
@@ -227,10 +271,8 @@ every task is finished, `End` fires once and the main flow continues.
 
 The splitter prompt is fixed and not editable. Its output is cleaned up before
 parsing — chain-of-thought is stripped and only the plan block is read — so
-reasoning models work here, but the token limit matters: a truncated plan
-leaves half-finished reasoning behind and parses badly. Give
-`Splitter Max Tokens` room, and make sure the splitter config's context is at
-least prompt + that number.
+reasoning models work here. The plan's length is not capped; give the splitter
+config enough context for the prompt and the whole plan.
 
 | Pin | Type | Direction | Meaning |
 |---|---|---|---|
@@ -245,9 +287,38 @@ least prompt + that number.
 | Setting | Default | Meaning |
 |---|---|---|
 | Splitter AI Config | — | The model that writes the plan |
-| Splitter Max Tokens | 4096 | Output cap for the plan. `0` removes the cap |
 | Parallel | off | Run the tasks inside one `-` group concurrently |
-| Max Parallel | 4 | How many at once when parallel is on |
+| Max Parallel | 0 | How many at once when parallel is on. `0` means no limit |
+
+---
+
+## Send Prompt
+
+Hands a prompt — and any files — to **another graph** and takes back what that
+graph returns. Think of it as a sub-agent: this graph decides what to send and
+what to do with the answer; the other graph, with its own models and settings,
+does the work.
+
+Dispatch runs a part of *this* graph once per task. Send Prompt runs a *different*
+graph, once.
+
+The other graph runs in the same session and over the same connection, so its
+tool calls, questions and streamed text all reach you as usual. Only its final
+result is caught and handed back here instead of ending your turn.
+
+| Pin | Type | Direction | Meaning |
+|---|---|---|---|
+| `Exec` | exec | in / out | |
+| `Prompt` | string | in | What the other graph receives as its message |
+| `Asset` | asset | in | Files it receives as attachments |
+| `Result` | string | out | The other graph's result: its End's `Result`, else `ALL`, else its only text value, else all of them as one JSON object |
+| `Asset` | asset | out | Files the other graph returned |
+
+| Setting | Default | Meaning |
+|---|---|---|
+| Graph | — | The graph the prompt is handed to |
+| Entry | empty | Which Start of that graph to run, by name. Empty runs its first Start |
+| Max Nesting Depth | 0 | How deep a chain of Send Prompt calls may go. `0` means no limit |
 
 ---
 
@@ -274,8 +345,8 @@ text is allowed. Answers arrive merged on `Answers`, ready to feed into a
 prompt; `Asked` tells the graph whether anything was asked at all, so a
 downstream [If](#if) can branch on it.
 
-If nothing needed asking, or the wait timed out, `Answers` is empty and `Asked`
-is `false` — the run continues either way.
+If nothing needed asking, `Answers` is empty and `Asked` is `false`. When there
+is a question, the run waits for your answer for as long as it takes.
 
 | Pin | Type | Direction | Meaning |
 |---|---|---|---|
@@ -286,11 +357,10 @@ is `false` — the run continues either way.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| AI Config | — | The model that decides whether to ask. Judgement, not prose — it runs at a low fixed temperature so the same input does not flip between asking and not asking |
+| AI Config | — | The model that decides whether to ask. Judgement, not prose — it runs at a temperature of at most 0.2 so the same input does not flip between asking and not asking |
 | What counts as the user's call | — | Extra guidance specific to this flow, added to the built-in criteria |
-| Max Questions | 3 | Upper bound, 1–10. It usually asks fewer |
+| Max Questions | 0 | Upper bound. `0` means no limit. It usually asks few or none |
 | Offer "Other…" | on | Adds a free-text choice to every question |
-| Answer Timeout | 600 | Seconds to wait per question, 30–3600 |
 
 Put it after [Start](#start) and before the expensive work — the value is in not
 building the wrong thing. Putting one in the middle of a long run interrupts you

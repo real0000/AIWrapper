@@ -83,8 +83,8 @@ services:
       - ${MODELS_DIR:?set MODELS_DIR in .env}:/models:ro
       # Generated images, audio and meshes are written here.
       - ${STATE_DIR:-./data}/output:/tmp/cage
-    # Models are memory-mapped and workers use shared memory; the 64 MB default
-    # is far too small and shows up as an unexplained worker crash.
+    # Shared memory (/dev/shm). Nothing in CAGE relies on it any more — it was for
+    # the Python worker processes, which are gone — so this only sets a ceiling.
     shm_size: ${SHM_SIZE:-8gb}
     # NVIDIA。需要主機安裝 nvidia-container-toolkit。
     # AMD 請改用 docker-compose.amd.yml —— ROCm 不走 container runtime plugin，

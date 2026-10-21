@@ -5,7 +5,6 @@
 #   ① base image 用 ubuntu:24.04 而不是 nvidia/cuda。HIP 後端包自帶 ROCm 的
 #      執行期函式庫（libamdhip64 / librocblas / rocBLAS 的 Tensile kernel…），
 #      所以不需要 CUDA base —— 那會白白多背十幾 GB。
-#      AMD 的 worker 本來就要 ROCm 版的 torch，那條路另外處理。
 #
 #   ② GPU 的給法。NVIDIA 走 nvidia-container-toolkit（deploy.resources），
 #      ROCm 完全不走那條 —— 它是把核心驅動的裝置節點直接映射進容器，
@@ -86,8 +85,8 @@ services:
       - ${MODELS_DIR:?set MODELS_DIR in .env}:/models:ro
       # Generated images, audio and meshes are written here.
       - ${STATE_DIR:-./data}/output:/tmp/cage
-    # Models are memory-mapped and workers use shared memory; the 64 MB default
-    # is far too small and shows up as an unexplained worker crash.
+    # Shared memory (/dev/shm). Nothing in CAGE relies on it any more — it was for
+    # the Python worker processes, which are gone — so this only sets a ceiling.
     shm_size: ${SHM_SIZE:-8gb}
     # ROCm 的 GPU 存取：直接映射核心驅動的裝置節點，沒有 runtime plugin。
     devices:

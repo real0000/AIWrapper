@@ -70,12 +70,14 @@ See [Project Indexing](indexing.md).
 
 ## Native acceleration
 
-Optional. Routes some work to a compiled sidecar; off by default.
+Routes some work to a compiled sidecar. The released extension does not include
+the sidecar, so unless you build one and point `binaryPath` at it, every module
+falls back to the TypeScript path whatever these say.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `cage.native.enabled` | `false` | Master switch. Off means everything uses the TypeScript path |
-| `cage.native.modules` | `[]` | Which modules to route, e.g. `["diff"]` |
+| `cage.native.enabled` | `true` | Master switch. Off means everything uses the TypeScript path |
+| `cage.native.modules` | `["logic"]` | Which modules to route. Known: `diff`, `patch`, `buildparse`, `transport`, `logic` |
 | `cage.native.binaryPath` | empty | Explicit sidecar path; empty auto-resolves |
 
 ## Commands

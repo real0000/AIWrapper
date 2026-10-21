@@ -85,12 +85,18 @@ from the Command Palette (`Ctrl+Shift+P`) and enter the account created in the
 control-plane web UI. The session token is stored by VSCode; you do not need to
 fill in `cage.server.apiKey`.
 
-If the server runs without a database it accepts every request without
-authentication, and this step is skipped.
+If the server runs without a database and no `<api_key>` is set in its
+`config.xml`, it accepts every request without authentication and this step is
+skipped. With an `<api_key>` set, put that key in `cage.server.apiKey` instead.
 
 ## 6. First use
 
 Click the **CAGE** icon in the activity bar to open the Chat panel.
+
+**No logic graph ships with CAGE.** Before the first message, create one in the
+Logic Editor — or import one — and pick it in the chat panel's Graph selector. A
+message with no graph selected is answered with an error. The
+[worked example](client/example-graph.md) is a complete graph, explained.
 
 Command Palette entries:
 

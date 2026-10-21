@@ -15,8 +15,13 @@ below.*
 
 | Kind | Used for | Stored |
 |---|---|---|
-| Admin | Signing in to the control plane web UI | `admin_users` |
-| User | Connecting an editor to the inference server | `users`, with tokens in `api_keys` |
+| Admin | Signing in to the control plane web UI, and full access on the inference server | `users`, role `admin` |
+| User | Connecting an editor to the inference server | `users`, role `user` |
+
+Both kinds are rows of one table. Personal access tokens are kept in `api_keys`,
+and the session tokens that **CAGE: Login** issues in `auth_tokens` — as hashes,
+so a copy of the database cannot be replayed. An older install's `admin_users`
+table is read once, to carry its accounts over into `users`.
 
 Passwords are hashed with PBKDF2-HMAC-SHA256. Nothing stores a plaintext
 password except the bootstrap entry in `control.xml`, which is why that file is
@@ -61,8 +66,12 @@ credential in the clear.
 ## Per-user accounting
 
 With a database, sessions and token usage are recorded per user, so
-consumption is attributable. Logic graphs are owned: private to their creator
-unless shared, in which case they appear in everyone's selector on that server.
+consumption is attributable. Logic graphs are owned: a graph is visible to its
+owner, to admins, and to the users it has been shared with, each with read or
+write access. Sharing is done through the server's HTTP API
+(`/api/logic-graph/share`, by the owner or an admin); there is no page for it
+yet. A graph saved before accounts existed has no owner and is visible to
+everyone.
 
 ## Running without a database
 

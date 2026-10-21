@@ -93,8 +93,8 @@ EXPOSE 15963 15972 8088
 ENV CONFIG_FILE=/config/config.xml \
     CAGE_CONTROL_CONFIG=/config/control.xml
 
-# tini reaps the worker subprocesses the server spawns; without an init the
-# container accumulates zombies as models load and unload.
+# tini reaps the child processes the server spawns — the backend probe at
+# startup, run_code — which would otherwise linger as zombies.
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 CMD ["--all"]
 

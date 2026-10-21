@@ -69,8 +69,11 @@ needs the room.
 
 ## Which GPUs it may use
 
-Per entry, the same way a language model picks cards: indices (`0,1,3`) or UUIDs
-(`GPU-xxxx`). Leave it empty and placement chooses.
+Chosen in the graph, on the [modality config](../../client/modality-config.md),
+the same way an AI config picks cards: by GPU UUID. Leave it empty and the server
+picks a card with room. A modality model always sits on a single card; if none of
+the chosen cards exists on this machine, the request fails rather than quietly
+landing somewhere else.
 
 Set it to keep generation off a card you want left alone — a display card, or one
 holding part of a large language model.

@@ -42,7 +42,7 @@ looks worse than elsewhere — it is probably windowing rather than parsing.
 ## Embedding
 
 The embedding model runs as a dedicated long-lived context, separate from the
-generation workers: embedding models are small, and loading and unloading one
+models that generate text: embedding models are small, and loading and unloading one
 repeatedly costs more than keeping it resident.
 
 Vectors are normalized, so similarity is a plain inner product. Text longer

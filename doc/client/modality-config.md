@@ -30,11 +30,16 @@ editor will only let you wire it somewhere that accepts that kind of file.
 | `music` | Music |
 | `mesh` | 3D meshes |
 
+These are the five types the editor knows. The server can also run
+speech-recognition and motion models, but the editor has no type for them yet and
+shows such a config as `image`.
+
 ## Local or remote
 
-Local modality workers are on the server's **VRAM ledger** alongside every other
-model, and they select GPUs per device the same way a text config does — there
-is no separate GPU whitelist to keep in step.
+Local modality models are on the server's **VRAM ledger** alongside every other
+model. A config can be limited to particular GPUs the same way a text config is;
+leave that empty and the server picks a card with room. A modality model always
+sits on a single card.
 
 **Local** configs name an alias from the server's `config.xml`. The server
 loads it in-process on first use, on the same backend the language models use.
@@ -80,8 +85,9 @@ Input pins that the template does not reference are passed through as
 generation parameters, which is how you drive things like a seed or a step count
 from elsewhere in the graph.
 
-`ALL` gives every produced file as a comma-joined list of server-side paths;
-where a single file is expected, the first one is also available on its own pin.
+`ALL` gives every produced file as a comma-joined list of server-side paths. An
+output pin you name `OutputFile` carries the first one on its own, and the `Asset`
+output carries them as files, ready to wire into another node's asset input.
 
 If an AI config and a modality config share a name, the AI config wins.
 

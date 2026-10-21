@@ -1,8 +1,9 @@
-# The server package is ~113 MB, past GitHub's 100 MB per-file limit for
-# repository content. It is published as a GitHub Release asset instead:
+# The server package and the backend packs (a CUDA pack is ~1 GB) are published
+# as GitHub Release assets instead of repository content:
 #
-#   gh release create v0.1.1 dist/cage-server-0.1.1-linux-x64.tar.gz \
-#                            dist/cage-0.1.1.vsix
+#   gh release create v0.2.0 dist/cage-server-0.2.0-linux-x64.tar.gz \
+#                            dist/cage-backend-*-0.2.0-linux-x64.tar.gz \
+#                            dist/cage-0.2.0.vsix
 #
 # The .vsix is small enough to live in the repository and is committed.
 dist/cage-server-*.tar.gz
@@ -11,9 +12,8 @@ dist/cage-backend-*.tar.gz
 dist/aiwrapper-server-*.tar.gz
 
 # Docker: the user's own secrets, their copy of the package, and the folders
-# compose creates for the database, server data and worker environments.
+# compose creates for the database and server data.
 docker/.env
 docker/*.tar.gz
 docker/config/
 docker/data/
-docker/venvs/
