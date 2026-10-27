@@ -90,10 +90,14 @@ The first sync sends everything; later ones send only what changed, unless too
 much changed at once, in which case a full index is cheaper. See
 [Project Indexing](indexing.md).
 
-Chunking is syntax-aware: files are cut at top-level definitions using a
-tree-sitter grammar, so a function tends to stay whole. Files in languages
-without a grammar, and oversized definitions, fall back to overlapping line
-windows.
+Chunking is syntax-aware: neighbouring top-level content is gathered into
+chunks of up to 4000 bytes using a tree-sitter grammar, never cutting inside a
+definition, so a function stays whole and a small file is one chunk. Files in
+languages without a grammar, and oversized definitions, fall back to overlapping
+line windows.
+
+`.cage/` — the project's memory and session records — is never indexed; the
+memory AI decides what of it a step reads. See [Project memory](memory.md).
 
 Vectors are stored per project on the server and persist across restarts, so
 re-opening a project does not re-embed it.

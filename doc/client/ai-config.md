@@ -41,7 +41,7 @@ immediately.
 |---|---|
 | Load-time | Quantization, GPU Layers, Split Mode, CPU MoE Layers, Auto Fit, Lookahead Decoding, MTP Decoding, GPU Visibility |
 | Per-context | Context Size, Prompt Batch Size, Threads, Flash Attention, KV Cache Type |
-| Per-request | Temperature, Top K, Top P, Reasoning Budget |
+| Per-request | Temperature, Top K, Top P, Presence Penalty, Reasoning Budget |
 
 The editor's console says which kind a parameter is when you change it.
 
@@ -149,6 +149,14 @@ positions at once runs different GPU kernels, and near-ties can flip.
 | Temperature | Randomness. Lower is more deterministic |
 | Top K | Sample only from the K most likely tokens |
 | Top P | Sample from the smallest set of tokens whose probability sums to P |
+| Presence Penalty | Lowers the score of every token that has already appeared in the reply, once, however often it appeared — the OpenAI definition, counted over the whole reply so far, reasoning included, not the prompt. `0` (the default) is off. Reasoning models use it against endless repetition in their thinking. Ignored while Lookahead Decoding is on. Remote endpoints only receive it on the OpenAI family |
+
+Use the values the model's own card recommends — they differ between models
+and between thinking and non-thinking use. Qwen3.6, for example, recommends
+temperature 1.0, Top P 0.95, Top K 20 and presence penalty 1.5 for thinking on
+general tasks, and says the penalty can go up to 2 against endless repetition,
+at the risk of mixed languages and slightly worse answers; Qwen3.8 recommends
+the same values with presence penalty 0.
 
 These are per-request, so editing them affects the very next call. Reasoning
 Budget, above, is too.

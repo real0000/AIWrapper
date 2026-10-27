@@ -33,6 +33,7 @@ It is a **breaking release for backend packs and for `config.xml`**. See below.
 | The installer is now `install.ps1`, a PowerShell script | **Install PowerShell 7.4 or newer and run `pwsh ./install.ps1`.** The options are the ones `install.sh` had. |
 | File history is read only when the memory AI picks it | **Set a Memory AI Config on your graphs** if you rely on file history. Without one, a file's history is no longer read just because the message names the file. |
 | A session record is written to `.cage/sessions/` in your project | Add `.cage/sessions/` to `.gitignore` if you do not want it committed. |
+| Retrieval cuts files into chunks differently | Nothing — each project's index is rebuilt once, the first time the project is opened. For a large project that takes as long as its first indexing did. |
 | Upgrading straight from AIWrapper 0.1.0: the database and its account were renamed in 0.1.1 | **Edit `sql/migrate-aiwrapper-to-cage.sql`** — replace `CHANGE-ME` with the password in `<mysql><password>` — **and run it as a database administrator before starting the new server.** |
 
 ---
@@ -135,6 +136,15 @@ Whether a model's context can be extended, and by how much, now comes from the
 model: its architecture (some apply position scaling only to windowed layers, some
 not at all) and the limit its model card states. A model whose card says nothing is
 not extended. When no length is chosen, the default is **32K**.
+
+## Presence penalty
+
+The AI config has a new sampling field, **Presence Penalty**: every token that
+already appears in the reply — the reasoning included — is made less likely,
+once, however often it appeared. Model cards for reasoning models recommend it
+against thinking that goes round in circles; Qwen3.6's, for example, recommends
+1.5 for thinking on general tasks. It is `0`, off, unless you set it. See
+[AI configs](doc/client/ai-config.md#sampling).
 
 ## One Tools page
 
@@ -246,6 +256,18 @@ recorded with it.
   now says the deliverables come from the verifier's run. If you built DemoCoder
   from the [worked example](doc/client/example-graph.md), add it to your coder's
   prompt.
+- **Retrieval handed steps the session record behind the memory AI's back.**
+  `.cage/` was indexed like any other folder, so the session record and file
+  histories came back as retrieved excerpts — in one run, a verifier was given
+  earlier attempts' reports while the log said the memory AI had chosen not to
+  read the record. `.cage/` is no longer indexed, and an existing index drops it
+  the next time the project is opened.
+- **Small files were indexed one line at a time.** The chunker made one chunk
+  per top-level definition and never joined them, so a `CMakeLists.txt` became
+  one chunk per command — four of that verifier's five excerpts were single lines
+  of one — and `#include` lines, top-level comments and globals in C and C++
+  were not indexed at all. Neighbouring top-level content is now gathered into
+  chunks of up to 4000 bytes, never cut inside a definition.
 - **Server messages are in English.** Log lines, errors, and the placement
   reasons the Logic Editor's console shows were partly in Chinese.
 - **The control plane caught up with the merged model list.** Its Models tab

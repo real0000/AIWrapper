@@ -357,7 +357,8 @@ only** — never from a `Dispatch` branch.
   "temperature": 0.7,
   "topK": 40,
   "topP": 0.9,
-  "reasoningBudget": -1       // -1 = no limit
+  "reasoningBudget": -1,      // -1 = no limit
+  "presencePenalty": 0        // 0 = off
 }
 ```
 

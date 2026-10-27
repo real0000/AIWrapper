@@ -29,15 +29,19 @@ some graphs retrieve and others do not.
 
 ## Chunking
 
-Files are split at top-level definitions using a tree-sitter grammar, so a
-function or class tends to arrive whole rather than sliced through the middle.
+Files are split along top-level nodes using a tree-sitter grammar: neighbouring
+top-level content — definitions, `#include` lines, comments, settings — is
+gathered into one chunk of up to 4000 bytes, and a chunk never ends inside a
+node. A function or class arrives whole, and a small file is a single chunk.
 
 Grammars ship for the common languages. A file in a language without one, or a
-single definition too large to be one chunk, falls back to overlapping line
-windows.
-
+single node too large to be one chunk, falls back to overlapping line windows.
 That fallback is worth remembering when retrieval on a particular language
 looks worse than elsewhere — it is probably windowing rather than parsing.
+
+`.cage/` is never indexed. It holds the project's memory — rules, file history,
+session records — and what of it a step reads is decided by the memory AI, not
+by similarity to the request.
 
 ## Embedding
 
@@ -61,9 +65,12 @@ Updating a file removes its old chunks — tombstoned, then compacted — and
 inserts the new ones, so re-indexing does not accumulate stale copies of edited
 code.
 
-Because it is on disk, reopening a project does not re-embed it. Deleting
-`data/vectors/` forces a full rebuild, which is the blunt fix if results look
-wrong.
+Because it is on disk, reopening a project does not re-embed it. The exception
+is an index cut by an older version of the chunker: it records which version
+cut it, and is rebuilt in full the first time its project is opened — files
+that have not changed would otherwise keep their old chunks indefinitely.
+Deleting `data/vectors/` forces a full rebuild, which is the blunt fix if
+results look wrong.
 
 ## What actually leaves the client
 
