@@ -33,6 +33,7 @@ It is a **breaking release for backend packs and for `config.xml`**. See below.
 | The installer is now `install.ps1`, a PowerShell script | **Install PowerShell 7.4 or newer and run `pwsh ./install.ps1`.** The options are the ones `install.sh` had. |
 | File history is read only when the memory AI picks it | **Set a Memory AI Config on your graphs** if you rely on file history. Without one, a file's history is no longer read just because the message names the file. |
 | A session record is written to `.cage/sessions/` in your project | Add `.cage/sessions/` to `.gitignore` if you do not want it committed. |
+| Upgrading straight from AIWrapper 0.1.0: the database and its account were renamed in 0.1.1 | **Edit `sql/migrate-aiwrapper-to-cage.sql`** — replace `CHANGE-ME` with the password in `<mysql><password>` — **and run it as a database administrator before starting the new server.** |
 
 ---
 
@@ -213,9 +214,58 @@ recorded with it.
 - **Running out of VRAM** no longer reports a failed computation as success, no
   longer aborts in two places, and no longer places the output layer on a card
   that was not selected.
+- **Stopping the agent left the server running.** The agent had no handler for
+  SIGINT or SIGTERM, so stopping it ended the agent at once and left the server
+  it had started behind, still holding its port and its VRAM. The agent now stops
+  the server and waits for it to unload its models before exiting.
+- **Speech recognition and motion configs turned into `image`.** The editor knew
+  five modality types; a config of any other type the server reports was
+  rewritten as `image` when the graph loaded again. It now knows all of them —
+  speech recognition, voice-activity detection, source separation and motion are
+  new. Three server-side faults on the same path are fixed as well: the text a
+  speech-recognition model returned never reached the node's output;
+  voice-activity detection, which returns only time segments, was always
+  reported as having produced nothing; and music generation from a graph was
+  refused because the prompt was not passed to the model as its text. The
+  editor's part is covered by its tests. The three server-side fixes have **not
+  yet run** with a real speech-recognition, voice-activity or music model.
+- **Tool calls from Qwen3.5, 3.6 and 3.8 could vanish.** These models sometimes
+  write a tool call inside their reasoning without closing it first. The parser
+  took only `</think>` as the end of reasoning, so the call was filed as
+  reasoning, the step reported no call, and a graph moved on as if the step were
+  done — in one run, forty minutes of a coder's work ended without the file it
+  was about to write. A tool call now ends the reasoning, as in upstream
+  llama.cpp (#26252), vLLM and Ollama. The same change accepts a call whose
+  required arguments come in a different order than declared, which used to fail
+  to parse. Every backend pack is rebuilt with it.
+- **The worked example's coder could think for forty minutes before writing
+  anything.** Its rules said the program's output was the point and that it must
+  not run anything, and nothing said the verifier produces that output. A coder
+  that stopped to reconcile the two weighed hand-writing a binary image and
+  rewrote the whole program in its reasoning before its first tool call. One rule
+  now says the deliverables come from the verifier's run. If you built DemoCoder
+  from the [worked example](doc/client/example-graph.md), add it to your coder's
+  prompt.
+- **Server messages are in English.** Log lines, errors, and the placement
+  reasons the Logic Editor's console shows were partly in Chinese.
+- **The control plane caught up with the merged model list.** Its Models tab
+  still had a separate, always-empty table for the old `<modalities>` block, and
+  showed image and 3D models as an unknown format; they now show the type the
+  server's probe found. The Server tab's VRAM bar never showed anything — it read
+  a field the server does not send — and now sums the cards the server drives.
 
 ## Known gaps
 
+- **`run_code` is not sandboxed and does not ask.** It runs the code a model
+  writes on the server machine, as the server's account, with no approval step.
+  The documentation used to say it ran in a sandbox; it does only in the narrow
+  sense described under [Tools](doc/client/tools.md#the-tool-that-runs-on-the-server).
+  It is offered unless you switch it off.
+- **A model that only mentions `<tool_call>` while thinking.** Following upstream,
+  the tag ends the reasoning wherever it appears. When tools are offered this
+  cannot happen — the moment the model writes the tag it is held to a complete,
+  valid call. With no tools offered, the rest of that thinking is shown as part
+  of the answer.
 - **The Pascal pack has never driven a Pascal card.** See above.
 - **The session record and the memory AI's choice** have been tested against a
   scripted model, not yet in a real run through a whole graph.

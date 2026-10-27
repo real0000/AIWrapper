@@ -22,7 +22,7 @@
     <pool_size>2</pool_size>
   </mysql>
 
-  <!-- Bootstrap account: created when admin_users is empty, and used as a
+  <!-- Bootstrap account: created when there are no accounts yet, and used as a
        fallback single account when the database is unreachable. An empty
        password disables authentication entirely. -->
   <admin>

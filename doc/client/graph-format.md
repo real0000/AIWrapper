@@ -70,7 +70,7 @@ All eight list fields must be present, even when empty.
 
 ```json
 {
-  "id":       "cdadab82-91ad-4828-b588-c38a5b91ae7c",
+  "id":       "5b0c1f2e-8d4a-4f7b-9c3e-2a6d8e1f4b70",
   "type":     "Start",
   "title":    "Start",
   "category": "start",
@@ -97,8 +97,8 @@ All eight list fields must be present, even when empty.
 ### Pin types
 
 `exec` is control flow. Everything else is data: `string` is the common case,
-and `asset` / `image` / `audio` / `tts` / `music` / `mesh` carry a reference to
-a produced file rather than text.
+and `asset` / `image` / `audio` / `tts` / `music` / `mesh` / `motion` carry a
+reference to a produced file rather than text.
 
 **The distinction matters.** An `exec` connection transfers control — it queues
 the downstream node to run. A data connection only copies a value into the
@@ -111,10 +111,10 @@ downstream input slot and does **not** cause it to run. A node with no incoming
 
 ```json
 {
-  "id":         "d2ac1f0e-7577-4be2-b255-d0f5e5df9795",
-  "fromNodeId": "cdadab82-…",
+  "id":         "9e4a7c21-3b5d-4e8f-a1c6-7d2b0f9e3a58",
+  "fromNodeId": "5b0c1f2e-…",
   "fromPinId":  "Exec",
-  "toNodeId":   "fa6d001b-…",
+  "toNodeId":   "c3f81a96-…",
   "toPinId":    "Exec"
 }
 ```

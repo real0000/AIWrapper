@@ -20,7 +20,7 @@ Open it with **CAGE: Open Logic Editor**.
 | Toolbar (top right) | Undo / Redo, Group / Ungroup, Upload / Download, Open / Export / Import |
 | Node palette (left) | Drag or click to add a node — see [Nodes](nodes.md) |
 | Sidebar sections (left, below) | The reusable configurations the graph's nodes reference |
-| Canvas (middle) | The graph. Drag nodes, drag pin to pin to connect, scroll to pan, zoom controls bottom right |
+| Canvas (middle) | The graph. Drag nodes, drag pin to pin to connect, drag across empty canvas to select several nodes. Scroll to zoom, drag with the middle or right button to pan; the buttons bottom right do both |
 | Inspector (right) | Settings for whatever is selected |
 | Console (bottom) | Warnings and results — model licence flags, config test output, load-time parameter notices |
 

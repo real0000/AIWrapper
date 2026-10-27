@@ -62,16 +62,19 @@ not, so that a run either converges or is stopped by you.
 {
   "name": "DemoCoder",
   "projectId": "",
-  "owner": "ian",
+  "owner": "",
   "ragEmbeddingConfig": "rag",
   "memoryAiConfig": "",
   "version": 3,
-  "updatedAt": 1787918643539,
+  "updatedAt": 0,
   "modalityConfigs": [],
   "variableConfigs": [],
   "groups": []
 }
 ```
+
+`owner` and `updatedAt` are blanked here; in the real file they name the account
+that saved it and when.
 
 | Field | Why |
 |---|---|
@@ -238,6 +241,15 @@ The prompt's rules are each the residue of a specific failure: *one file per job
 and three test scripts; *the program's output is a deliverable* after the self-deleting
 test script; *do not build or run anything* to keep the roles separate, because a coder
 that also verifies will report its own work as passing.
+
+The last rule — *DELIVERABLES are produced later, when the verifier builds and runs what
+you wrote* — came from the two before it colliding. The coder reads the plan, where
+DELIVERABLES says "produced by running the program", and is told not to run anything;
+nothing said who produces them. A coder that stopped to reconcile the two spent one
+generation of 20,000 tokens — forty minutes — weighing whether to hand-write a binary
+image, whether a scratch tool counted as running, and writing the program over in its
+reasoning, before making its first tool call. In the same context it did that three
+times in four tries; with the rule added, it started work at once in both tries made.
 
 ### Verifier — `SendToAi`
 

@@ -1,7 +1,9 @@
 # Modality Configs
 
 A modality config points at something that generates a file rather than text:
-an image, speech, audio, music, or a 3D mesh.
+an image, speech, audio, music, motion or a 3D mesh. Speech recognition and
+voice-activity detection go the other way, from a recording to text, and are
+configured the same way.
 
 **It lives in the same AI CONFIGS list as everything else.** Picking a model is
 one decision, not two — the list is one section, generative entries are labelled
@@ -16,7 +18,8 @@ every node already bound to it stays bound.
 When a node runs a modality config, the model call becomes a generation call:
 no tool loop, no retrieval, no structured output. The node's `ALL` pin carries
 the resulting file paths, and its type changes to match the modality, so the
-editor will only let you wire it somewhere that accepts that kind of file.
+editor will only let you wire it somewhere that accepts that kind of file. For
+`asr` and `vad` the result is text, and `ALL` is an ordinary text pin.
 
 ---
 
@@ -29,10 +32,14 @@ editor will only let you wire it somewhere that accepts that kind of file.
 | `audio` | General audio |
 | `music` | Music |
 | `mesh` | 3D meshes |
+| `motion` | Motion clips |
+| `asr` | Text recognised from a recording |
+| `vad` | The stretches of a recording that contain speech, as JSON segments |
+| `separation` | Separate tracks split out of a recording |
 
-These are the five types the editor knows. The server can also run
-speech-recognition and motion models, but the editor has no type for them yet and
-shows such a config as `image`.
+A local config takes its type from the model. The server works out what each
+model is at startup, and picking the model in the config sets the type, so
+there is nothing to match up by hand.
 
 ## Local or remote
 
@@ -85,9 +92,16 @@ Input pins that the template does not reference are passed through as
 generation parameters, which is how you drive things like a seed or a step count
 from elsewhere in the graph.
 
-`ALL` gives every produced file as a comma-joined list of server-side paths. An
-output pin you name `OutputFile` carries the first one on its own, and the `Asset`
-output carries them as files, ready to wire into another node's asset input.
+Models that work on an existing file read it from an input pin with a fixed
+name: `mesh` takes its picture from a pin named `image`, and `asr`, `vad` and
+`separation` take their recording from a pin named `audio`. The pin can be an
+asset pin, or a text pin holding a server-side path such as the `OutputFile` of
+an earlier node.
+
+`ALL` gives every produced file as a comma-joined list of server-side paths, or
+the text when the model produced text and no file (`asr`, `vad`). An output pin
+you name `OutputFile` carries the first file on its own, and the `Asset` output
+carries the files as files, ready to wire into another node's asset input.
 
 If an AI config and a modality config share a name, the AI config wins.
 

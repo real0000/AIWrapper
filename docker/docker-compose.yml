@@ -86,9 +86,10 @@ services:
     # Shared memory (/dev/shm). Nothing in CAGE relies on it any more — it was for
     # the Python worker processes, which are gone — so this only sets a ceiling.
     shm_size: ${SHM_SIZE:-8gb}
-    # NVIDIA。需要主機安裝 nvidia-container-toolkit。
-    # AMD 請改用 docker-compose.amd.yml —— ROCm 不走 container runtime plugin，
-    # 兩者的機制完全不同，硬塞進同一個檔案只會讓兩邊都要編輯它。
+    # NVIDIA. Needs nvidia-container-toolkit on the host.
+    # For AMD use docker-compose.amd.yml instead — ROCm has no container runtime
+    # plugin. The two mechanisms have nothing in common, and forcing them into
+    # one file would only mean editing it either way.
     deploy:
       resources:
         reservations:

@@ -24,10 +24,11 @@
 # CUDA 12.x containers run on any driver from the 12.x series (>= 525.60.13)
 # thanks to minor-version compatibility, so this does not have to match the
 # host's CUDA toolkit exactly.
-# BASE_IMAGE 讓同一份 Dockerfile 服務兩種硬體：
-#   NVIDIA → nvidia/cuda:*-runtime（預設）
-#   AMD    → ubuntu:24.04（HIP 後端包自帶 ROCm 的執行期函式庫，不需要 CUDA base）
-# 見 docker-compose.yml 與 docker-compose.amd.yml。
+# BASE_IMAGE lets one Dockerfile serve both kinds of hardware:
+#   NVIDIA → nvidia/cuda:*-runtime (the default)
+#   AMD    → ubuntu:24.04 (a HIP backend pack carries its own ROCm runtime
+#            libraries, so the CUDA base is not needed)
+# See docker-compose.yml and docker-compose.amd.yml.
 ARG BASE_IMAGE=nvidia/cuda:12.6.3-runtime-ubuntu24.04
 FROM ${BASE_IMAGE}
 

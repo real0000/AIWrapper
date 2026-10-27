@@ -93,7 +93,8 @@ vary what matters.
 
 Graph-side, a [modality config](../../client/modality-config.md) names the alias,
 and a Send To AI node selects that config. The node then produces a file instead
-of text.
+of text — or, for speech recognition and voice-activity detection, the text the
+model returned.
 
 `POST /api/generate` invokes one directly; that is what the Logic Editor's
 preview uses.

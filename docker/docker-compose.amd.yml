@@ -1,24 +1,27 @@
-# CAGE — AMD / ROCm 版的 compose。
+# CAGE — compose for AMD / ROCm.
 #
-# 與 docker-compose.yml 的差別只有兩件事，其餘完全相同：
+# It differs from docker-compose.yml in two things only; everything else is the
+# same:
 #
-#   ① base image 用 ubuntu:24.04 而不是 nvidia/cuda。HIP 後端包自帶 ROCm 的
-#      執行期函式庫（libamdhip64 / librocblas / rocBLAS 的 Tensile kernel…），
-#      所以不需要 CUDA base —— 那會白白多背十幾 GB。
+#   1. The base image is ubuntu:24.04 rather than nvidia/cuda. A HIP backend pack
+#      carries its own ROCm runtime libraries (libamdhip64, librocblas, rocBLAS's
+#      Tensile kernels …), so the CUDA base would be a dozen wasted gigabytes.
 #
-#   ② GPU 的給法。NVIDIA 走 nvidia-container-toolkit（deploy.resources），
-#      ROCm 完全不走那條 —— 它是把核心驅動的裝置節點直接映射進容器，
-#      使用者還必須在擁有那些節點的群組裡。
+#   2. How the GPU is handed over. NVIDIA goes through nvidia-container-toolkit
+#      (deploy.resources); ROCm does not use that at all — the kernel driver's
+#      device nodes are mapped straight into the container, and the user inside
+#      has to be in the groups that own them.
 #
-# 用法：
+# Usage:
 #
 #   cp ../dist/cage-server-0.2.0-linux-x64.tar.gz  .
-#   cp ../dist/cage-backend-hip-gfx1100_*.tar.gz   .    # 你的卡那一包
-#   cp .env.example .env                                # 然後編輯它
+#   cp ../dist/cage-backend-hip-gfx1100_*.tar.gz   .    # the pack for your card
+#   cp .env.example .env                                # then edit it
 #   docker compose -f docker-compose.amd.yml up -d --build
 #
-# 先確認主機看得到卡：ls /dev/kfd /dev/dri
-# 沒有 /dev/kfd 就是 amdgpu 驅動沒載入，容器再怎麼設定都沒用。
+# Check the host can see the card first: ls /dev/kfd /dev/dri
+# No /dev/kfd means the amdgpu driver is not loaded, and no container setting
+# will help.
 
 services:
   mysql:
@@ -88,15 +91,17 @@ services:
     # Shared memory (/dev/shm). Nothing in CAGE relies on it any more — it was for
     # the Python worker processes, which are gone — so this only sets a ceiling.
     shm_size: ${SHM_SIZE:-8gb}
-    # ROCm 的 GPU 存取：直接映射核心驅動的裝置節點，沒有 runtime plugin。
+    # ROCm GPU access: the kernel driver's device nodes, mapped in directly. There
+    # is no runtime plugin.
     devices:
-      - /dev/kfd            # ROCm 的運算介面
+      - /dev/kfd            # ROCm's compute interface
       - /dev/dri            # DRM render node
-    # 容器內的使用者要在擁有上面那些節點的群組裡，否則會是「看得到檔案、
-    # 打不開」—— 症狀是 probe 回報 0 個裝置，跟「沒裝後端包」長得一樣。
+    # The user inside the container must be in the groups that own those nodes,
+    # or it can see the files but not open them — the probe then reports 0
+    # devices, which looks exactly like a missing backend pack.
     group_add:
       - video
       - render
-    # 部分 ROCm 版本的 HSA queue 會被預設的 seccomp profile 擋下。
+    # Some ROCm versions' HSA queues are blocked by the default seccomp profile.
     security_opt:
       - seccomp:unconfined

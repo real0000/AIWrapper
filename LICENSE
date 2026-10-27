@@ -180,16 +180,14 @@ refund under Section 9.
 7. WHAT IS NOT INCLUDED
 --------------------------------------------------------------------------------
 
-   The Software contains no model weights, and none are supplied with it. It
-   also does not supply the Python worker environments, which are installed from
-   third-party sources onto Your own machines by the setup scripts.
+   The Software contains no model weights, and none are supplied with it.
 
-   Model weights and worker dependencies are licensed to You by their own
-   authors, on their own terms. Several in common use restrict commercial use,
-   impose revenue or user-count thresholds, or exclude particular territories.
-   Determining whether Your intended use is permitted is Your responsibility,
-   and the Licensor makes no representation about any model or dataset You
-   choose to run. See the model licensing section of the server documentation.
+   Model weights are licensed to You by their own authors, on their own terms.
+   Several in common use restrict commercial use, impose revenue or user-count
+   thresholds, or exclude particular territories. Determining whether Your
+   intended use is permitted is Your responsibility, and the Licensor makes no
+   representation about any model or dataset You choose to run. See the model
+   licensing section of the server documentation.
 
 --------------------------------------------------------------------------------
 8. PURCHASE THROUGH A RESELLER

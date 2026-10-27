@@ -29,7 +29,7 @@ The table is split into sections by source.
 |---|---|---|
 | **Built-in** | plain (`read_file`, `apply_patch`, …) | Needs the editor: your workspace, your selection, your terminal |
 | **Added by you** | plain, you choose | A name, a description, a parameter list and one command line — see below |
-| **Runs on the CAGE server** | plain (`run_code`) | Needs the server's own sandbox rather than your editor |
+| **Runs on the CAGE server** | plain (`run_code`) | Runs on the server machine rather than in your editor — see [below](#the-tool-that-runs-on-the-server) |
 | **One section per MCP program** | `mcp__<program>__<tool>` | A ready-made tool set you attached — see [MCP programs](mcp.md) |
 | **Not currently provided** | — | Tools the table knows about that are switched off, or whose program is not connected |
 
@@ -109,10 +109,29 @@ program's heading. See [MCP programs](mcp.md) for the connection details.
 
 ## The tool that runs on the server
 
-`run_code` executes in the server's own sandbox rather than in your editor, so
-only two of its settings mean anything here: whether it is **offered** at all,
+`run_code` writes the code the model gives it to a fresh temporary folder on
+the **server machine** and runs it there, as the account the server runs under.
+Only two of its settings mean anything here: whether it is **offered** at all,
 and the **description** the model sees. Approval and custom behaviour do not
-apply — the call never passes through your machine.
+apply — the call never passes through your machine, so **nothing asks you
+before the code runs.**
+
+It is offered unless you switch it off. Know what that means before leaving it
+on:
+
+- **The temporary folder is not a sandbox.** The code can read and write
+  anything the server's account can — its home directory, `config.xml`, model
+  folders.
+- **If `firejail` is installed on the server**, the run step (not a compile
+  step) gets no network and a private `/tmp`. That is all it changes: the home
+  directory is still readable and writable. Without `firejail` there is no
+  isolation at all. The installer does not install it.
+- **In [Docker](../server/docker.md)** the code runs inside the server's
+  container, which limits it to what the container can reach.
+
+If the server runs on a machine you care about, clear `run_code`'s
+[**Enabled**](#what-you-can-set-on-a-tool) setting, or give the server an account
+that can reach nothing but what it needs.
 
 The server tells the client which tools it has when the client registers. They
 stay listed even when you are not connected.

@@ -30,7 +30,7 @@ Tesla V100-SXM2 (7.0), NVLink between the V100s.
 
 | Pack | Level | Detail |
 |---|---|---|
-| `cuda-sm70_sm75` | **Runs** | Drives all four V100s and correctly refuses the 4070, saying why. The 0.2.0 server with this pack, installed as the install guide describes and started by the agent, answered a prompt on a V100 at 174 tok/s (Qwen3-0.6B) |
+| `cuda-sm70_sm75` | **Runs** | Drives all four V100s and correctly refuses the 4070, saying why. The 0.2.0 server with this pack, installed as the install guide describes and started by the agent, answered a prompt on a V100 at 167 tok/s (Qwen3-0.6B) — the rebuilt pack, natively and in Docker |
 | `cuda-sm80_sm86` | **Runs** | Drives the 4070 (sm_86 code is forward-compatible within compute capability 8) |
 | `cuda-sm89_sm90` | **Runs** | Drives the 4070 |
 | `cpu` | **Runs** | Self-test passes |
@@ -38,6 +38,16 @@ Tesla V100-SXM2 (7.0), NVLink between the V100s.
 | `cuda-sm60_sm61` | **Loads** | **New in 0.2.0**, for the P40 and the rest of Pascal. No Pascal card here. 236 kernels present for each of sm_60 and sm_61, no PTX; correctly refused by every card in this machine |
 | `cuda-sm120_sm121` | **Loads** | No Blackwell hardware here. Correctly refused by every card in this machine |
 | `hip-*` (all five) | **Loads** | No AMD hardware here. Checked in a clean Ubuntu 24.04 container — no ROCm, no AMD driver — with only the four host packages the install guide lists |
+
+**Rebuilt on 2026-10-28.** Every pack was rebuilt at ik `60d899d9b`, which adds
+the Qwen3-Coder chat parser (see Tools below) — tool-call parsing, not
+computation — with the same toolchain as before: Ubuntu 24.04, CUDA 12.0,
+GCC 13.3. Each rebuilt pack was checked again: it dlopens, its ABI fingerprint
+matches the server's, and it reports `60d899d9b` — the CPU, Vulkan and HIP packs
+in a clean Ubuntu 24.04 container with only the packages the install guide
+lists, the CUDA packs on the machine above. `cuda-sm70_sm75` and `cpu` also ran
+again, as their rows say. The other **Runs** rows were measured on the previous
+build of the same sources.
 
 **Without a CUDA toolkit.** The machine above has CUDA installed system-wide,
 which hides a missing library. So all five CUDA packs, and the server as the
@@ -78,9 +88,9 @@ from inside `bin/`, where the native problems disappear.
 | | Level | Detail |
 |---|---|---|
 | Chat | **Runs** | Local models answering on the V100s, including from the packaged 0.2.0 build above |
-| Tools, file approval | **Runs** | As in 0.1.2 — against `glm-4.5-air` across the V100s. Not re-run for this release |
+| Tools, file approval | **Runs** | As in 0.1.2 — against `glm-4.5-air` across the V100s. Not re-run for this release. Tool-call parsing for the Qwen3.5/3.6/3.8 and Nemotron templates — including a call written inside reasoning that was never closed — is covered by a test through the pack's own C boundary: 68 checks on four real templates, of which the earlier 0.2.0 build failed 5 |
 | Multi-GPU placement | **Runs** | Topology and NVLink reported; placement across four V100s, a chosen subset, or one card |
-| A hybrid Mamba2 model | **Runs** | **New in 0.2.0.** NVIDIA-Nemotron-3-Ultra-550B-A55B: 12 attention, 48 MoE and 48 Mamba2 layers. Correct answers at temperature 0, on four V100s with the experts in host memory, 2.8 tok/s. Checked on a development build at ik `86e53daf5`; the packs carry `083bb2713`, which differs only in a HIP header that CUDA builds do not compile |
+| A hybrid Mamba2 model | **Runs** | **New in 0.2.0.** NVIDIA-Nemotron-3-Ultra-550B-A55B: 12 attention, 48 MoE and 48 Mamba2 layers. Correct answers at temperature 0, on four V100s with the experts in host memory, 2.8 tok/s. Checked on a development build at ik `86e53daf5`; the packs carry `60d899d9b`, which adds a HIP header fix that CUDA builds do not compile and the Qwen3-Coder chat parser — neither touches the computation |
 | Image and 3D | **Runs** | SD 3.5 Large images and TRELLIS.2 meshes (the mesh on a V100), in-process, on development builds during this release. TRELLIS's three borrowed components were found from the model's own `components/` folder with no paths in the config |
 | Retrieval | **Runs** | End to end as in 0.1.2, not re-run for this release. The embedding model itself, `nemotron-3-embed-1b`, is now read in-process from safetensors: on a development build during this release it loaded and its vectors matched the reference scores its model card lists |
 | Multi-model logic graph with a feedback loop | **Runs** | As in 0.1.2 — DemoCoder converged on the first iteration. Not re-run for this release |
