@@ -46,8 +46,10 @@ describing the difference. A branch switch usually crosses it.
 | `cage.index.debounceMs` | 2000 | Quiet period after a save |
 | `cage.index.deltaFullThreshold` | 0.4 | Change ratio above which a full index is sent |
 
-**CAGE: Rebuild Index** forces a full re-index, which is the thing to try
-when retrieval results look stale.
+**CAGE: Rebuild Index** makes the server drop this project's index, including
+the copy it saved, and embed every file again — the thing to try when retrieval
+results look stale, or after changing the embedding model. An ordinary sync
+skips every file whose modification time has not changed.
 
 ## Keeping it useful
 

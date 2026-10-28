@@ -69,8 +69,9 @@ Because it is on disk, reopening a project does not re-embed it. The exception
 is an index cut by an older version of the chunker: it records which version
 cut it, and is rebuilt in full the first time its project is opened — files
 that have not changed would otherwise keep their old chunks indefinitely.
-Deleting `data/vectors/` forces a full rebuild, which is the blunt fix if
-results look wrong.
+**CAGE: Rebuild Index** in the editor does the same for one project on request:
+its saved index is deleted and every file is embedded again. Deleting
+`data/vectors/` does it for every project at once.
 
 ## What actually leaves the client
 

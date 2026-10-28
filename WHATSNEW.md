@@ -268,6 +268,23 @@ recorded with it.
   of one — and `#include` lines, top-level comments and globals in C and C++
   were not indexed at all. Neighbouring top-level content is now gathered into
   chunks of up to 4000 bytes, never cut inside a definition.
+- **A model could read the session record on its own.** The memory AI's choice
+  could be bypassed from inside the step as well: in one run a coder listed the
+  project, found `.cage/sessions/`, and read the record with `read_file`. The
+  file tools now refuse `.cage/` — reading, writing and patching alike, and a
+  patch that touches it is not applied at all. `run_terminal` is a shell and
+  cannot be held to this; its description asks the model to leave `.cage` out
+  of searches.
+- **"Rebuild Index" did nothing.** The command showed a message and stopped
+  there. It now makes the server drop the project's index, including the copy
+  saved on disk, and embed every file again — an ordinary sync skips every file
+  that has not changed.
+- **A new chat could carry on the previous one.** Choosing Discard or Resume on
+  an interrupted run opened a connection for that conversation and left it open.
+  A new chat started after that sent its first message down the same connection,
+  so the server filed it under the old conversation — whose unanswered messages
+  the first step then received as well. Switching conversations now reconnects.
+  The native client already did.
 - **Server messages are in English.** Log lines, errors, and the placement
   reasons the Logic Editor's console shows were partly in Chinese.
 - **The control plane caught up with the merged model list.** Its Models tab

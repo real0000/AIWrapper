@@ -12,7 +12,9 @@ AI on your terms.
 
 All three live in `.cage/` in your project, as plain Markdown you can read, edit
 and commit. Which of them a run reads is decided by the memory AI — see
-[What gets read](#what-gets-read).
+[What gets read](#what-gets-read). The model's file tools cannot open `.cage/`,
+and retrieval does not index it, so what reaches a step is what the memory AI
+chose.
 
 ---
 

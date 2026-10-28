@@ -88,7 +88,7 @@ falls back to the TypeScript path whatever these say.
 | `CAGE: New Session` | Start a fresh conversation and reset session approvals |
 | `CAGE: Open Logic Editor` | Open the [Logic Editor](logic-editor.md) |
 | `CAGE: Open Logic Debug` | Inspect a graph run node by node |
-| `CAGE: Rebuild Index` | Force a full re-index |
+| `CAGE: Rebuild Index` | Drop this project's retrieval index on the server and embed every file again |
 | `CAGE: Tools` | The [tool table](tools.md) — built-in, your own, MCP programs, groups |
 | `CAGE: Switch Tool Group` | Switch the active [tool group](tools.md#groups) |
 | `CAGE: Open Memory` | The project [routing table](memory.md) |

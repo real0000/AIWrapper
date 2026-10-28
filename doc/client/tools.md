@@ -75,6 +75,14 @@ appends to and condenses the session record. Neither is offered to the model,
 neither asks for approval, and this table does not govern them. They do show up
 as tool cards in the chat.
 
+`.cage/` is off limits to the file tools. `read_file`, `write_file`,
+`apply_patch` and `open_file` refuse any path inside it, and a patch that touches
+it is not applied at all — not even to its other files. What a step gets from
+project memory is chosen by the memory AI, and notes are written with
+`remember`; a model reading the session record on its own would go around that
+choice. `run_terminal` is a shell and cannot be held to this: its description
+asks the model to leave `.cage` out of searches, and that is all.
+
 ## Writing your own tool
 
 **+ New tool** on the Tools page. A tool you add is four things:

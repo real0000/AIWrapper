@@ -105,7 +105,7 @@ Command Palette entries:
 | `CAGE: Open Chat` | Chat panel |
 | `CAGE: New Session` | Start a fresh conversation |
 | `CAGE: Open Logic Editor` | Visual editor for the logic graph that drives the agent |
-| `CAGE: Rebuild Index` | Re-index the workspace for retrieval |
+| `CAGE: Rebuild Index` | Drop the project's retrieval index and embed every file again |
 | `CAGE: Tools` | The tool table: built-in, your own, MCP programs, groups |
 | `CAGE: Open Logic Debug` | Inspect a graph run |
 | `CAGE: Login` / `Logout` | Account session |
