@@ -101,8 +101,10 @@ front end that renders the conversation and executes tool calls locally.
 
 ![The CAGE chat panel in VSCode](doc/images/chat-panel.png)
 
-*The chat panel runs inside VSCode. The selector at the bottom picks which
-logic graph drives the conversation.*
+*The chat panel runs inside VSCode — here the DemoCoder graph has planned a
+texture packer and its coder, Qwen3.8 on four local V100s, has just written
+`packer.cpp`. The selector at the bottom picks which logic graph drives the
+conversation.*
 
 ## Features
 
