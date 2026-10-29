@@ -150,11 +150,11 @@ against thinking that goes round in circles; Qwen3.6's, for example, recommends
 
 The MCP page became **Tools**: one table of everything the model can call — built-in
 tools, tools you define yourself, and the tools of each MCP program — grouped by
-where they come from. Every tool runs in your editor; the server has none of its
-own. Every tool can be switched off or
-re-described; a **group** is a set of those settings you can switch as a whole. You
-can add a tool of your own with a name, a description, a parameter table and one
-command line. MCP requests no longer have a timeout.
+where they come from. All of them run in your editor; the server has none of its
+own. Every tool can be switched off or re-described; a **group** is a set of those
+settings you can switch as a whole. You can add a tool of your own with a name, a
+description, a parameter table and one command line. MCP requests no longer have a
+timeout.
 
 ## Memory that follows the conversation
 
