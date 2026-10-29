@@ -79,7 +79,7 @@ Client to server:
 | `memory.sync` | The project's memory routing table and rule files |
 | `logic_graph.update` | Save a graph |
 | `logic.execute` | Run a graph explicitly |
-| `mcp_tools_register` / `_update` | Declare which tools this client can run, and the settings for the server's own |
+| `mcp_tools_register` / `_update` | Declare the tools this client runs. The model is offered exactly these; the server has none of its own |
 | `file_response` | A file the server asked for |
 | `conn_step.sync` / `.update` | Connection state bookkeeping |
 | `file_transfer.init`, binary frames | Chunked upload. **Not supported** — use `POST /api/files/upload` instead |
@@ -99,7 +99,6 @@ Server to client:
 | `project_index.request` / `.ack` | Ask for, and acknowledge, the project index |
 | `rag_index.progress` | How far embedding the project has got |
 | `memory.ack` | The routing table was received |
-| `server_tools` | The tools that run on the server itself, for the Tools page |
 | `logic_graph.ack` / `.diverged` | Graph saved, or a version conflict |
 | `run_interrupted` / `run_resumed` / `run_discarded` | State of a run that stopped half-way |
 | `cancelled` | The run was stopped |

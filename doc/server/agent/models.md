@@ -84,10 +84,17 @@ Two traps it handles, both found in real files:
   rather than a side being picked.
 
 The scan itself refuses only one thing: a directory with no weights it
-recognises — no `*.gguf`, and no `model*.safetensors`. It does not try to judge
+recognises — no `.gguf` and no `.safetensors` file anywhere inside it. Weights in
+subfolders count (TRELLIS.2 keeps them in `ckpts/`), and so do safetensors not
+named `model*` (`sd3.5_large.safetensors`); a quantization choice is offered only
+where the chat-model loader reads the folder directly. It does not try to judge
 whether something is a language model, because that is not a question you can
 answer from a directory listing. `.pt`, `.bin` and `.ckpt` do not count as
 weights at all: those are Python pickles, and nothing in the server reads them.
+
+A folder with a model card (a README with YAML front matter) or a `config.json`,
+`model_index.json` or `pipeline.json` at its top is one model. Its subfolders are
+its parts, not models of their own.
 
 Deciding what a set of weights actually *is* happens when the server starts, and
 it refuses two more things there, each with the reason in the log:

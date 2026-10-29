@@ -402,6 +402,12 @@ influence the one it is producing now — the opposite of what a judge should do
 The observable effect is in the log: `memory=shared: seeded N messages`, with N growing
 by one per node per round.
 
+Your message joins that conversation as soon as it arrives. When the run ends without
+a shared node having answered it — the run was stopped, failed, never started, or
+answered from isolated nodes only — the server adds the answer itself: the run's final
+result, or a line saying what happened to it. The next message's nodes never see two of
+your messages in a row with nothing in between.
+
 ### 3. `rag_mode: "off"` on the Filter — retrieval poisons a judge
 
 Retrieved context is prepended to the prompt as `### file (lines A-B)` blocks of code

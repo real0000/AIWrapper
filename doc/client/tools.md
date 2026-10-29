@@ -1,12 +1,13 @@
 # Tools
 
-Tool calls run **in your editor**, not on the server. When the model reads a file
-it reads your workspace; when it runs a command it runs on your machine.
+Tool calls run **in your editor**, not on the server — every one of them. When the
+model reads a file it reads your workspace; when it runs a command or a program it
+runs on your machine.
 
 Everything the model can call lives in one table, on the **Tools** page. That
-includes the built-in tools, tools you write yourself, tools from an MCP program
-you attached, and the one tool that runs on the CAGE server. All of them are
-editable in the same place and in the same way.
+includes the built-in tools, tools you write yourself and tools from an MCP
+program you attached. All of them are editable in the same place and in the same
+way.
 
 Open it with **CAGE: Tools**, or the 🔧 **Tools** button under the chat box.
 
@@ -29,7 +30,6 @@ The table is split into sections by source.
 |---|---|---|
 | **Built-in** | plain (`read_file`, `apply_patch`, …) | Needs the editor: your workspace, your selection, your terminal |
 | **Added by you** | plain, you choose | A name, a description, a parameter list and one command line — see below |
-| **Runs on the CAGE server** | plain (`run_code`) | Runs on the server machine rather than in your editor — see [below](#the-tool-that-runs-on-the-server) |
 | **One section per MCP program** | `mcp__<program>__<tool>` | A ready-made tool set you attached — see [MCP programs](mcp.md) |
 | **Not currently provided** | — | Tools the table knows about that are switched off, or whose program is not connected |
 
@@ -46,6 +46,7 @@ exactly what the connected client declares, which is what this table says.
 | `write_file` | [per file](file-approval.md) | Writes a file, after you approve that file |
 | `apply_patch` | [per file](file-approval.md) | Applies a unified diff, asking once per file it touches |
 | `run_terminal` | **ask** | Runs a shell command. Can run in the background and return a process id |
+| `run_code` | **ask** | Runs a short program the model writes, to check a result — see [below](#checking-results-with-run_code) |
 | `process_status` | auto | Status and buffered output of a background process |
 | `process_stop` | auto | Terminates a background process |
 | `view_window` | auto | Reads the rendered image of one application window so a vision model can check what a running GUI actually displays |
@@ -80,8 +81,9 @@ as tool cards in the chat.
 it is not applied at all — not even to its other files. What a step gets from
 project memory is chosen by the memory AI, and notes are written with
 `remember`; a model reading the session record on its own would go around that
-choice. `run_terminal` is a shell and cannot be held to this: its description
-asks the model to leave `.cage` out of searches, and that is all.
+choice. `run_terminal` and `run_code` run real programs in your workspace and
+cannot be held to this: `run_terminal`'s description asks the model to leave
+`.cage` out of searches, and that is all.
 
 ## Writing your own tool
 
@@ -115,34 +117,30 @@ If a name collides with a tool from another source, that source wins.
 starts it and reads its tool list; what comes back joins the table under that
 program's heading. See [MCP programs](mcp.md) for the connection details.
 
-## The tool that runs on the server
+## Checking results with `run_code`
 
-`run_code` writes the code the model gives it to a fresh temporary folder on
-the **server machine** and runs it there, as the account the server runs under.
-Only two of its settings mean anything here: whether it is **offered** at all,
-and the **description** the model sees. Approval and custom behaviour do not
-apply — the call never passes through your machine, so **nothing asks you
-before the code runs.**
+`run_code` runs a short program the model writes, to check something: work out
+the value a test should expect, parse a file the project produced, compare two
+outputs byte for byte. It runs on your machine like every other tool, and asks
+first, like `run_terminal`. The approval card shows the whole program.
 
-It is offered unless you switch it off. Know what that means before leaving it
-on:
+- **The source goes to a temporary folder outside your workspace**, and is
+  deleted afterwards. It does not clutter the project or end up in the index.
+- **The program runs in your workspace root**, so a relative path in it reaches
+  the project's files. The first line of its stderr says where it ran.
+- **Compiled languages are compiled first**, in the temporary folder. A compile
+  error goes back to the model as it is, and nothing runs.
+- **It uses what you have installed.** The languages are python, javascript,
+  bash, sh, ruby, php, c, cpp, rust and go, each through its usual program on
+  your `PATH`: `python3` (`python` on Windows), `node`, `bash`, `sh`, `ruby`,
+  `php`, `cc`, `c++`, `rustc`, `go`. When one is missing the model is told which
+  program was not found.
+- **It is not a sandbox.** The program runs as you, with your permissions — the
+  reason it asks.
+- **No time limit.** Stopping the run stops the program.
 
-- **The temporary folder is not a sandbox.** The code can read and write
-  anything the server's account can — its home directory, `config.xml`, model
-  folders.
-- **If `firejail` is installed on the server**, the run step (not a compile
-  step) gets no network and a private `/tmp`. That is all it changes: the home
-  directory is still readable and writable. Without `firejail` there is no
-  isolation at all. The installer does not install it.
-- **In [Docker](../server/docker.md)** the code runs inside the server's
-  container, which limits it to what the container can reach.
-
-If the server runs on a machine you care about, clear `run_code`'s
-[**Enabled**](#what-you-can-set-on-a-tool) setting, or give the server an account
-that can reach nothing but what it needs.
-
-The server tells the client which tools it has when the client registers. They
-stay listed even when you are not connected.
+It is not meant for building or running the project itself. Its description
+points the model at `build_project`, `run_tests` and `run_terminal` for that.
 
 ## Groups
 
@@ -194,14 +192,15 @@ Shown on the approval card to help you decide quickly:
 
 | Level | Tools |
 |---|---|
-| 🔴 High | `run_terminal` |
+| 🔴 High | `run_terminal`, `run_code` |
 | 🟡 Medium | `build_project`, `run_tests` |
 | 🟢 Low | everything else |
 
-`run_terminal` is the one that genuinely reaches outside. It runs a real command
-on your machine, in your workspace root — it can reach the network, install
-packages, and touch paths that no file gate sees. A tool you wrote yourself, and
-a tool with custom behaviour, run a command line the same way.
+`run_terminal` and `run_code` are the ones that genuinely reach outside. They run
+a real command or program on your machine, in your workspace root — it can reach
+the network, install packages, and touch paths that no file gate sees. A tool you
+wrote yourself, and a tool with custom behaviour, run a command line the same
+way.
 
 ## Approving
 
@@ -224,7 +223,7 @@ A request waits until you answer it. There is no timer.
 | Setting | Default | Meaning |
 |---|---|---|
 | `cage.toolApproval.mode` | `ask` | Default for every tool |
-| `cage.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides. This is where the Tools page writes the default group's approval |
+| `cage.toolApproval.perTool` | `run_terminal`, `run_code`, `build_project`, `run_tests` → `ask` | Per-tool overrides. This is where the Tools page writes the default group's approval |
 
 `auto` for everything means a model can run arbitrary commands on your machine
 without asking. Reasonable in a scratch workspace; a poor trade in a repository

@@ -149,8 +149,9 @@ against thinking that goes round in circles; Qwen3.6's, for example, recommends
 ## One Tools page
 
 The MCP page became **Tools**: one table of everything the model can call — built-in
-tools, tools you define yourself, the server's own `run_code`, and the tools of each
-MCP program — grouped by where they come from. Every tool can be switched off or
+tools, tools you define yourself, and the tools of each MCP program — grouped by
+where they come from. Every tool runs in your editor; the server has none of its
+own. Every tool can be switched off or
 re-described; a **group** is a set of those settings you can switch as a whole. You
 can add a tool of your own with a name, a description, a parameter table and one
 command line. MCP requests no longer have a timeout.
@@ -272,9 +273,9 @@ recorded with it.
   could be bypassed from inside the step as well: in one run a coder listed the
   project, found `.cage/sessions/`, and read the record with `read_file`. The
   file tools now refuse `.cage/` — reading, writing and patching alike, and a
-  patch that touches it is not applied at all. `run_terminal` is a shell and
-  cannot be held to this; its description asks the model to leave `.cage` out
-  of searches.
+  patch that touches it is not applied at all. `run_terminal` and `run_code` run
+  real programs and cannot be held to this; `run_terminal`'s description asks
+  the model to leave `.cage` out of searches.
 - **"Rebuild Index" did nothing.** The command showed a message and stopped
   there. It now makes the server drop the project's index, including the copy
   saved on disk, and embed every file again — an ordinary sync skips every file
@@ -285,6 +286,36 @@ recorded with it.
   so the server filed it under the old conversation — whose unanswered messages
   the first step then received as well. Switching conversations now reconnects.
   The native client already did.
+- **`run_code` ran on the server, and did not ask.** It is the tool a model uses
+  to check a result — work out an expected value, parse a file the project
+  produced. It ran on the server machine, as the server's account: it could not
+  reach your project's files, and nothing asked you before the code ran. It now
+  runs on your machine like every other tool, in your workspace root, and asks
+  first like `run_terminal`; the source goes to a temporary folder outside the
+  workspace and is deleted afterwards. See
+  [Tools](doc/client/tools.md#checking-results-with-run_code).
+- **A message could stay unanswered in the shared conversation.** Your message
+  joins the conversation that `shared` nodes see as soon as it arrives, but a
+  reply is added only when such a node finishes. After a run that had no shared
+  node, was stopped, failed, or never started, the next message's nodes saw two
+  of your messages in a row and could not tell what became of the first. The end
+  of the run now fills the gap — with the run's final answer, or a line saying it
+  was stopped, failed (and in which node), or did not run (and why).
+- **Sending with no folder open.** Without a workspace folder, `write_file` and
+  `apply_patch` put relative paths wherever the editor's own process happened to
+  be, and the index, project memory and session record had nowhere to live. The
+  chat now asks you to open a folder before it sends anything, and keeps what you
+  typed. The native client does the same.
+- **A new chat showed the previous one's Resume / Discard banner.** The banner
+  for an interrupted run survived **+**, and came back when the panel was
+  rebuilt. It now goes with the conversation it belongs to.
+- **Importing a model from disk said "no loadable weights"** for TRELLIS.2,
+  SD 3.5 Large and Ace-Step 1.5. The import used the chat-model loader's rule —
+  weights at the top of the folder, named `model*.safetensors` — although what a
+  model is gets decided by the server's probe. Any `.gguf` or `.safetensors` in
+  the folder now counts. A folder with a model card or a `config.json`,
+  `model_index.json` or `pipeline.json` at its top is taken as one model, not
+  split into its subfolders. See [Models](doc/server/agent/models.md).
 - **Server messages are in English.** Log lines, errors, and the placement
   reasons the Logic Editor's console shows were partly in Chinese.
 - **The control plane caught up with the merged model list.** Its Models tab
@@ -295,11 +326,6 @@ recorded with it.
 
 ## Known gaps
 
-- **`run_code` is not sandboxed and does not ask.** It runs the code a model
-  writes on the server machine, as the server's account, with no approval step.
-  The documentation used to say it ran in a sandbox; it does only in the narrow
-  sense described under [Tools](doc/client/tools.md#the-tool-that-runs-on-the-server).
-  It is offered unless you switch it off.
 - **A model that only mentions `<tool_call>` while thinking.** Following upstream,
   the tag ends the reasoning wherever it appears. When tools are offered this
   cannot happen — the moment the model writes the tag it is held to a complete,

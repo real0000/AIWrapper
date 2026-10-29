@@ -117,7 +117,7 @@ Approval behaviour is configurable:
 | Setting | Default |
 |---|---|
 | `cage.toolApproval.mode` | `ask` |
-| `cage.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask`. `write_file` and `apply_patch` are not here — every file they touch is approved individually |
+| `cage.toolApproval.perTool` | `run_terminal`, `run_code`, `build_project`, `run_tests` → `ask`. `write_file` and `apply_patch` are not here — every file they touch is approved individually |
 
 ## 7. Troubleshooting
 

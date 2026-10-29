@@ -26,7 +26,7 @@ See [Tools](tools.md).
 | Setting | Default | Meaning |
 |---|---|---|
 | `cage.toolApproval.mode` | `ask` | Default mode: `ask`, `auto`, `deny` |
-| `cage.toolApproval.perTool` | `run_terminal`, `build_project`, `run_tests` → `ask` | Per-tool overrides. `write_file` and `apply_patch` are absent because they do not use this setting: every file is approved individually before it is written — see [File Approval](file-approval.md) |
+| `cage.toolApproval.perTool` | `run_terminal`, `run_code`, `build_project`, `run_tests` → `ask` | Per-tool overrides. `write_file` and `apply_patch` are absent because they do not use this setting: every file is approved individually before it is written — see [File Approval](file-approval.md) |
 
 ## Build and test
 

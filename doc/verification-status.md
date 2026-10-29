@@ -107,7 +107,8 @@ what reaches the model, what is written and read, and in what order.
 | What memory is read | 161 | The whole memory suite, including: with a memory AI, whether history is read does not depend on the message naming the file; without one, only rules are read |
 | A session across a server restart | 19 | Three server restarts: the session is recalled from the database; an unknown id is refused with 404; without a database the client's id is taken |
 | Tool calls in two sessions | 9 | Stop or a disconnect in one session leaves the other's waiting calls alone; two sessions with the same call id each get their own result; a reply from the wrong session is refused |
-| Client tools end to end | 24 | The native client, headless, with a real MCP subprocess |
+| Client tools end to end | 25 | The native client, headless, with a real MCP subprocess. `run_code` runs on the client, in the workspace root, in the group that switches it on — and not at all where it is off |
+| Unanswered messages | 10 | A message whose run had no shared node, was stopped, failed, or never started gets one answer in the shared conversation — the run's final result, or what happened to it; a shared node's own answer is not doubled |
 
 **Not yet:** a real model through a whole graph with the session record, and the
 installed extension and native client restarting.

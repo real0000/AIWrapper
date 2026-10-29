@@ -26,6 +26,14 @@ palette.
 | Session buttons (top right) | History panel, and new session |
 | Status chip (status bar) | `CAGE: Idle`, `Connecting...`, the model's name while it answers, `Disconnected`, or an error |
 
+## A folder must be open
+
+Nothing is sent until a folder is open in the editor. Without one, a file the
+model writes has nowhere to go but the editor's own working directory, and the
+index, project memory and session record have nowhere to live. A note above the
+input box offers **Open Folder…** instead; what you typed and attached stays put.
+The native client does the same and points you at ≡ → **Open Folder…**.
+
 ## Attaching files
 
 📎 beside the input box picks one or more files. They upload immediately and
