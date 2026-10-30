@@ -164,7 +164,6 @@ named after keys of the structured output to have them split out for you.
 "config": {
   "ai_config": "planner",          // name from aiConfigs — required
   "format_config": "",             // name from formatConfigs; enables structured output
-  "role": "",                      // system prompt
   "prompt_template": "Plan: {{Task}}",
   "tools_enabled": true,
   "allowed_tools": "*",            // "*" or a comma-separated list

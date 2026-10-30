@@ -34,6 +34,7 @@ It is a **breaking release for backend packs and for `config.xml`**. See below.
 | File history is read only when the memory AI picks it | **Set a Memory AI Config on your graphs** if you rely on file history. Without one, a file's history is no longer read just because the message names the file. |
 | A session record is written to `.cage/sessions/` in your project | Add `.cage/sessions/` to `.gitignore` if you do not want it committed. |
 | Retrieval cuts files into chunks differently | Nothing — each project's index is rebuilt once, the first time the project is opened. For a large project that takes as long as its first indexing did. |
+| Send To AI has no **Role** field any more. It put a short persona — "Coder", "Reviewer" — in front of the prompt as a system message | Nothing, unless a role of yours carried real instructions: it is no longer read, so **move those into the Prompt Template**. The example graphs had only names there. |
 | Upgrading straight from AIWrapper 0.1.0: the database and its account were renamed in 0.1.1 | **Edit `sql/migrate-aiwrapper-to-cage.sql`** — replace `CHANGE-ME` with the password in `<mysql><password>` — **and run it as a database administrator before starting the new server.** |
 
 ---
@@ -286,6 +287,13 @@ recorded with it.
   so the server filed it under the old conversation — whose unanswered messages
   the first step then received as well. Switching conversations now reconnects.
   The native client already did.
+- **HTTPS to a remote model failed on Linux.** Every remote AI, embedding or
+  modality config with an `https://` URL failed with `certificate verify
+  failed`. The server's OpenSSL looked for root certificates in a directory
+  that exists on no machine, and the Linux build never loaded the system's own.
+  It now loads the system CA bundle, from the same list of places the model
+  downloader already used (`CAGE_CA_BUNDLE` or `SSL_CERT_FILE` override it).
+  The tests had only ever talked to plain-`http` stand-ins.
 - **`run_code` ran on the server, and did not ask.** It is the tool a model uses
   to check a result — work out an expected value, parse a file the project
   produced. It ran on the server machine, as the server's account: it could not

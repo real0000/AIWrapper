@@ -105,7 +105,6 @@ list, never to the raw reference.
 |---|---|---|
 | AI Config | — | Which [AI Config](ai-config.md) or [Modality Config](modality-config.md) runs this node |
 | Format | — | A [Format Config](format-config.md). Turns on structured output, so the model must answer in that shape |
-| Role | — | System role text for this call |
 | Prompt Template | — | The prompt. `{{pinName}}` inserts an input pin's value |
 | Enable Tool Calls | on | Whether the model may call tools in your editor |
 | Allowed Tools | `*` | Comma-separated allow-list; `*` means every tool the client offers |

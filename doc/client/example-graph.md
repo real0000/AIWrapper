@@ -188,7 +188,6 @@ to two nodes.
 {
   "ai_config": "coder",
   "format_config": "",
-  "role": "",
   "prompt_template": "…{{Request}}…",
   "tools_enabled": false,
   "allowed_tools": "*",
