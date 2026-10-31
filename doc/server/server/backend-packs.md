@@ -39,7 +39,7 @@ Splitting it means:
 - updating the server does not re-download a gigabyte of kernels.
 
 The server is **49 MB** and has no CUDA dependency of its own. A CUDA pack is
-1.6–2.3 GB unpacked — two architectures' kernels plus the CUDA libraries it
+1.2–1.5 GB unpacked — two architectures' kernels plus the CUDA libraries it
 carries; the Vulkan and CPU packs are about 140 MB and 120 MB.
 
 ## Choosing one
@@ -87,7 +87,8 @@ drive those cards.
 NVIDIA driver, the HIP packs need a few libraries that are not theirs to ship:
 
 ```bash
-sudo apt install libdrm2 libdrm-amdgpu1 libnuma1 libelf1
+sudo apt install libdrm2 libdrm-amdgpu1 libnuma1 libelf1      # Debian, Ubuntu
+sudo dnf install libdrm numactl-libs elfutils-libelf          # RHEL, AlmaLinux, Rocky, Fedora
 ```
 
 `libdrm*` comes with the amdgpu driver stack — the AMD equivalent of

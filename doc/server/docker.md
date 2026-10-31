@@ -99,8 +99,9 @@ folders would otherwise belong to root.
 The base image is `nvidia/cuda:12.6.3-runtime-ubuntu24.04`, and both halves of
 that matter:
 
-- **ubuntu24.04** — the server binary needs `GLIBC_2.38`. Ubuntu 22.04 ships 2.35
-  and the binary will not start on it.
+- **ubuntu24.04** — what this setup was verified with. The server and the packs
+  need only glibc 2.28, so an older base would also do; that has not been tried
+  with this Dockerfile.
 - **-runtime** — nothing in the image compiles anything. It used to be `-devel`,
   for building the Python worker environments, which are gone. The CUDA packs
   carry their own CUDA libraries, so a plain `ubuntu:24.04` base should do as
@@ -180,14 +181,16 @@ only you can reach; not otherwise. See [Accounts](control/accounts.md).
 
 ## What was tested
 
-For 0.2.0, from the release packages, following the quick start:
+For 0.2.0, from the release packages, following the quick start — last on
+2026-10-31, with the packages rebuilt on the Enterprise Linux 8 base:
 
 | Step | Result |
 |---|---|
 | Image build | `nvidia/cuda:12.6.3-runtime-ubuntu24.04`, the 0.2.0 server package and the `cuda-sm70_sm75` pack |
 | Stack start | MySQL healthy, then the server; `config.xml` seeded from the template |
 | Backend pack | Found in `/opt/cage/bin`; drives the four V100s and refuses the RTX 4070 |
-| Inference | Qwen3-0.6B, a safetensors directory under the read-only `/models`, answered on one V100: 138 tokens in 0.81 s, and again after `down` + `up` |
+| Inference | Qwen3-0.6B, a safetensors directory under the read-only `/models`, answered on one V100: 138 tokens in 0.78 s, and again after `down` + `up` |
+| HTTPS | From inside the container, `https://huggingface.co` passes certificate verification and a site with an expired certificate is refused |
 | Web UI | Serves on the published port |
 | Persistence | After `down` + `up`: config kept, model registered again |
 
@@ -235,7 +238,7 @@ The entrypoint prints a warning for each of the common mistakes before starting
 
 | Symptom | Likely cause |
 |---|---|
-| Container exits immediately | Check `docker compose logs cage`. A GLIBC error means the base image was changed to 22.04 |
+| Container exits immediately | Check `docker compose logs cage`. A GLIBC error means the base image was changed to one older than glibc 2.28 — Ubuntu 18.04, for example |
 | `could not select device driver` at start | NVIDIA Container Toolkit is not installed, or the daemon was not restarted after installing it |
 | Server starts, no GPU in the log | Same, or the `deploy.resources` block was removed |
 | GGUF models never load | Check the model path is under a mounted directory; `backend` should be `llama` |

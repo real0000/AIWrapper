@@ -186,7 +186,7 @@ several machines.
 |---|---|
 | Server, either way | Linux x86-64, plus a [backend pack](doc/server/server/backend-packs.md) for your GPU. NVIDIA needs only the driver — the packs carry their own CUDA libraries. AMD through the HIP packs or Vulkan, Intel through Vulkan. CPU-only works, slowly |
 | …via Docker | Docker with Compose v2, and the NVIDIA Container Toolkit for GPU access. Nothing else on the host |
-| …natively | glibc 2.38+ (Ubuntu 24.04 or newer), PowerShell 7.4+ to run the installer, and MySQL if you want accounts |
+| …natively | glibc 2.28+ (RHEL / AlmaLinux / Rocky 8, Ubuntu 20.04, Debian 11, Fedora, or newer), PowerShell 7.4+ to run the installer, and MySQL if you want accounts |
 | Client | VSCode 1.85+ |
 
 ## Documentation

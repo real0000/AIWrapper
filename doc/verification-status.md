@@ -30,31 +30,38 @@ Tesla V100-SXM2 (7.0), NVLink between the V100s.
 
 | Pack | Level | Detail |
 |---|---|---|
-| `cuda-sm70_sm75` | **Runs** | Drives all four V100s and correctly refuses the 4070, saying why. The 0.2.0 server with this pack, installed as the install guide describes and started by the agent, answered a prompt on a V100 at 167 tok/s (Qwen3-0.6B) — the rebuilt pack, natively and in Docker |
+| `cuda-sm70_sm75` | **Runs** | Drives all four V100s and correctly refuses the 4070, saying why. The 0.2.0 server with this pack, installed as the install guide describes and started by the agent, answered a prompt on a V100 at about 177 tok/s (Qwen3-0.6B: 138 tokens in 0.78 s) — the 2026-10-31 build, natively and in Docker |
 | `cuda-sm80_sm86` | **Runs** | Drives the 4070 (sm_86 code is forward-compatible within compute capability 8) |
 | `cuda-sm89_sm90` | **Runs** | Drives the 4070 |
 | `cpu` | **Runs** | Self-test passes |
 | `vulkan` | **Runs** | Drives all five cards here — the 4070 and the four V100s. On AMD see below |
 | `cuda-sm60_sm61` | **Loads** | **New in 0.2.0**, for the P40 and the rest of Pascal. No Pascal card here. 236 kernels present for each of sm_60 and sm_61, no PTX; correctly refused by every card in this machine |
 | `cuda-sm120_sm121` | **Loads** | No Blackwell hardware here. Correctly refused by every card in this machine |
-| `hip-*` (all five) | **Loads** | No AMD hardware here. Checked in a clean Ubuntu 24.04 container — no ROCm, no AMD driver — with only the four host packages the install guide lists |
+| `hip-*` (all five) | **Loads** | No AMD hardware here. Checked in clean AlmaLinux 8, Ubuntu 20.04, Ubuntu 22.04, Debian 13 and Fedora containers — no ROCm, no AMD driver — with only the host packages the [install guide](server/server/backend-packs.md) lists for each |
 
-**Rebuilt on 2026-10-28.** Every pack was rebuilt at ik `60d899d9b`, which adds
-the Qwen3-Coder chat parser (see Tools below) — tool-call parsing, not
-computation — with the same toolchain as before: Ubuntu 24.04, CUDA 12.0,
-GCC 13.3. Each rebuilt pack was checked again: it dlopens, its ABI fingerprint
-matches the server's, and it reports `60d899d9b` — the CPU, Vulkan and HIP packs
-in a clean Ubuntu 24.04 container with only the packages the install guide
-lists, the CUDA packs on the machine above. `cuda-sm70_sm75` and `cpu` also ran
-again, as their rows say. The other **Runs** rows were measured on the previous
-build of the same sources.
+**Rebuilt on 2026-10-31, on an older base.** The server and every pack were
+rebuilt at ik `5bc962756` on Enterprise Linux 8 — AlmaLinux 8, NVIDIA's Rocky
+Linux 8 CUDA images and AMD's AlmaLinux 8 ROCm image — with GCC 14 and the same
+CUDA 12.0, CUDA 12.9 and ROCm 6.4.4 as before, so the GPU code is unchanged. They
+now need nothing newer than glibc 2.28: the server's executables ask for at most
+`GLIBC_2.28`, the packs and the libraries they carry for `GLIBC_2.27`. The CUDA
+packs no longer carry source-line information in their device code, which made
+them about a third smaller. Every pack was checked again: it dlopens, its ABI
+fingerprint matches the server's, it reports `5bc962756`, and on the machine
+above each gives exactly the result its row states. The `cuda-sm70_sm75` row,
+the install and Docker rows below, and the test suites further down were re-run
+on these packages.
 
-**Without a CUDA toolkit.** The machine above has CUDA installed system-wide,
-which hides a missing library. So all five CUDA packs, and the server as the
-installer lays it out, were also checked in a clean Ubuntu 24.04 container with
-no CUDA and no driver: everything they need resolves from the package's own
-`lib/` except `libcuda.so.1`, which comes with the driver. This check found
-that the packs had been shipping without `libcufft`; they now carry it.
+**Older and newer distributions, without a CUDA toolkit.** The machine above
+has CUDA installed system-wide, which hides a missing library. So the server and
+all twelve packs were also checked in clean AlmaLinux 8 (glibc 2.28), Ubuntu
+20.04 (2.31), Ubuntu 22.04 (2.35), Debian 13 (2.41) and Fedora (2.43)
+containers with no CUDA, no ROCm and no driver, and only the host packages the
+install guide lists: the server starts, the CPU pack runs its self-test, the
+HIP and Vulkan packs load, and everything the CUDA packs need resolves from
+their own `lib/` except `libcuda.so.1`, which comes with the driver. An earlier
+round of this check found that the packs had been shipping without `libcufft`;
+they now carry it.
 
 **Packs side by side.** `cuda-sm60_sm61` and `cuda-sm70_sm75` were installed
 into the same `bin/` together, as a machine with a P40 next to V100s would have
@@ -109,7 +116,7 @@ what reaches the model, what is written and read, and in what order.
 | What memory is read | 161 | The whole memory suite, including: with a memory AI, whether history is read does not depend on the message naming the file; without one, only rules are read |
 | A session across a server restart | 19 | Three server restarts: the session is recalled from the database; an unknown id is refused with 404; without a database the client's id is taken |
 | Tool calls in two sessions | 9 | Stop or a disconnect in one session leaves the other's waiting calls alone; two sessions with the same call id each get their own result; a reply from the wrong session is refused |
-| Client tools end to end | 25 | The native client, headless, with a real MCP subprocess. `run_code` runs on the client, in the workspace root, in the group that switches it on — and not at all where it is off |
+| Client tools end to end | 27 | The native client, headless, with a real MCP subprocess. `run_code` runs on the client, in the workspace root, in the group that switches it on — and not at all where it is off. A step that ran a command is not told its verification is unconfirmed |
 | Unanswered messages | 10 | A message whose run had no shared node, was stopped, failed, or never started gets one answer in the shared conversation — the run's final result, or what happened to it; a shared node's own answer is not doubled |
 
 **Not yet:** a real model through a whole graph with the session record, and the

@@ -98,6 +98,23 @@ its own cards, and the V100 pack answered prompts from that two-pack install.
 **Not verified:** a P40 actually running a model — there was none to test on. A
 report from a P40 owner is the most useful one this release could get.
 
+## Older Linux distributions
+
+The server and every backend pack now need only **glibc 2.28**: RHEL, AlmaLinux
+and Rocky 8, Ubuntu 20.04, Debian 11, Fedora, and anything newer. 0.1.x needed
+Ubuntu 24.04 or newer, because a program asks for the C library of the system it
+was built on, and it was built on a current one. The packages are now built on
+Enterprise Linux 8 with GCC 14 and the same CUDA and ROCm versions as before, so
+the GPU code is the same.
+
+The CUDA packs are also about a third smaller: they no longer carry the source
+line information that only profilers read.
+
+**Verified:** the server package starts and every pack loads in clean AlmaLinux
+8, Ubuntu 20.04, Ubuntu 22.04, Debian 13 and Fedora containers. On this machine
+(Ubuntu 26.04) the rebuilt server passed the full test suite and answered on a
+V100, installed natively and in Docker.
+
 ## Hybrid Mamba2 models: Nemotron-3-Ultra
 
 NVIDIA-Nemotron-3-Ultra-550B-A55B now runs. It is a hybrid: of its 108 layers, 12
@@ -226,6 +243,15 @@ recorded with it.
 - **Running out of VRAM** no longer reports a failed computation as success, no
   longer aborts in two places, and no longer places the output layer on a card
   that was not selected.
+- **A model that just fit on one card could fail its first request.** After a
+  restart, the first model on a card was placed without the card's own runtime
+  overhead — the CUDA context and cuBLAS, a few hundred MB — which the server
+  could measure only after the first computation. With Auto Fit filling the
+  card, the context then did not fit and the request failed. The server now
+  warms each card it is about to use and measures that overhead before placing
+  the model. If a context still does not fit because the numbers turned out
+  wrong — another program took memory after they were measured — it plans the
+  placement again and reloads once.
 - **Stopping the agent left the server running.** The agent had no handler for
   SIGINT or SIGTERM, so stopping it ended the agent at once and left the server
   it had started behind, still holding its port and its VRAM. The agent now stops
@@ -317,6 +343,12 @@ recorded with it.
 - **A new chat showed the previous one's Resume / Discard banner.** The banner
   for an interrupted run survived **+**, and came back when the panel was
   rebuilt. It now goes with the conversation it belongs to.
+- **Opening another folder continued the previous folder's conversation.** There
+  was one current conversation for every folder: in project B you were still in
+  project A's conversation, with its shared memory, its Resume banner and its
+  session record. Each folder now keeps its own, in VS Code and in the native
+  client; History still lists all of them. With two VS Code windows open, one
+  could also drop a conversation the other had just started.
 - **Importing a model from disk said "no loadable weights"** for TRELLIS.2,
   SD 3.5 Large and Ace-Step 1.5. The import used the chat-model loader's rule —
   weights at the top of the folder, named `model*.safetensors` — although what a

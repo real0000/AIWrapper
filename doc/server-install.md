@@ -56,7 +56,7 @@ From here on this page is the **native** install. For containers see
 
 | | Required | Notes |
 |---|---|---|
-| OS | Linux x86-64, glibc 2.38+ | Ubuntu 24.04 or newer. The binary needs `GLIBC_2.38`, so Ubuntu 22.04 (2.35) will not run it |
+| OS | Linux x86-64, glibc 2.28+ | RHEL / AlmaLinux / Rocky 8, Ubuntu 20.04, Debian 11, Fedora, or anything newer. The packages are built on an Enterprise Linux 8 base, so they ask for nothing newer than glibc 2.28 and GCC 8's `libstdc++` |
 | GPU | A driver, plus a [backend pack](server/server/backend-packs.md) | NVIDIA needs only the driver — the CUDA packs carry their own `libcudart`, `libcublas` and `libcufft`. No CUDA toolkit to install. See [supported GPUs](#supported-gpus) |
 | RAM | 16 GB minimum | Large models are mostly RAM-resident when they exceed VRAM |
 | MySQL | optional | Needed only for accounts, sessions and usage tracking. Without it the server runs in open mode — see §7 |
