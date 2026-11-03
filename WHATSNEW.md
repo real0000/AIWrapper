@@ -252,6 +252,24 @@ recorded with it.
   the model. If a context still does not fit because the numbers turned out
   wrong — another program took memory after they were measured — it plans the
   placement again and reloads once.
+- **Running out of VRAM mid-reply now waits instead of failing.** When a
+  computation cannot get memory, because an estimate was low or another program
+  took some, the reply used to fail. Now idle models on that card are evicted,
+  or the computation retries every 10 seconds until something on the card
+  finishes or the run is cancelled. Nothing already produced is lost. It fails
+  only when nothing could ever free enough. Generative and embedding models
+  wait the same way. See
+  [Backends → When a card runs out](doc/server/server/backends.md#when-a-card-runs-out-during-a-computation).
+- **Memory freed by other programs was not noticed until a restart.** The server
+  only corrected its count of VRAM used outside CAGE when something failed. A
+  program that had held memory and then exited kept the card looking full, so
+  models went to the CPU or did not fit. The cards a model may use are now
+  measured again just before it is placed.
+- **A config whose GPUs were missing used every card instead.** When none of the
+  cards an AI config names was present, such as a card that dropped off the bus
+  or a config from another machine, the model was placed across every visible
+  card, including any display card. The request now fails and says why. Embedding
+  models behave the same way.
 - **Stopping the agent left the server running.** The agent had no handler for
   SIGINT or SIGTERM, so stopping it ended the agent at once and left the server
   it had started behind, still holding its port and its VRAM. The agent now stops

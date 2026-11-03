@@ -124,6 +124,31 @@ Detection is not NVIDIA-only: `nvidia-smi`, AMD's KFD interface, Apple's
 `sysctl` and a Vulkan fallback are tried in turn, and `CAGE_GPU_PROBE` forces
 one. Modality models are on this same ledger.
 
+### When a card runs out during a computation
+
+An estimate can be low, and a program outside CAGE can take memory after a
+model was placed. When a computation then runs out of VRAM, the request does
+not fail. It **waits** for room on that card:
+
+- Idle models and contexts on the card are evicted, and the computation runs
+  again at once.
+- Otherwise it runs again every 10 seconds until a model in use on the card
+  finishes, or a program outside CAGE lets go. There is no time limit; it waits
+  until the run is cancelled.
+- It fails only when nothing could ever free enough. That means nothing else on
+  the card can be released (pinned models stay), and even the memory used
+  outside CAGE would not be enough.
+
+Nothing already produced is lost. A language model rolls back the batch that
+failed and computes the same batch again. A model whose state cannot be rolled
+back, such as a recurrent architecture, reports the error instead. A generative
+model is unloaded and loaded again with the whole card booked for it, less any
+pinned model, so whatever shared the card is evicted or waited for first.
+Embedding models wait the same way.
+
+Waiting does not query the driver. Each retry is the test, so memory freed by
+another program is noticed on the next attempt.
+
 ## Asking where a model would go, without loading it
 
 `cage-llama-fit` runs the same placement logic the server uses and prints what

@@ -120,6 +120,11 @@ GPU. **Nothing is refused for lack of VRAM**, and Context Size is never quietly
 reduced. While Auto Fit is on, GPU Layers, Split Mode and CPU MoE Layers are
 decided by the server and hidden in the editor.
 
+A card can still run out in the middle of a reply, for example when another
+program takes memory. The reply then waits for room and continues where it
+stopped. See
+[Backends → When a card runs out](../server/server/backends.md#when-a-card-runs-out-during-a-computation).
+
 **`-1` can quietly mean CPU.** With Auto Fit off, on a machine where this backend
 has no usable GPU, `-1` resolves to 0 and the model loads entirely on the CPU —
 no error, just far slower. Auto Fit reports its plan in the console instead.
