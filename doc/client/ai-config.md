@@ -120,8 +120,8 @@ GPU. **Nothing is refused for lack of VRAM**, and Context Size is never quietly
 reduced. While Auto Fit is on, GPU Layers, Split Mode and CPU MoE Layers are
 decided by the server and hidden in the editor.
 
-**`-1` can quietly mean CPU.** With Auto Fit off, if the server finds no usable
-GPU for this config, `-1` resolves to 0 and the model loads entirely on the CPU —
+**`-1` can quietly mean CPU.** With Auto Fit off, on a machine where this backend
+has no usable GPU, `-1` resolves to 0 and the model loads entirely on the CPU —
 no error, just far slower. Auto Fit reports its plan in the console instead.
 
 **GPU Visibility picks the cards this config may use.** The restriction is applied
@@ -129,6 +129,10 @@ where placement is decided, so a card you leave out is never touched. Use it to
 keep a model off a display card, or off one another model is holding. With Auto
 Fit on, the list is a set: the same cards in another order are the same placement
 and do not cause a reload.
+
+**If none of the cards it names is on this machine**, the request fails and says
+so — a card that has dropped off the bus, or a config written on another machine.
+Other cards are never used in their place. The same holds for embedding models.
 
 ## Decoding
 
