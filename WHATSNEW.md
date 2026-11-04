@@ -257,7 +257,9 @@ recorded with it.
   took some, the reply used to fail. Now it gives back its context and queues
   like a new placement. Idle models on the card are evicted, models in use are
   waited for, and if nothing can make room, part of the model moves to the CPU.
-  It then continues where it stopped, without repeating what it already sent.
+  Either way the reply continues where it stopped, without repeating what it
+  already sent. A model moved to the CPU this way moves back the next time it is
+  idle and the room is available again.
   Generative and embedding models queue the same way, but have no CPU to fall
   back to. See
   [Backends → When a card runs out](doc/server/server/backends.md#when-a-card-runs-out-during-a-computation).

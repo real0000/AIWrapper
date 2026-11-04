@@ -123,7 +123,8 @@ decided by the server and hidden in the editor.
 A card can still run out in the middle of a reply, for example when another
 program takes memory. The reply then gives back its context and queues like a
 new placement, and continues where it stopped. If nothing can make room, part of
-the model moves to the CPU. See
+the model moves to the CPU, and moves back the next time the model is idle with
+the room available again. See
 [Backends → When a card runs out](../server/server/backends.md#when-a-card-runs-out-during-a-computation).
 
 **`-1` can quietly mean CPU.** With Auto Fit off, on a machine where this backend

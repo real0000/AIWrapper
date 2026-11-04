@@ -138,7 +138,11 @@ placement:
 - When nothing on the card can make room, because what is left is pinned or is
   used outside CAGE, the model is placed again with a few layers on the CPU.
   The request continues more slowly instead of waiting for that program to
-  leave. The model stays that way until it is next loaded.
+  leave.
+- A model placed partly off its cards for lack of room is checked again each
+  time it goes idle: its cards are measured once, and if the room is back, it
+  is loaded onto them again while nobody is using it. A model that is simply
+  larger than its cards is not checked.
 - Once placed, it computes the prompt and the tokens it already produced again,
   then continues. Nothing already produced is lost or sent twice.
 
