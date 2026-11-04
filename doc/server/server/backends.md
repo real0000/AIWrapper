@@ -128,26 +128,28 @@ one. Modality models are on this same ledger.
 
 An estimate can be low, and a program outside CAGE can take memory after a
 model was placed. When a computation then runs out of VRAM, the request does
-not fail. It **waits** for room on that card:
+not fail. It gives back what it holds and **queues** with every other
+placement:
 
-- Idle models and contexts on the card are evicted, and the computation runs
-  again at once.
-- Otherwise it runs again every 10 seconds until a model in use on the card
-  finishes, or a program outside CAGE lets go. There is no time limit; it waits
-  until the run is cancelled.
-- It fails only when nothing could ever free enough. That means nothing else on
-  the card can be released (pinned models stay), and even the memory used
-  outside CAGE would not be enough.
+- Its context (KV cache and compute buffers) is released, and the request is
+  placed again by the same rules as a new one. Idle models on the card are
+  evicted, and models in use are waited for. A queued request holds nothing,
+  so two requests queued for the same card never wait for each other.
+- When nothing on the card can make room, because what is left is pinned or is
+  used outside CAGE, the model is placed again with a few layers on the CPU.
+  The request continues more slowly instead of waiting for that program to
+  leave. The model stays that way until it is next loaded.
+- Once placed, it computes the prompt and the tokens it already produced again,
+  then continues. Nothing already produced is lost or sent twice.
 
-Nothing already produced is lost. A language model rolls back the batch that
-failed and computes the same batch again. A model whose state cannot be rolled
-back, such as a recurrent architecture, reports the error instead. A generative
-model is unloaded and loaded again with the whole card booked for it, less any
-pinned model, so whatever shared the card is evicted or waited for first.
-Embedding models wait the same way.
+How much more the context needed than was measured is remembered, so later
+placements of the same configuration leave that room. A generative model is
+unloaded and queues the same way. It has no CPU to fall back to, so when
+nothing in CAGE can make room it reports the error. Embedding models release
+their context and queue the same way.
 
-Waiting does not query the driver. Each retry is the test, so memory freed by
-another program is noticed on the next attempt.
+There is no time limit: a queued request waits until it is placed or
+cancelled. Waiting does not query the driver.
 
 ## Asking where a model would go, without loading it
 

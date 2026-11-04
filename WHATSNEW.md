@@ -252,13 +252,14 @@ recorded with it.
   the model. If a context still does not fit because the numbers turned out
   wrong — another program took memory after they were measured — it plans the
   placement again and reloads once.
-- **Running out of VRAM mid-reply now waits instead of failing.** When a
+- **Running out of VRAM mid-reply no longer fails the reply.** When a
   computation cannot get memory, because an estimate was low or another program
-  took some, the reply used to fail. Now idle models on that card are evicted,
-  or the computation retries every 10 seconds until something on the card
-  finishes or the run is cancelled. Nothing already produced is lost. It fails
-  only when nothing could ever free enough. Generative and embedding models
-  wait the same way. See
+  took some, the reply used to fail. Now it gives back its context and queues
+  like a new placement. Idle models on the card are evicted, models in use are
+  waited for, and if nothing can make room, part of the model moves to the CPU.
+  It then continues where it stopped, without repeating what it already sent.
+  Generative and embedding models queue the same way, but have no CPU to fall
+  back to. See
   [Backends → When a card runs out](doc/server/server/backends.md#when-a-card-runs-out-during-a-computation).
 - **Memory freed by other programs was not noticed until a restart.** The server
   only corrected its count of VRAM used outside CAGE when something failed. A
