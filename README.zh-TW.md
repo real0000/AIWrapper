@@ -2,13 +2,118 @@
 
 # CAGE — Composable Agent Graph Engine
 
-**自架的 AI 程式開發助手：一個 C++20 推論伺服器，加上一個 VSCode client。
-模型、session、專案索引和產生出來的檔案，全部留在你自己的硬體上。**
+**把節點接起來，就能組出你自己的 AI agent。語言、視覺、圖片、語音、音樂、動作和 3D 模型在同一張圖裡分工合作，跑在你自己的 GPU 上。**
 
-名字就是設計本身：agent 的迴圈是一張你用節點組起來、隨時可以修改的**圖**，不是寫死在執行檔裡的固定迴圈。每個節點自己挑模型，所以同一輪可以用又小又快的模型做規劃，再交給大模型寫程式。
+在 CAGE 裡，agent 是一張看得見的圖。每個節點是一個步驟：問模型、檢查答案、分支、繞回去重來、把工作拆開、停下來問你。而每個步驟都可以用自己的模型。同一個 agent 可以用小而快的模型規劃、用圖片模型畫圖、用語音模型開口說話，再把一張圖變成 3D 網格，一次執行全部做完。不用寫程式，也不用裝 Python。
+
+寫程式只是它能做的其中一件事，遠遠不是唯一的一件。
 
 > **專有軟體。** Copyright (c) 2026 real0000. All Rights Reserved.
 > 這個 repository 發行的是編譯好的套件與文件，不含原始碼，原始碼也不出售。
+
+---
+
+## 能做出什麼
+
+| Agent | 圖怎麼做到 |
+|---|---|
+| **從概念到 3D 素材** | 描述一個物件。圖片模型把它畫出來，圖片轉 3D 的模型再把這張圖變成帶貼圖的 `.glb` 網格，存進你的專案 |
+| **符合需求的圖片** | 圖片模型畫圖，視覺模型拿圖跟需求比對，不符合就帶著哪裡不對繞回去重畫，直到符合為止 |
+| **有旁白的解說** | 語言模型寫稿，語音模型把稿子唸出來，音檔存進你的專案 |
+| **從錄音整理會議紀錄** | 附上一段錄音。語音辨識把它轉成文字，語言模型再從逐字稿整理出決議和待辦事項 |
+| **遊戲場景的配樂與動作** | 音樂模型依場景描述配樂，動作模型把「騎士拔劍、單膝跪下」變成一段動畫 |
+| **會自己檢查成果的 coder** | 一個模型規劃、一個寫程式、一個實際建置並執行、一個讀報告下判斷。沒過就帶著錯誤送回去重寫 |
+| **有第二意見的研究** | 檢索找出專案裡相關的部分。一個模型起草、一個挑毛病、一個決定什麼時候算完成 |
+| **把大工作拆開做** | 一個 dispatcher 把要求拆成幾項工作，在平行的分支上逐項完成，再把結果收齊 |
+
+這些都不是寫死的功能。每一個都是幾個節點組成的圖：在 Logic Editor 裡畫一次，到 chat panel 選它，哪裡不夠好就馬上改。[完整範例](doc/client/example-graph.zh-TW.md)把其中一張一個節點一個節點拆開來說明。
+
+---
+
+## 為什麼選 CAGE
+
+### agent 就是你畫出來的圖
+
+![Logic Editor](doc/images/logic-editor.png)
+
+*VSCode 裡的 Logic Editor：左邊是節點面板和這張圖用到的 AI configs，中間是圖本身 —— 這裡是一個會自我檢查的 coding agent。*
+
+組 agent 用的積木：
+
+- **呼叫模型。** Send To AI 可以呼叫任何模型：本機或雲端、文字或生成式。
+- **做判斷。** If 依一個值分支。Check Format 檢查回答是不是你要的格式，格式不對就能送回去重來。
+- **迴圈。** 接回前面節點的連線會讓它再跑一次，直到檢查通過。
+- **平行處理。** Dispatch 把一件工作拆成幾項，同時進行。
+- **agent 裡還有 agent。** Send Prompt 把工作交給另一張圖，再把結果拿回來。
+- **讓人參與決定。** Ask User 會暫停執行，把決定交給你。
+- **帶著狀態走。** 變數、計數器和組合好的文字，在整次執行中一路帶著。
+- **結構化的回答。** 列出你要的欄位，回答進來時就已經拆好，一個欄位一個 pin。
+
+每個節點都能自己選模型、量化、GPU 和取樣參數。圖是純 JSON，[每個欄位都有文件](doc/client/graph-format.zh-TW.md)，所以程式 —— 或你請來幫忙的 AI —— 不打開編輯器也寫得出一張圖。
+
+### 各種模型，放進同一張圖
+
+| 種類 | 節點拿它做什麼 |
+|---|---|
+| 語言 | 規劃、寫作、摘要、評判、呼叫工具 |
+| 視覺 | 看你附上的圖片，或它啟動的應用程式視窗 |
+| 圖片 | 依文字描述畫圖 |
+| 語音 | 把文字唸出來、把錄音轉成文字、找出錄音裡有人說話的片段 |
+| 音樂與音訊 | 依描述作曲、把一段錄音分離成各個音軌 |
+| 動作 | 把一段描述變成動畫 |
+| 3D | 把一張圖變成帶貼圖的網格 |
+| Embedding | 支撐對你專案的檢索 |
+
+- **檔案跟文字一樣在圖裡流動。** 一個節點畫出來的圖，就是下一個節點的輸入。網格、旁白或配樂會存進你的專案，每個檔案各核准一次。
+- **一個程序，一本帳。** 每一種模型都在 server 裡面執行，跟語言模型用同一個後端包、同樣的 GPU、同一本 VRAM 帳本。沒有 Python、沒有 worker 程序，也不用另外架服務。閒著的圖片模型會讓位給聊天模型，反過來也一樣。
+- **指向資料夾就好。** server 從權重判斷一個模型是聊天、embedding、畫圖還是做網格。沒有一份模型種類清單要你維護。
+- **想用雲端也可以。** 任何節點都能改呼叫 OpenAI、Anthropic 或 Gemini，或代管的圖片、語音服務（OpenAI、Stability、ElevenLabs、Replicate、fal），跟你的本機模型放在同一張圖裡。
+
+每一種模型在真實硬體上跑到什麼程度，列在[驗證過什麼](doc/verification-status.zh-TW.md)。
+
+### 你的硬體，你的模型
+
+- **自己架設。** server、模型和它們產出的一切，都留在你掌控的機器上。雲端模型只用在你指定給它的步驟。
+- **有什麼硬體就用什麼。** 後端包涵蓋 NVIDIA 從 Pascal（Tesla P40）到 Blackwell（RTX 50xx）、透過 ROCm 的 AMD、透過 Vulkan 的 Intel 與其他 GPU，以及沒有 GPU 的機器。一台機器混用不同的卡時，可以並排裝好幾個後端包。
+- **多 GPU，不用自己算。** 你挑卡，CAGE 依實際的拓樸決定怎麼切：NVLink 分成哪幾座島、每張卡還剩多少記憶體、模型是 dense 還是 mixture-of-experts。一個 5500 億參數的模型，曾在四張 32 GB 的 V100 上正確執行，專家層放在主機記憶體裡。
+- **模型共用一台機器。** 第一次用到才載入，空間不夠時會互相讓位。回答到一半 GPU 記憶體不夠，會等到有空間再接著做，而不是失敗。
+- **Hugging Face 的權重直接用。** safetensors 直接載入，載入時量化成你選的格式。GGUF 檔也能用，一個檔案就是一種量化。
+
+### 在你工作的地方運作
+
+- **就在 VSCode 裡。** chat panel 用來跟你的 agent 對話、選由哪一張圖來驅動對話，Logic Editor 用來組 agent。
+- **工具在你的編輯器裡執行，由你掌控。** agent 能讀寫檔案、執行指令、建置與測試（CMake、Unity、Unreal、Node、Cargo、Go、Make），並用小程式檢查自己的結果。全部在你的機器上執行，每個要寫入的檔案都先經過你核准。
+- **帶上你自己的工具。** 接上任何 MCP 程式，或自己定義一個工具：名字、說明、參數，加上一行指令。
+- **記憶會延續下去。** 每個檔案的修改歷史、每一步做了什麼的紀錄（重試時知道上一次查到了什麼），以及你自己定的長期規則；由一個小模型挑出每一步要讀哪些。對專案的檢索會隨著你的編輯保持最新。
+
+### 為團隊而做
+
+- 帳號、存取權杖、每個使用者各自的 session 與用量計算。
+- 圖可以只屬於擁有者，也可以分享給別人讀或寫。
+- 網頁控制台管理多台機器：各自的模型、從 Hugging Face 下載，以及重新啟動。
+- 一個 `docker compose up` 就架好整個 server 端。
+
+---
+
+## 運作方式
+
+```
+   VSCode extension ──┐
+                      ├── WebSocket + HTTP ──► CAGE Server ──► local models / GPUs
+   native client    ──┘                              │
+                                                     ├── backend pack (in-process):
+                                                     │     text, vision, safetensors,
+                                                     │     image, speech, music, motion, 3D
+                                                     └── remote chat APIs
+```
+
+所有吃資源的工作都在 server：模型的載入與擺放、執行邏輯圖、檢索，以及每一種模型。client 是一層薄薄的編輯器前端，負責顯示對話，並在你的電腦上執行工具呼叫。
+
+![VSCode 裡的 CAGE chat panel](doc/images/chat-panel.png)
+
+*chat panel 就在 VSCode 裡。圖中 DemoCoder 這張圖剛規劃好一個 texture packer，負責寫程式的 coder（四張本機 V100 上的 Qwen3.8）剛寫完 `packer.cpp`。底部的選單決定由哪一張邏輯圖來驅動這段對話。*
+
+---
 
 ## 授權
 
@@ -32,7 +137,7 @@ CAGE 以**基本產品，加上另外購買的模組**的方式販售，每個�
 
 ---
 
-## 下載
+## 開始使用
 
 | 套件 | 平台 | 內容 | 位置 |
 |---|---|---|---|
@@ -59,71 +164,9 @@ CAGE 以**基本產品，加上另外購買的模組**的方式販售，每個�
 
 可以同時裝好幾包，server 會逐張卡探測每一包。一包都沒裝的話 server 照樣能跑，但只有 `remote` 模型能用。完整說明：**[後端包](doc/server/server/backend-packs.zh-TW.md)**。
 
-安裝：先看 **[doc/server-install.zh-TW.md](doc/server-install.zh-TW.md)**（Docker 或原生安裝），再看編輯器 client 的 **[doc/extension-install.zh-TW.md](doc/extension-install.zh-TW.md)**。
+安裝：先看 **[doc/server-install.zh-TW.md](doc/server-install.zh-TW.md)**（Docker 或原生安裝），再看編輯器 client 的 **[doc/extension-install.zh-TW.md](doc/extension-install.zh-TW.md)**。CAGE 沒有附現成的圖；你的第一張圖，可以從[完整範例](doc/client/example-graph.zh-TW.md)開始。
 
----
-
-## 概觀
-
-```
-   VSCode extension ──┐
-                      ├── WebSocket + HTTP ──► CAGE Server ──► local models / GPUs
-   native client    ──┘                              │
-                                                     ├── backend pack (in-process):
-                                                     │     text, vision, safetensors,
-                                                     │     image, speech, music, motion, 3D
-                                                     └── remote chat APIs
-```
-
-所有吃資源的工作都在 server：模型的載入與擺放、agent 迴圈、檢索，以及多模態的處理流程。client 只是一層薄薄的編輯器前端，負責顯示對話，並在你的電腦上執行工具呼叫。
-
-![VSCode 裡的 CAGE chat panel](doc/images/chat-panel.png)
-
-*chat panel 就在 VSCode 裡。圖中 DemoCoder 這張圖剛規劃好一個 texture packer，負責寫程式的 coder（四張本機 V100 上的 Qwen3.8）剛寫完 `packer.cpp`。底部的選單決定由哪一張邏輯圖來驅動這段對話。*
-
-## 功能
-
-### 本機推論，多種後端
-
-模型都經過同一層 adapter，後端有兩種。一種是行程內的 **ik_llama.cpp**（來自後端包），GGUF 和 Hugging Face safetensors 都由它跑，視覺模型也是（透過 `mmproj` projector）；另一種是 **remote** 雲端端點（OpenAI、Anthropic、Gemini）。整套沒有任何 Python。模型要等到第一個用到它的請求才載入；所有本機模型共用一本 RAM／VRAM 帳本，新模型放不下時，驅逐最久沒用、而且正閒著的那一個。
-
-模型的 `<path>` 是一個*資料夾*：裡面每個 `*.gguf` 都會變成一個可以選的量化版本；safetensors 資料夾則在載入時才量化（4bit、8bit、bf16、fp16、fp32）。模型是哪一種（聊天、embedding、圖像生成）是從權重判斷出來的，不用自己宣告。
-
-### 多 GPU 擺放
-
-擺放依照機器實際的拓樸來決定：NVLink 怎麼分群、每張卡還剩多少 VRAM，以及模型是 dense 還是 mixture-of-experts。layer split、tensor split、把專家層放到 CPU，都由系統自動選擇；你只要在每個 AI config 裡挑要用哪幾張 GPU。
-
-### 用邏輯圖取代寫死的 agent 迴圈
-
-agent 的行為是一張明確、可以執行的圖，在 VSCode 裡用視覺化的方式編輯：prompt 節點、格式檢查、dispatch、可以重新進入的迴圈，以及會暫停執行、向你提問的決策節點。每個節點都能自己選模型、量化、GPU 組合和取樣參數。同一輪裡，可以讓便宜快速的模型做規劃，大模型寫程式。
-
-![Logic Editor](doc/images/logic-editor.png)
-
-*Logic Editor 裡的一套 coding 工作流程。左側是節點面板、圖中節點所綁定的 AI configs，以及這張圖的變數。每個 config 各自指定自己的模型與參數。*
-
-### 工具在你的編輯器裡執行
-
-讀寫檔案、套用 patch、執行終端機指令、建置專案、開啟檔案，全部在 VSCode 裡執行。每個工具都可以要求核准，寫檔則是一個檔案一個檔案核准。一張 **Tools** 表收錄了模型能呼叫的所有工具：內建的、你用一行指令自己定義的，以及掛上來的 **MCP** 程式所提供的（stdio 或 Streamable HTTP）。
-
-### 對你的專案做檢索
-
-client 先送出完整的索引，之後隨著你編輯送出增量。切塊依 tree-sitter 的 AST 進行，不支援的語言改以行數視窗切塊；embedding 在 server 上計算，向量依專案存放在 hnswlib 裡。圖中任何一個節點，都能替自己的 prompt 取回最相關的前 k 個片段。
-
-### 多模態
-
-圖像生成、文字轉語音、音訊與音樂生成、動作生成，以及圖片轉 3D 網格，也都在行程內透過後端包執行，跟語言模型共用同一個 GPU context 與同一本 VRAM 帳本。
-
-### 專案記憶
-
-每個檔案改了什麼、為什麼改的歷史；目前這段對話每一步做了什麼的紀錄（迴圈裡再跑一次的步驟，因此看得到上一次發現了什麼）；以及你自己定下的長期規則。由一個小模型挑出每一步實際要讀哪些。
-
-### 多使用者
-
-帳號、個人存取權杖、每個使用者各自的 session 與 token 計量；邏輯圖可以只屬於擁有者，也可以共享；還有控制台的網頁介面，用來管理多台機器上的帳號、節點與模型下載。
-
----
-
-## 需求
+### 需求
 
 | | |
 |---|---|

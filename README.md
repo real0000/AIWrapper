@@ -2,16 +2,168 @@
 
 # CAGE — Composable Agent Graph Engine
 
-**A self-hosted AI coding assistant: a C++20 inference server plus a VSCode client.
-Models, sessions, project index and generated artifacts all stay on your own hardware.**
+**Build your own AI agents by connecting nodes. Language, vision, image, speech,
+music, motion and 3D models work together in one graph, on your own GPUs.**
 
-The name is the design: the agent loop is a **graph** you compose from nodes and
-edit, not a fixed loop inside the binary. Each node picks its own model, so one
-run can plan with a small fast model and write code with a large one.
+An agent in CAGE is a graph you can see. Each node is one step: ask a model,
+check the answer, branch, loop back, split the work, ask you. And each step picks
+its own model. One agent can plan with a small fast model, draw with an image
+model, speak with a speech model and turn a picture into a 3D mesh, all in one
+run. You do not write code, and you do not install Python.
+
+Writing code is one thing you can build with it. It is far from the only one.
 
 > **Proprietary software.** Copyright (c) 2026 real0000. All Rights Reserved.
 > This repository distributes compiled packages and documentation; it does not
 > contain the source code, and the source code is not for sale.
+
+---
+
+## What you can build
+
+| Agent | How the graph does it |
+|---|---|
+| **Concept to 3D asset** | Describe an object. An image model draws it, an image-to-3D model turns the picture into a textured `.glb` mesh, and the mesh is saved into your project |
+| **Pictures that match the brief** | An image model draws, a vision model compares the picture with the brief, and the graph loops back with what is wrong until they match |
+| **Narrated explainer** | A language model writes the script, a speech model reads it aloud, and the audio is saved into your project |
+| **Meeting notes from a recording** | Attach a recording. Speech recognition transcribes it, and a language model turns the transcript into decisions and action items |
+| **Sound and motion for a game scene** | A music model scores the scene from its description, and a motion model turns "a knight draws his sword and kneels" into an animation clip |
+| **A coder that checks its own work** | One model plans, one writes the code, one builds and runs it, one reads the report. Failures go back to the coder with the errors |
+| **Research with a second opinion** | Retrieval finds the relevant parts of your project. One model drafts, another critiques, a third decides when the draft is done |
+| **Big jobs, split up** | A dispatcher breaks a request into tasks, works through them on parallel branches, and gathers the results |
+
+None of these is a fixed feature. Each is a graph of a handful of nodes: you draw
+it once in the Logic Editor, pick it from the chat panel, and change it the moment
+it falls short. The [worked example](doc/client/example-graph.md) takes one apart
+node by node.
+
+---
+
+## Why CAGE
+
+### Agents are graphs you draw
+
+![The Logic Editor](doc/images/logic-editor.png)
+
+*The Logic Editor inside VSCode: the node palette and the graph's AI configs on
+the left, the graph itself in the middle — here, a coding agent with a check
+loop.*
+
+The building blocks:
+
+- **Call a model.** Send To AI calls any model, local or cloud, text or generative.
+- **Decide.** If branches on a value. Check Format checks a reply against the
+  format you asked for, so a malformed one can be sent back.
+- **Loop.** An edge back to an earlier node runs it again, until a check passes.
+- **Work in parallel.** Dispatch splits a job into tasks and runs them side by side.
+- **Put agents inside agents.** Send Prompt hands a job to another graph and takes
+  back its result.
+- **Keep a human in the loop.** Ask User pauses the run to put a decision to you.
+- **Carry state.** Variables, counters and composed text travel through the run.
+- **Get structured answers.** Name the fields you want, and the reply arrives split
+  into one pin per field.
+
+Every node picks its own model, quantization, GPUs and sampling parameters. Graphs
+are plain JSON, [documented field by field](doc/client/graph-format.md), so a
+program, or an AI you ask, can write one without opening the editor.
+
+### Every kind of model, in one graph
+
+| Kind | What a node does with it |
+|---|---|
+| Language | Plan, write, summarise, judge, call tools |
+| Vision | Read the images you attach, or the window of an app it launched |
+| Image | Draw from a text prompt |
+| Speech | Read text aloud, transcribe a recording, find where someone is talking |
+| Music and audio | Compose music from a description, separate a recording into its tracks |
+| Motion | Turn a description into an animation clip |
+| 3D | Turn a picture into a textured mesh |
+| Embedding | Power retrieval over your project |
+
+- **Files flow like text.** The image one node draws is the input of the next.
+  A mesh, a voice-over or a track is saved into your project, one approval per
+  file.
+- **One process, one budget.** Every kind runs inside the server, from the same
+  backend pack, on the same GPUs and the same VRAM ledger as the language models.
+  No Python, no worker processes, no extra services. An idle image model makes
+  room for a chat model, and the other way round.
+- **Point at a folder.** The server works out from the weights whether a model
+  chats, embeds, draws or builds meshes. There is no list of model types to keep
+  up to date.
+- **Cloud when you want it.** Any node can call OpenAI, Anthropic or Gemini, or a
+  hosted image or speech service (OpenAI, Stability, ElevenLabs, Replicate, fal),
+  in the same graph as your local models.
+
+How far each kind has been run on real hardware is listed in
+[What has been verified](doc/verification-status.md).
+
+### Your hardware, your models
+
+- **Self-hosted.** The server, the models and everything they produce stay on
+  machines you control. A cloud model is used only for the steps you give it.
+- **Runs on what you have.** Backend packs cover NVIDIA from Pascal (Tesla P40) to
+  Blackwell (RTX 50xx), AMD through ROCm, Intel and others through Vulkan, and
+  machines with no GPU. Install several side by side when a machine mixes cards.
+- **Multi-GPU without the arithmetic.** You pick the cards; CAGE decides the split
+  from the real topology: NVLink islands, free memory per card, dense or
+  mixture-of-experts. A 550-billion-parameter model ran correctly on four 32 GB
+  V100s, with its experts in host memory.
+- **Models share the machine.** They load on first use and make room for each
+  other. A reply that runs out of GPU memory part-way waits for room and carries
+  on, instead of failing.
+- **Hugging Face weights as they are.** Safetensors load directly and are
+  quantized to whatever you pick when they load. GGUF files work too, one
+  quantization per file.
+
+### Works where you work
+
+- **Inside VSCode.** A chat panel to talk to your agents and choose which graph
+  drives the conversation, and the Logic Editor to build them.
+- **Tools in your editor, under your control.** Agents read and write files, run
+  commands, build and test (CMake, Unity, Unreal, Node, Cargo, Go, Make) and check
+  their results with short programs. All of it runs on your machine, and every
+  file written is approved first.
+- **Bring your own tools.** Attach any MCP program, or define a tool yourself: a
+  name, a description, its parameters and one command line.
+- **Memory that carries over.** Each file's history, a record of what every step
+  did so that a retry knows what the last attempt found, and your own standing
+  rules. A small model picks what each step reads. Retrieval over your project
+  stays current as you edit.
+
+### Built for teams
+
+- Accounts, access tokens, per-user sessions and usage accounting.
+- Graphs private to their owner, or shared with read or write access.
+- A web control plane to manage several machines: their models, downloads from
+  Hugging Face, and restarts.
+- One `docker compose up` for the whole server side.
+
+---
+
+## How it works
+
+```
+   VSCode extension ──┐
+                      ├── WebSocket + HTTP ──► CAGE Server ──► local models / GPUs
+   native client    ──┘                              │
+                                                     ├── backend pack (in-process):
+                                                     │     text, vision, safetensors,
+                                                     │     image, speech, music, motion, 3D
+                                                     └── remote chat APIs
+```
+
+The server owns everything expensive: model loading and placement, running the
+graphs, retrieval, and every kind of model. The client is a thin editor front end
+that shows the conversation and runs tool calls on your machine.
+
+![The CAGE chat panel in VSCode](doc/images/chat-panel.png)
+
+*The chat panel runs inside VSCode — here the DemoCoder graph has planned a
+texture packer and its coder, Qwen3.8 on four local V100s, has just written
+`packer.cpp`. The selector at the bottom picks which logic graph drives the
+conversation.*
+
+---
 
 ## Licensing
 
@@ -43,7 +195,7 @@ terms: <https://github.com/real0000>
 
 ---
 
-## Downloads
+## Get started
 
 | Package | Platform | Contents | Where |
 |---|---|---|---|
@@ -81,108 +233,10 @@ server still runs, but only `remote` models work. Full detail:
 
 Installation: **[doc/server-install.md](doc/server-install.md)** — Docker or
 native — then **[doc/extension-install.md](doc/extension-install.md)** for the
-editor client.
+editor client. CAGE ships no ready-made graphs; the
+[worked example](doc/client/example-graph.md) is the place to start your first.
 
----
-
-## Overview
-
-```
-   VSCode extension ──┐
-                      ├── WebSocket + HTTP ──► CAGE Server ──► local models / GPUs
-   native client    ──┘                              │
-                                                     ├── backend pack (in-process):
-                                                     │     text, vision, safetensors,
-                                                     │     image, speech, music, motion, 3D
-                                                     └── remote chat APIs
-```
-
-The server owns everything expensive: model loading and placement, the agent
-loop, retrieval, and the multimodal pipelines. The client is a thin editor
-front end that renders the conversation and executes tool calls locally.
-
-![The CAGE chat panel in VSCode](doc/images/chat-panel.png)
-
-*The chat panel runs inside VSCode — here the DemoCoder graph has planned a
-texture packer and its coder, Qwen3.8 on four local V100s, has just written
-`packer.cpp`. The selector at the bottom picks which logic graph drives the
-conversation.*
-
-## Features
-
-### Local inference, multiple backends
-
-Models run through one adapter with two backends: in-process **ik_llama.cpp**,
-from the backend pack, for GGUF and Hugging Face safetensors alike (vision
-included, via an `mmproj` projector), and **remote** cloud endpoints (OpenAI,
-Anthropic, Gemini). There is no Python anywhere. Nothing loads until the first
-request that targets it, and one RAM/VRAM ledger across every local model evicts
-the least recently used idle one when a new one does not fit.
-
-A model's `<path>` is a *directory*: every `*.gguf` inside it becomes a
-selectable quantization, and a safetensors directory is quantized while it loads
-(4bit, 8bit, bf16, fp16, fp32). What kind of model it is — chat, embedding, image
-generator — is worked out from the weights, not declared.
-
-### Multi-GPU placement
-
-Placement is decided from the machine's actual topology — NVLink cliques, free
-VRAM per card, and whether the model is dense or mixture-of-experts. Layer
-split, tensor split and expert CPU offload are chosen automatically; you pick
-the GPUs, per AI config.
-
-### Logic Graph instead of one fixed agent loop
-
-The agent's behaviour is an explicit, executable graph edited visually in
-VSCode: prompt nodes, format checks, dispatch, loops with re-entry, and
-user-decision nodes that pause the run to ask you a question. Each node can
-choose its own model, quantization, GPU set and sampling parameters — so a
-cheap fast model can plan and a large model can write the code, in one run.
-
-![The Logic Editor](doc/images/logic-editor.png)
-
-*A coding workflow in the Logic Editor. Left: the node palette, the AI configs
-the graph's nodes bind to, and its variables. Each config names its own model
-and parameters.*
-
-### Tools run in your editor
-
-Reading and writing files, applying patches, running terminal commands,
-building projects and opening files all execute in VSCode, with per-tool
-approval and per-file approval for writes. One **Tools** table holds every tool
-the model can call — built-in ones, tools you define with a command line, and
-the tools of attached **MCP** programs (stdio or Streamable HTTP).
-
-### Retrieval over your project
-
-The client pushes a full index and then incremental deltas as you edit. Chunking
-is tree-sitter AST-aware with a line-window fallback, embeddings are computed
-on the server, and vectors persist per project in an hnswlib store. Any node in
-the graph can retrieve top-k chunks for its prompt.
-
-### Multimodal
-
-Image generation, text-to-speech, audio and music generation, motion, and
-image-to-3D meshes run in-process too, through the backend pack, on the same GPU
-context and the same VRAM ledger as the language models.
-
-### Project memory
-
-Each file's history of what was changed and why, a record of what every step of
-the current conversation did — so a step that runs again in a loop sees what the
-last attempt found — and your own standing rules. A small model picks which of
-them each step actually reads.
-
-### Multi-user
-
-Accounts, personal access tokens and per-user sessions with token accounting,
-logic graphs that are either private to their owner or shared, and a
-control-plane web UI for managing accounts, nodes and model downloads across
-several machines.
-
----
-
-## Requirements
+### Requirements
 
 | | |
 |---|---|
