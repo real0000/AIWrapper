@@ -1,3 +1,5 @@
+**English** · [繁體中文](README.zh-TW.md)
+
 # Client Guide
 
 The CAGE client is a VSCode extension. It holds no models and runs no

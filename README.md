@@ -1,3 +1,5 @@
+**English** · [繁體中文](README.zh-TW.md)
+
 # CAGE — Composable Agent Graph Engine
 
 **A self-hosted AI coding assistant: a C++20 inference server plus a VSCode client.

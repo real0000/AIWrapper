@@ -1,3 +1,5 @@
+**English** · [繁體中文](memory.zh-TW.md)
+
 # Project Memory
 
 CAGE keeps notes about your project, and injects the relevant ones into a run.

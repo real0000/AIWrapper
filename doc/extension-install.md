@@ -1,3 +1,5 @@
+**English** · [繁體中文](extension-install.zh-TW.md)
+
 # VSCode Extension Installation
 
 Installing the CAGE client and connecting it to a server.

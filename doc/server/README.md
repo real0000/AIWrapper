@@ -1,3 +1,5 @@
+**English** · [繁體中文](README.zh-TW.md)
+
 # Server Guide
 
 The server side is three processes, not one. Understanding which does what

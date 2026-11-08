@@ -1,3 +1,5 @@
+**English** · [繁體中文](variables.zh-TW.md)
+
 # Variables
 
 Variables are named state that belongs to the graph rather than to any one node.

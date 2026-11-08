@@ -1,3 +1,5 @@
+**English** · [繁體中文](models.zh-TW.md)
+
 # Models
 
 How the server turns `<models>` in `config.xml` into the list clients see, and

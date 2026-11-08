@@ -1,3 +1,5 @@
+**English** · [繁體中文](server-install.zh-TW.md)
+
 # Server Installation
 
 Two ways to install, both from the same package on Linux x86-64:

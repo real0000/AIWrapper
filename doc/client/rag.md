@@ -1,3 +1,5 @@
+**English** · [繁體中文](rag.zh-TW.md)
+
 # RAG
 
 Retrieval gives a model the parts of your project that are relevant to the

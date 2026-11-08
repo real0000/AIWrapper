@@ -1,3 +1,5 @@
+**English** · [繁體中文](indexing.zh-TW.md)
+
 # Project Indexing
 
 The client keeps the server aware of what is in your workspace. The index is

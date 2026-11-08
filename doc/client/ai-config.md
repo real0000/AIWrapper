@@ -1,3 +1,5 @@
+**English** · [繁體中文](ai-config.zh-TW.md)
+
 # AI Configs
 
 An AI config is a named bundle of "which model, loaded how, sampled how". Nodes

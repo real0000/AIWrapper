@@ -1,3 +1,5 @@
+**English** · [繁體中文](modalities.zh-TW.md)
+
 # Modalities
 
 Image, speech, audio, music, 3D and motion generation. Each one is a `<model>`

@@ -1,3 +1,5 @@
+**English** · [繁體中文](example-graph.zh-TW.md)
+
 # A worked example: DemoCoder
 
 `DemoCoder` is a **generic** build-and-check loop: plan the work, write the code, verify
@@ -114,7 +116,7 @@ which field matters and why, not as settings to copy. What to do instead is in
 | Field | Why this value |
 |---|---|
 | `ctxSize: 262144` | Every node shares one conversation (see `memory_mode` below), so the context grows with each round. 16K and 80K were both tried first and both overflowed — the failure is an explicit `Input tokens (…) exceed` error, not a silent truncation |
-| `cudaVisibleDevices` | **Your own card UUIDs** — `nvidia-smi --query-gpu=uuid --format=csv`. The placeholders above are not real; a UUID that does not exist on the machine loading the graph resolves to nothing, and the model then loads with no device restriction (with a warning) rather than failing. The graph this example came from listed four compute cards and left out the display card on purpose, which is the usual reason to set this field at all |
+| `cudaVisibleDevices` | **Your own card UUIDs** — `nvidia-smi --query-gpu=uuid --format=csv`. The placeholders above are not real: if none of the listed cards is on the machine loading the graph, the request fails and says so — other cards are never used in their place. The graph this example came from listed four compute cards and left out the display card on purpose, which is the usual reason to set this field at all |
 | `autoFit: false` | Placement is set by hand here: a layer split across the four listed cards. With Auto Fit on — the default — the same card list would stand and the server would choose the split itself |
 | `splitMode: "layer"` | Layer-split across the four cards. Auto Fit would pick `graph` (tensor parallelism) across a fully NVLink-connected set of cards |
 | `lookahead: false` | Measured slower than plain decoding on Volta for every parameter set tried |

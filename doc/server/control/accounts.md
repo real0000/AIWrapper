@@ -1,3 +1,5 @@
+**English** · [繁體中文](accounts.zh-TW.md)
+
 # Accounts
 
 Who can use the server, and who can administer it. Both live in the same

@@ -1,3 +1,5 @@
+**English** · [繁體中文](nodes.zh-TW.md)
+
 # Nodes
 
 Every step in a logic graph is a node. This page describes each type: what it

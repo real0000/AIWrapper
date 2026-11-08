@@ -1,3 +1,5 @@
+**English** · [繁體中文](tools.zh-TW.md)
+
 # Tools
 
 Tool calls run **in your editor**, not on the server — every one of them. When the

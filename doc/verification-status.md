@@ -1,3 +1,5 @@
+**English** · [繁體中文](verification-status.zh-TW.md)
+
 # What has been verified
 
 CAGE 0.2.0 is an evaluation build. This page says exactly how far each piece has

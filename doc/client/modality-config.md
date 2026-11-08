@@ -1,3 +1,5 @@
+**English** · [繁體中文](modality-config.zh-TW.md)
+
 # Modality Configs
 
 A modality config points at something that generates a file rather than text:

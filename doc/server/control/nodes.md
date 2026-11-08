@@ -1,3 +1,5 @@
+**English** · [繁體中文](nodes.zh-TW.md)
+
 # Multiple Nodes
 
 A node is a machine running a [node agent](../agent/README.md) and, under it,

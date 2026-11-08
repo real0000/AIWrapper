@@ -1,3 +1,5 @@
+**English** · [繁體中文](api.zh-TW.md)
+
 # Node API
 
 The HTTP surface the agent exposes. The control plane is its only intended

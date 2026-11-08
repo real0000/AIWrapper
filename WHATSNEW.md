@@ -1,3 +1,5 @@
+**English** · [繁體中文](WHATSNEW.zh-TW.md)
+
 # What's New in CAGE 0.2.0
 
 0.2.0 is two months of work and has no single theme, but four changes shape it:

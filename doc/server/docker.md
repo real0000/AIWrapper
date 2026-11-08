@@ -1,3 +1,5 @@
+**English** · [繁體中文](docker.zh-TW.md)
+
 # Docker
 
 Run the whole server side in containers, built from a Dockerfile you have. No
@@ -63,7 +65,7 @@ the GPUs it selected.
 Build with none and the image still runs — `remote` models work,
 local ones fail to load. The build prints a warning saying so.
 
-Three things must be set in `.env`:
+Set these in `.env`:
 
 | Variable | Meaning |
 |---|---|

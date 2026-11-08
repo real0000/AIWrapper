@@ -1,3 +1,5 @@
+**English** · [繁體中文](README.zh-TW.md)
+
 # Node Agent
 
 `cage-launcher --agent` is the resident process on each machine. It owns the

@@ -1,3 +1,5 @@
+**English** · [繁體中文](rag.zh-TW.md)
+
 # Retrieval
 
 The server side of RAG: what happens between the client pushing a file listing
@@ -50,7 +52,9 @@ models that generate text: embedding models are small, and loading and unloading
 repeatedly costs more than keeping it resident.
 
 Vectors are normalized, so similarity is a plain inner product. Text longer
-than the context is truncated, with a warning in the log.
+than the context is split at sentence boundaries into pieces that fit; each
+piece is embedded and the results are averaged, weighted by token count, so
+the whole text is in the vector rather than only its beginning.
 
 **Indexing and querying deliberately use the same config.** Vectors only mean
 anything within one embedding space; there is a single setting rather than two

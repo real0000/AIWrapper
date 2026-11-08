@@ -1,3 +1,5 @@
+**English** · [繁體中文](graph-format.zh-TW.md)
+
 # Logic graph file format
 
 A logic graph is one JSON file. This page specifies it completely enough that a

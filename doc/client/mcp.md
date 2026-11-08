@@ -1,3 +1,5 @@
+**English** · [繁體中文](mcp.zh-TW.md)
+
 # MCP programs
 
 An **MCP program** is a ready-made set of tools you attach. Attaching one is the

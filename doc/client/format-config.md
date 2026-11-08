@@ -1,3 +1,5 @@
+**English** · [繁體中文](format-config.zh-TW.md)
+
 # Format Configs
 
 A format config describes a shape a string is supposed to have. It does two

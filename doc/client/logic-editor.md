@@ -1,3 +1,5 @@
+**English** · [繁體中文](logic-editor.zh-TW.md)
+
 # Logic Editor
 
 The Logic Editor is where you design what the agent does. A logic graph replaces

@@ -1,3 +1,5 @@
+**English** · [繁體中文](chat-panel.zh-TW.md)
+
 # Chat Panel
 
 The chat panel lives in the CAGE container in the activity bar. It is where

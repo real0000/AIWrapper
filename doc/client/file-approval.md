@@ -1,3 +1,5 @@
+**English** · [繁體中文](file-approval.zh-TW.md)
+
 # File Approval
 
 `write_file` and `apply_patch` write straight into your workspace — but not

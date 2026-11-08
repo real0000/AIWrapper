@@ -1,3 +1,5 @@
+**English** · [繁體中文](settings.zh-TW.md)
+
 # Settings
 
 Every setting the extension contributes, as it appears under `cage.*` in

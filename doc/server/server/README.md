@@ -1,3 +1,5 @@
+**English** · [繁體中文](README.zh-TW.md)
+
 # Inference Server
 
 `cage-server` is the process that does the work: it loads models, executes
@@ -59,7 +61,7 @@ RAG VectorStore persist dir: data/vectors
 Listening on port 15963
 ```
 
-Five of those lines are worth reading every time:
+The lines worth reading every time:
 
 - **Hardware topology** — the GPUs it can see and which pairs are NVLink
   connected. Automatic placement is decided from this.

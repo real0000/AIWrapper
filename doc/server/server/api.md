@@ -1,3 +1,5 @@
+**English** · [繁體中文](api.zh-TW.md)
+
 # Server API
 
 What the server exposes to clients. Both the HTTP API and the WebSocket share

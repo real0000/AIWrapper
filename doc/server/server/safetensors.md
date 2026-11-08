@@ -1,3 +1,5 @@
+**English** · [繁體中文](safetensors.zh-TW.md)
+
 # Safetensors models
 
 A Hugging Face directory of `*.safetensors` runs the same way a GGUF file does:

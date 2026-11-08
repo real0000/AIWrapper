@@ -1,3 +1,5 @@
+**English** · [繁體中文](models.zh-TW.md)
+
 # Models & Downloads
 
 Everything about getting a model onto a machine and into its config, which is
@@ -7,7 +9,7 @@ the agent's other job besides supervising the server.
 
 ## Adding a model
 
-Three ways, all ending in the same place — a `<model>` entry in the local
+Four ways, all ending in the same place — a `<model>` entry in the local
 `config.xml`:
 
 | Route | When |

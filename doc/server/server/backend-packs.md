@@ -1,3 +1,5 @@
+**English** · [繁體中文](backend-packs.zh-TW.md)
+
 # Backend Packs
 
 Every local model — GGUF or safetensors, text or generative — needs a **backend
