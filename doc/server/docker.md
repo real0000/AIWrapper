@@ -119,8 +119,14 @@ Everything that matters is a host folder, so containers stay disposable.
 | `${STATE_DIR}/config` | `/config` | `config.xml`, `control.xml` — seeded on first start, then yours |
 | `${STATE_DIR}/server` | `/opt/cage/data` | Logic graphs, retrieval vectors, the server log |
 | `${STATE_DIR}/mysql` | `/var/lib/mysql` | The database |
-| `${STATE_DIR}/output` | `/tmp/cage` | Generated images, audio, meshes |
 | `${MODELS_DIR}` | `/models` (read-only) | Your models |
+
+There is no output folder. Files a graph generates are handed to the client and
+written into the user's project; `/api/generate`, called directly, leaves its
+files in the server's own temporary directory inside the container
+(`/tmp/cage-<uid>`, readable by the server's account only), which does not
+outlive the container. Earlier compose files mounted `${STATE_DIR}/output` at
+`/tmp/cage`; nothing writes there any more.
 
 **The server data mount is `/opt/cage/data`, not `/data`.** The server
 resolves `data/logic_graphs` and `data/vectors` against its
@@ -174,10 +180,21 @@ the `:ro` in the compose file if you want the agent to download models itself.
 
 ## Running without a database
 
-Leave `MYSQL_PASSWORD` empty and remove the `mysql` service and the `depends_on`
-block. The server then runs in open mode: no accounts, no per-user sessions, and
-no authentication on the API. Reasonable for a single-user trial on a machine
-only you can reach; not otherwise. See [Accounts](control/accounts.md).
+Remove the `mysql` service, the `depends_on` block and the `MYSQL_PASSWORD`
+lines from the compose file. On the first start the entrypoint then writes
+`config.xml` without a `<mysql>` block, and the server runs in open mode: no
+accounts, no per-user sessions, and no authentication on the API.
+
+**Security:** every request on the published API port is served as admin.
+Anyone who can reach that port can read every session and change graphs. This
+is deliberate for a single-user trial and will not be changed — publish the
+port as `127.0.0.1:${API_PORT:-15963}:15963` to keep it to this machine. See
+[Accounts](control/accounts.md).
+
+A `config.xml` that already has a `<mysql>` block keeps it — the entrypoint
+never removes it, so a forgotten password cannot quietly open the server. The
+server then waits for that database; remove the block yourself to run without
+one.
 
 ## What was tested
 

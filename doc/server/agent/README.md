@@ -44,7 +44,7 @@ The agent reads the `<node>` block of the same `config.xml` the server uses:
   <agent_port>15972</agent_port>
   <node_token></node_token>
   <download_dir>models</download_dir>
-  <log_file>/tmp/cage/server.log</log_file>
+  <log_file>data/server.log</log_file>
 </node>
 ```
 
@@ -56,7 +56,7 @@ The agent reads the `<node>` block of the same `config.xml` the server uses:
 | `bind` / `agent_port` | Where the node API listens. `127.0.0.1` for a single machine; a reachable address when a remote control plane drives it |
 | `node_token` | Bearer the control plane must present. Empty disables authentication — only acceptable on localhost |
 | `download_dir` | Where downloaded models go. Repeat the element to use several disks |
-| `log_file` | Where the server child's stdout and stderr land |
+| `log_file` | Where the server child's stdout and stderr land. Unset: `<system temp>/cage-<uid>/server.log`, readable by the service account only. Not a fixed path under `/tmp` — another account could create it first |
 
 Every relative path in `config.xml` resolves against the directory the file
 lives in, not the agent's working directory — so it does not matter where the
@@ -93,7 +93,7 @@ and the pending entries become live.
 ```bash
 systemctl status cage-agent
 journalctl -u cage-agent -f          # the agent
-tail -f /tmp/cage/server.log   # the server it spawned
+tail -f /opt/cage/data/server.log   # the server it spawned (log_file, relative to the install)
 ```
 
 The server's own output goes to `log_file`, not to the journal — the agent

@@ -28,6 +28,21 @@ See [Tools](tools.md).
 | `cage.toolApproval.mode` | `ask` | Default mode: `ask`, `auto`, `deny` |
 | `cage.toolApproval.perTool` | `run_terminal`, `run_code`, `build_project`, `run_tests` → `ask` | Per-tool overrides. `write_file` and `apply_patch` are absent because they do not use this setting: every file is approved individually before it is written — see [File Approval](file-approval.md) |
 
+## File access
+
+Where the file tools — `read_file`, `write_file`, `apply_patch`, `open_file` —
+may go. Also on the chat panel's **⚙ Settings** page. See
+[File Approval → Outside the project](file-approval.md#outside-the-project).
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `cage.fileAccess.scope` | `project` | `project`: the workspace folder plus `allowedPaths`. `all`: anywhere this account can reach |
+| `cage.fileAccess.allowedPaths` | `[]` | More places the file tools may use without asking: absolute paths to files or folders (everything inside a folder counts; `~` is your home folder). Relative paths are ignored |
+| `cage.fileAccess.outside` | `ask` | Anywhere else: `ask` asks every time, for that one file; `deny` refuses without asking |
+
+All three are machine settings: a project's `.vscode/settings.json` cannot
+change them, so a repository cannot widen what the tools can reach.
+
 ## Build and test
 
 Used by `build_project` and `run_tests`.

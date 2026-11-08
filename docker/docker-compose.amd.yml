@@ -70,7 +70,10 @@ services:
       PUID: ${PUID:-}
       PGID: ${PGID:-}
     ports:
-      # AI API — this is what the VSCode extension connects to.
+      # AI API — this is what the VSCode extension connects to, usually from
+      # another machine, so it is published on every interface; sign-in is
+      # required (this stack always has accounts). Behind a TLS proxy on this
+      # host, prefix 127.0.0.1: so the plain port stays local.
       - "${API_PORT:-15963}:15963"
       # Control-plane web UI. Bound to localhost by default; drop the
       # 127.0.0.1 prefix only behind a TLS proxy.
@@ -86,8 +89,6 @@ services:
       # and the graphs are lost when the container is recreated.
       - ${STATE_DIR:-./data}/server:/opt/cage/data
       - ${MODELS_DIR:?set MODELS_DIR in .env}:/models:ro
-      # Generated images, audio and meshes are written here.
-      - ${STATE_DIR:-./data}/output:/tmp/cage
     # Shared memory (/dev/shm). Nothing in CAGE relies on it any more — it was for
     # the Python worker processes, which are gone — so this only sets a ceiling.
     shm_size: ${SHM_SIZE:-8gb}

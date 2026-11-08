@@ -69,8 +69,12 @@ Five of those lines are worth reading every time:
   whose directory is missing, or holds no weights the server recognises, is
   logged as `Model skipped` with the reason and does not appear in the model
   list.
-- **auth** — `dev-open` means no authentication. See
+- **auth** — `dev-open` means no authentication: every request is served as
+  admin, to anyone who can reach the port. See
   [Accounts](../control/accounts.md).
+- **Waiting for the database** — the config has a `<mysql>` block and that
+  database is not answering yet. Nothing is served until it does; remove the
+  block to run without a database.
 - **ready (lazy)** — no model is loaded at startup. The first request that
   targets a model loads it.
 

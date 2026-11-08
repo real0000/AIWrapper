@@ -169,7 +169,9 @@ pwsh ./install.ps1                 # to /opt/cage, with systemd services
 The installer reports which backend packs it found and checks that every shared
 library the server needs resolves, copies `bin/`, `lib/` and `sql/`, creates `config.xml` and `control.xml` from
 the templates (mode 600 — they hold database credentials), and creates
-`data/`, `models/` and `/tmp/cage`.
+`data/` and `models/`. There is no shared `/tmp/cage` any more: the server and
+the launcher each make their own temporary directory, `/tmp/cage-<uid>`, mode
+700, which is why the systemd units let them write under `/tmp`.
 
 `sudo` is used only when the target directory is not writable. To install
 without root:
@@ -283,21 +285,35 @@ The web UI is at `http://<host>:8088/`.
 
 ## 7. Running without a database
 
-Leave `<mysql>` pointing at nothing reachable and the server logs:
+Remove the whole `<mysql>` block from `config.xml`. The server logs:
 
 ```
-[warning] MySQL connect failed (Connection refused) — DB features disabled;
-          admin login falls back to the config password
-[info] [auth] auth DISABLED (dev-open) (users=0, masterKey=no)
+[info] MySQL: no <mysql> block - running without a database (no accounts; ...)
+[warning] [auth] auth DISABLED (dev-open) (users=0, masterKey=no, database=none): every request is served as admin, ...
 ```
 
-The control plane says the same thing in its Accounts tab — see
-[Accounts](server/control/accounts.md).
+With no `<api_key>` set either, this is **open mode**, and its security problem
+is deliberate, not a bug that will be fixed:
 
-With no `<api_key>` set either, it then serves every request without
-authentication. That is fine for a local single-user trial and **not**
-appropriate for anything reachable from another machine. Setting `<api_key>`
-keeps it closed: one shared token, no database.
+- Every request is served as admin, with no sign-in.
+- Anyone who can reach the port can read every session (conversations, with
+  your code in them) and change or delete graphs. `<bind>127.0.0.1</bind>`
+  limits that to this machine.
+
+Web pages cannot use it, in this mode or any other: the server refuses every
+request a browser page makes (see [API](server/server/api.md)).
+
+Use it only for a single-user trial. Setting `<api_key>` closes it: one shared
+token, still no database.
+
+**A `<mysql>` block that points at a database the server cannot reach does not
+mean "no database".** The server waits for it before serving anything —
+`Waiting for the database at …`, then a line every 30 seconds — and starts once
+it answers. It never takes "the database is not up yet" for "there are no
+accounts", because that would start it open. It also waits if the database
+answers but the accounts cannot be read. An account created while the server is
+running (for example the control plane seeding its admin) ends open mode
+immediately, without a restart.
 
 ## 8. TLS
 

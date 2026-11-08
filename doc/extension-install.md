@@ -87,7 +87,9 @@ fill in `cage.server.apiKey`.
 
 If the server runs without a database and no `<api_key>` is set in its
 `config.xml`, it accepts every request without authentication and this step is
-skipped. With an `<api_key>` set, put that key in `cage.server.apiKey` instead.
+skipped — and so does everyone else who can reach it; see
+[Running without a database](server-install.md#7-running-without-a-database).
+With an `<api_key>` set, put that key in `cage.server.apiKey` instead.
 
 ## 6. First use
 
@@ -118,6 +120,7 @@ Approval behaviour is configurable:
 |---|---|
 | `cage.toolApproval.mode` | `ask` |
 | `cage.toolApproval.perTool` | `run_terminal`, `run_code`, `build_project`, `run_tests` → `ask`. `write_file` and `apply_patch` are not here — every file they touch is approved individually |
+| `cage.fileAccess.scope` / `.outside` | `project` / `ask` — the file tools stay in the workspace (plus `cage.fileAccess.allowedPaths`) and ask, each time, before touching anything else. See [File Approval](client/file-approval.md#outside-the-project) |
 
 ## 7. Troubleshooting
 

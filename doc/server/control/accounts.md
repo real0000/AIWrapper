@@ -75,19 +75,30 @@ everyone.
 
 ## Running without a database
 
-Perfectly viable for one person:
+Viable for one person on one machine. Remove the `<mysql>` block from the
+server's `config.xml`; the server logs:
 
 ```
-[warning] MySQL connect failed (Connection refused) — DB features disabled
-[info] [auth] auth DISABLED (dev-open) (users=0, masterKey=no)
+[info] MySQL: no <mysql> block - running without a database (no accounts; ...)
+[warning] [auth] auth DISABLED (dev-open) (users=0, masterKey=no, database=none): every request is served as admin, ...
 ```
 
-The server then accepts every request without authentication. There are no
-accounts, no per-user history, and no usage accounting. Chat history still
-works — the client keeps its own.
+There are no accounts, no per-user history, and no usage accounting. Chat
+history still works — the client keeps its own.
+
+**Security:** with no `<api_key>` either, every request is served as admin.
+Anyone who can reach the server's port can read every session and change or
+delete graphs. This is deliberate for a single-user trial and will not be
+changed; do not use it for anything else. `<bind>127.0.0.1</bind>` in
+`config.xml` keeps it to this machine.
 
 `<api_key>` in `config.xml` is the middle ground: one shared static token, no
 database, but not open either.
+
+A `<mysql>` block whose database is not reachable is not this mode: the server
+waits for the database before serving anything, so a database that starts late
+never leaves it open. An account created while the server runs ends open mode
+at once.
 
 ## Checklist for a shared deployment
 

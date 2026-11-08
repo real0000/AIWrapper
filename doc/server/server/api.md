@@ -17,16 +17,39 @@ The token is either a personal access token issued through the
 [control plane](../control/accounts.md), a session token from logging in, or
 the static `<api_key>` from `config.xml`.
 
-With no database and no `<api_key>`, the server runs open and accepts
-everything — the `auth DISABLED (dev-open)` line at startup. Appropriate for a
-single-user local trial, not for anything reachable.
+With no database (no `<mysql>` block) and no `<api_key>`, the server runs open
+and accepts everything as admin — the `auth DISABLED (dev-open)` warning at
+startup. Every endpoint here, the WebSocket included, then answers anyone who
+can reach the port. That is deliberate for a single-user trial and will not be changed;
+see [Running without a database](../../server-install.md#7-running-without-a-database).
+A configured database that is not reachable makes the server wait for it rather
+than run open.
+
+**Requests from web pages are refused** with `403`, before the token is looked
+at and without reading the body — the WebSocket handshake and CORS preflights
+included, and no CORS headers are sent. The API is for programs: the CAGE
+clients, the control plane, scripts. A request counts as a web page's when it
+carries `Origin`, or `Sec-Fetch-Site` with any value but `none` (`none` is an
+address typed into the browser). Node's built-in `fetch` and `WebSocket`, curl,
+and the clients send neither. Otherwise any page you visit could make your
+browser call a server only your network can reach — for example, try sign-in
+passwords and read back the token.
+
+The main port listens on `<bind>` (default `0.0.0.0`, every interface). Behind a
+TLS reverse proxy on the same machine, set `<bind>127.0.0.1</bind>` so the
+plain port is not reachable from outside.
+
+A request body is read only after its bearer token checks out. Without a valid
+token the body is read and thrown away in small pieces — never held in memory —
+and the request is answered `401`. There is no size limit on the body of an
+authenticated request.
 
 ## HTTP
 
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/health` | Liveness. No auth |
-| `POST` | `/api/auth/login` | `{username, password}` → a session token |
+| `POST` | `/api/auth/login` | Credentials in an `Authorization: Basic base64(username:password)` header → a session token. No body is read: this is the one POST handled before authentication |
 | `POST` | `/api/auth/logout` | Revoke the token presented |
 | `GET` | `/api/auth/me` | Who the token belongs to |
 | `POST` | `/api/session` | Create a session, returns `{session_id}` |
@@ -38,6 +61,8 @@ single-user local trial, not for anything reachable.
 | `GET` | `/api/hardware` | GPUs, NVLink topology, RAM — what the GPU picker draws |
 | `GET` | `/api/modalities` | Registered modality aliases |
 | `POST` | `/api/generate` | Invoke a modality directly. The Logic Editor's preview |
+| `GET` | `/api/delivery?session_id=&id=` | Download a file a graph generated for that session (the client saves it into the project). The session's owner or an admin |
+| `POST` | `/api/delivery/result` | `{session_id, delivery_id, status}` — `written`, `rejected` or `failed`. The server removes its copy once the run is over and every file has been dealt with |
 | `POST` | `/api/ai-config/test` | Validate an AI config, then actually load it and generate |
 | `POST` | `/api/ai-config/placement` | Where an AI config would be placed, without loading it |
 | `POST` | `/api/ai-config/budget` | Per-card memory the real load would plan, measured without loading |
@@ -71,7 +96,7 @@ Client to server:
 | Message | Purpose |
 |---|---|
 | `message` | A user message. Carries `logic_graph_name` and `start_name`, naming the graph and entry point to run, and the `file_id`s of any attachments |
-| `tool_result` | The result of a tool the server asked for |
+| `tool_result` | The result of a tool the server asked for: `content`, `is_error`, and `denied: true` when the tool did not run because the user or their settings refused it |
 | `tool_stream_chunk` | Output of a tool that is still running |
 | `cancel` | Abort the run |
 | `run.resume` / `run.discard` | Continue the run that was interrupted, or give it up |

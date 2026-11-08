@@ -105,6 +105,33 @@ carries the files as files, ready to wire into another node's asset input.
 
 If an AI config and a modality config share a name, the AI config wins.
 
+## Saving the files into your project
+
+Generated files are made on the server and kept there for the rest of the run,
+so later nodes can use them. To get them into your project, give the node an
+`out_dir` — a pin named `out_dir`, or an `out_dir` default in the config. It is
+a folder **in your project**: a relative path is under the workspace folder, so
+`out` puts the files in `<project>/out/`. The server never creates it on its own
+machine, and the server and your editor do not need to be the same machine.
+
+When a file is ready, the chat panel saves it the way it saves any write:
+
+- It asks first, one file at a time, with the same approval as `write_file` — if
+  you set file writes to be allowed automatically, these are too. The card says
+  the file was generated, and whether it replaces one that is already there.
+- An absolute `out_dir`, or one that leads out of the project, follows
+  **Settings → File access**: asked about each time, or refused.
+- A card in the chat says where the file was saved, or why it was not.
+
+If the editor is closed or disconnected when the file is ready, it is offered
+again the next time that conversation connects.
+
+Without `out_dir`, a file is only used inside the run — the picture you turn
+into a mesh, for example — and is removed when the run ends. The server also
+removes a run's files once the run is over and every file offered from it has
+been saved, declined or failed; where they wait until then is set by
+`<modality_output_dir>` in the server's `config.xml`.
+
 ---
 
 [← Logic Editor](logic-editor.md) · [AI Configs](ai-config.md) · [Client Guide](README.md)

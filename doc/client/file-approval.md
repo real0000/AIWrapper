@@ -40,9 +40,34 @@ File approvals and [tool approvals](tools.md) share the one queue, so a
 
 ## Where files go
 
-Always your workspace root. The server does not decide where files land — the
-path comes from the client, and every write is checked to be inside the
-workspace before you are even asked.
+Relative paths land in your workspace root. The server does not decide where
+files land — the path comes from the client, and every path is checked against
+**Settings → File access** before you are even asked.
+
+## Outside the project
+
+The file tools stay inside the workspace folder and the paths you allow in
+**Settings → File access** (`cage.fileAccess.*`, see [Settings](settings.md#file-access)).
+Symlinks count as where they really point: a link inside the project that leads
+elsewhere is elsewhere, and so is a broken one — writing through it would create
+the file at its target.
+
+Anywhere else, with **Anywhere else** set to *Ask each time* (the default), the
+card is red, names the real location, and offers only **Allow once** and
+**Deny**:
+
+- Reading or opening a file there asks too, not only writing.
+- **Allow all (Session)** and auto-approved writes do not cover it. Each file
+  outside is asked about, each time.
+- To stop being asked about a place, add it to the allowed paths.
+
+Set to *Refuse without asking*, the tool refuses and the model is told your
+settings do not allow it. An `apply_patch` that touches any file outside is
+refused as a whole — none of its files are written.
+
+`run_terminal` and `run_code` are not covered: they run commands, which can
+reach anything your account can. They have their own approval — see
+[Tools](tools.md).
 
 ## Why it works this way
 
