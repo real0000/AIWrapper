@@ -18,7 +18,7 @@ arithmetic are byte-for-byte upstream's.
   include/cage_safetensors/awq_gptq_dequant.h
   include/cage_safetensors/mxfp4_dequant.h
   include/cage_safetensors/nvfp4_dequant.h
-  include/vt/dtype.h                          (未修改，原樣保留)
+  include/vt/dtype.h                          (unmodified, kept as upstream wrote it)
   src/safetensors_reader.cpp
   src/read_only_file_mapping.cpp
   src/awq_gptq_dequant.cpp

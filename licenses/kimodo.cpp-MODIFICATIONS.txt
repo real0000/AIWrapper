@@ -1,15 +1,38 @@
 kimodo.cpp is licensed under the Apache License, Version 2.0.
-Upstream: https://github.com/localai-org/kimodo.cpp
 
-Modifications made by the CAGE project (Apache-2.0 section 4(b)):
-  - CMakeLists.txt: use the caller's ggml target when one already
-    exists, instead of building the pinned ggml submodule. CAGE links
-    kimodo into a shared object that already contains one ggml
-    (llama.cpp/mtmd, sd.cpp, trellis.cpp, audio.cpp all share it);
-    a second copy would carry its own backend registry, CUDA context
-    and VRAM accounting, and tensors could not cross between them.
-  - src/ggml_weights.cpp, src/inspect.cpp, src/llm_text_encoder.cpp,
-    src/llm_tokenizer.cpp: include ggml-backend.h / ggml.h instead of
-    ggml-cpu.h / gguf.h. ik_llama.cpp's ggml is a single target and
-    does not split those headers out.
-No other source files were modified; no algorithm was changed.
+Modifications made by the CAGE project (Apache-2.0 section 4(b)). In summary:
+  - the build uses the caller's ggml target when one already exists,
+    instead of building the pinned ggml submodule. CAGE links kimodo into
+    a shared object that already contains one ggml (llama.cpp/mtmd,
+    sd.cpp, trellis.cpp, audio.cpp all share it); a second copy would
+    carry its own backend registry, CUDA context and VRAM accounting.
+    Sources include ggml-backend.h / ggml.h, which that ggml provides,
+    instead of ggml-cpu.h / gguf.h;
+  - backends and devices are chosen through the ggml registry (no longer
+    a fixed Vulkan device 0), device strings may name several devices,
+    and a wrong device is reported at load time.
+No algorithm was changed. Every file changed relative to upstream is listed below.
+
+Upstream:  https://github.com/localai-org/kimodo.cpp.git
+Based on:  upstream commit 75ed52d2d3ec767a9bac79d11060b65d99f61a89 (2026-10-29)
+This copy: 07f1ce38c4f00778088a6f9f657b7179dee80f61
+
+Files changed by the CAGE project relative to that upstream commit (17):
+  M = modified, A = added, D = deleted, R = renamed (old -> new)
+  M  CMakeLists.txt
+  A  include/kimodo/backend_select.hpp
+  M  include/kimodo/kimodo.hpp
+  M  include/kimodo/kimodo_capi.h
+  A  src/backend_select.cpp
+  M  src/capi.cpp
+  M  src/denoiser.cpp
+  M  src/ggml_weights.cpp
+  M  src/ggml_weights.hpp
+  M  src/inspect.cpp
+  M  src/llm_text_encoder.cpp
+  M  src/llm_text_encoder.hpp
+  M  src/llm_tokenizer.cpp
+  M  src/model.cpp
+  M  src/motion_graph_cache.hpp
+  M  src/pack_text.cpp
+  M  src/quantize_text.cpp
