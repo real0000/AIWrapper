@@ -174,7 +174,6 @@ named after keys of the structured output to have them split out for you.
   "rag_embedding_config": "",      // with rag_mode="custom"
   "memory_context": true,
   "memory_history_top_k": 0,       // 0 = keep every file history
-  "memory_filter_config": "",
   "chunking": false,
   "chunk_desc": ""
 }
@@ -265,10 +264,13 @@ graph variables by the same `{{name}}` syntax.
 `in[Exec, Input]` → `out[Exec, Memory]`
 
 ```json
-"config": { "ai_config": "", "token_budget": 0, "history_top_k": 0 }
+"config": { "token_budget": 0, "history_top_k": 0 }
 ```
 
-One `Memory` node can feed several `SendToAi` nodes, which is the point of it.
+A `SendToAi` node scans memory itself each time it runs and does not read a
+`Memory` pin, so this node is for nodes that read its text — `Compose`'s
+`{{Memory}}`, or a prompt that references `{{Memory}}`. The graph's
+`memoryAiConfig` does the choosing.
 
 ### `Dispatch` — split work and run it item by item
 `in[Exec, Input]` → `out[Step, Task, Index, Plan, End]`

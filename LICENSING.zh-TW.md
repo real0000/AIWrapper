@@ -35,7 +35,7 @@ GitHub 上的是評估版。這裡的 Releases 放的是預覽與評估用的套
 
 ## 開放原始碼元件
 
-CAGE 使用了一些開放原始碼元件，全部採用寬鬆授權，連同各自的著作權聲明列在 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
+CAGE 使用了一些開放原始碼元件，全部採用寬鬆授權，連同各自的著作權聲明列在 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。每個後端包也附有自己的 `THIRD-PARTY-NOTICES.md` 與 `licenses/`，涵蓋編進它的元件 —— ik_llama.cpp、safetensors 讀取程式，以及生圖、3D、語音與動作的引擎（sd.cpp、trellis.cpp、audio.cpp、kimodo.cpp）—— 並附上 CAGE 在每一個裡面改過的檔案清單，這是 Apache-2.0 的要求。
 
 ## 模型權重
 

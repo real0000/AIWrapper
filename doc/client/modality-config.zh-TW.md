@@ -30,7 +30,7 @@ modality config 指向一個產生檔案、而不是文字的東西：圖片、�
 
 ## 本機或遠端
 
-本機的 modality 模型，跟其他所有模型一起記在 server 的 **VRAM 帳本**上。config 可以限制只用特定的 GPU，方式跟文字 config 一樣；留空的話，server 會挑一張有空間的卡。modality 模型永遠只放在一張卡上。
+本機的 modality 模型，跟其他所有模型一起記在 server 的 **VRAM 帳本**上。config 可以限制只用特定的 GPU，方式跟文字 config 一樣，模型就跑在那幾張卡上、全部都用；留空的話，用後端驅動得動的每一張卡。不只一張卡時按層切分。見 [Modality → 可以用哪些 GPU](../server/server/modalities.zh-TW.md#可以用哪些-gpu)。
 
 **本機**的 config 指定 server `config.xml` 裡的一個 alias。server 會在第一次用到時，在行程內、用跟語言模型同一個後端載入它。所有生成式類型都是這樣運作；沒有另外的服務，也沒有 Python。
 

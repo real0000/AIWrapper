@@ -100,14 +100,24 @@ One ledger across the local backends caps how much can be resident at once.
 </budget>
 ```
 
+A language model is planned as if its cards were idle: memory held by models
+that can be evicted, idle or in use, counts as free, and only pinned models,
+embedding models and what is used outside CAGE count against it. So where a
+model's layers go never depends on what happens to be on the cards at the
+moment. See [AI configs → GPU placement](../../client/ai-config.md#gpu-placement).
+
 When a new model needs to load, the budget checks whether it fits alongside
 what is already resident, card by card. If not:
 
 - `lru` — evict idle, unpinned models from the cards it needs, least recently
-  used first. If that is not enough, it **waits** for models in use on those
-  cards to finish, and a model that can run partly on the CPU keeps whatever
-  does not fit there. It fails only when host RAM is short and nothing is in use
-  that could free any — waiting would never help.
+  used first, and **wait** for models in use on those cards to finish —
+  including any that started loading earlier. Nothing is evicted for a request
+  that would still have to wait: it holds nothing while it waits and evicts at
+  the moment it fits, so an idle model is never dropped for room that cannot be
+  used yet. A model that can run partly on the CPU moves part of itself there
+  only when the cards hold nothing more that could be evicted. It fails only
+  when host RAM is short and nothing is in use that could free any — waiting
+  would never help.
 - `reject` — never evict and never wait. Whatever can move to the CPU does; if
   it still does not fit, the request fails at once.
 
@@ -125,6 +135,13 @@ detection sums every card it can see, including ones you did not intend to use.
 Detection is not NVIDIA-only: `nvidia-smi`, AMD's KFD interface, Apple's
 `sysctl` and a Vulkan fallback are tried in turn, and `CAGE_GPU_PROBE` forces
 one. Modality models are on this same ledger.
+
+The fast links found there — NVLink, AMD's XGMI — also decide which cards may
+read each other's memory directly. Only those pairs do; any other pair copies
+through host memory, which is slower but correct. CUDA also offers direct
+access between cards joined only by PCIe through the CPU, and on the machine
+this was found on such copies arrived as zeros with no error reported, so a
+model split across two NVLink groups answered with nothing but token 0.
 
 ### When a card runs out during a computation
 

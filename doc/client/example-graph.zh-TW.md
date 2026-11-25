@@ -11,7 +11,7 @@
 | 欄位 | 這裡 | 在你的機器上 |
 |---|---|---|
 | `aiConfigs[].model` | `qwen-coder-next`、`nemotron-3-embed-1b` | 你的 server 在 `config.xml` 裡定義的 alias。AI Config 面板會列出來 |
-| `aiConfigs[].cudaVisibleDevices` | 預留位置的 UUID | 你自己的卡（`nvidia-smi --query-gpu=uuid --format=csv`），或留空讓 server 自己挑 |
+| `aiConfigs[].cudaVisibleDevices` | 預留位置的 UUID | 你自己的卡（`nvidia-smi --query-gpu=uuid --format=csv`），或留空，用 server 看得到的每一張卡 |
 | `aiConfigs[].ctxSize` | `262144` | 你的卡和模型允許多少就給多少 —— 這張圖需要餘裕，見下方 |
 | `ragEmbeddingConfig` | `rag` | 有 embedding 模型才需要。留空就是關閉檢索，對這張圖的結構毫無影響 |
 
@@ -170,7 +170,6 @@ embedder 自成一個 config，只是因為它是另一個模型；指定它的�
   "rag_embedding_config": "",
   "memory_context": true,
   "memory_history_top_k": 0,
-  "memory_filter_config": "",
   "memory_mode": "shared",
   "chunking": false,
   "chunk_desc": ""
@@ -365,7 +364,7 @@ packer.cpp:248-341: missing code after line 341
 1. **一開始一個 AI config 就夠了。** 取個名字，選一個你的 server 真的有的模型，四個 `SendToAi` 節點都指向它。每個角色用不同的模型是之後的改進，不是必要條件。
 2. **context 盡量給大。** 用 `memory_mode: "shared"` 時，對話每一輪每個節點多一則訊息，所以會跑好幾輪的迴圈需要餘裕。你的卡挪不出來的話，把三個執行者設成 `"isolated"`，改用 pin 傳遞它們需要的東西 —— 圖一樣能用，只是各輪之間記得的比較少。溢出時會明確報出 `Input tokens (…) exceed` 錯誤，不會默默截斷，所以你會知道。
 3. **檢索可有可無。** 沒有 embedding 模型，或不想建索引 —— `ragEmbeddingConfig` 留空，每個 `rag_mode: "inherit"` 就什麼都不做。結構上沒有任何東西依賴它。如果要開，Filter 維持 `"off"`。
-4. **選 GPU 也可有可無。** `cudaVisibleDevices` 留空，就由 server 挑。機器裡有某張卡不該碰時才設 —— 顯示卡，或另一個工作正在用的卡。
+4. **選 GPU 也可有可無。** `cudaVisibleDevices` 留空，模型就用 server 看得到的每一張卡，連顯示卡也算在內。機器裡有某張卡不該碰時才設 —— 顯示卡，或另一個工作正在用的卡。
 
 然後，工作寫在 chat 訊息裡，不是寫在圖裡。
 

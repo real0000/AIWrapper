@@ -96,7 +96,7 @@ folders would otherwise belong to root.
 | GPU access | **NVIDIA**: nvidia-container-toolkit on the host (`docker-compose.yml`). **AMD**: the amdgpu driver, so that `/dev/kfd` exists (`docker-compose.amd.yml`). With neither, everything runs on CPU |
 | Driver | Any CUDA 12.x driver, 525.60.13 or newer |
 | GPU | Whatever your [backend pack](server/backend-packs.md) covers — CUDA from compute capability 6.0 (Pascal), AMD through the HIP packs, anything else through Vulkan |
-| Disk | The image before the backend pack, plus 1.6–2.3 GB unpacked for a CUDA pack (Vulkan and CPU packs, ~150 MB), plus your models |
+| Disk | The image before the backend pack, plus 1.2–1.6 GB unpacked for a CUDA pack (Vulkan and CPU packs, 130–160 MB), plus your models |
 
 The base image is `nvidia/cuda:12.6.3-runtime-ubuntu24.04`, and both halves of
 that matter:

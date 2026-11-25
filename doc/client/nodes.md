@@ -96,7 +96,7 @@ list, never to the raw reference.
 |---|---|---|---|
 | `Exec` | exec | in / out | |
 | `Asset` | asset | in | Files for this call — from Start's `ASSET`, or another node's output |
-| `Memory` | string | in | Optional, user-added. Wired from a [Memory](#memory) node, its value is placed before the prompt as the memory block instead of becoming part of the prompt text |
+| `Memory` | string | in | Optional, user-added. Not used as the memory block — the node scans memory for itself each time it runs (see [Memory](#memory)). Its value goes into the prompt only where the template references `{{Memory}}` |
 | *user-defined* | string / asset | in | Values for `{{placeholders}}` in the template, or more files |
 | `ALL` | string | out | The whole answer. Becomes an image/audio/mesh path list under a modality config |
 | `Asset` | asset | out | Under a modality config, the generated files — wire straight into another node's asset input |
@@ -110,14 +110,25 @@ list, never to the raw reference.
 | Prompt Template | — | The prompt. `{{pinName}}` inserts an input pin's value |
 | Enable Tool Calls | on | Whether the model may call tools in your editor |
 | Allowed Tools | `*` | Comma-separated allow-list; `*` means every tool the client offers |
-| Max Tool Iterations | 0 | How many tool round trips before the node stops. `0` means no limit: the node runs until the model stops calling tools |
+| Max Tool Iterations | 0 | How many replies may call tools before the node stops. One reply can make several calls. When set, the prompt tells the model the limit. `0` means no limit: the node runs until the model stops calling tools |
 | RAG | Inherit | `Inherit` uses the graph's setting, `Off` disables retrieval here, `Custom` picks a different embedding config. See [RAG](rag.md) |
 | RAG Embedding | — | The config used when RAG is set to Custom |
-| Use project memory | on | Whether this node reads [project memory](memory.md) at all |
-| Memory AI Config | inherit | The model that chooses what memory to read. Empty uses the graph's |
+| Use project memory | on | Whether this node reads [project memory](memory.md). When on, it scans memory each time it runs, using the graph's Memory AI Config |
 | Memory: keep top-N history | 0 | Keep only the N file histories closest to the task, by similarity under the graph's RAG embedding config. `0` keeps all of them |
 | Split long input into chunks | off | When the prompt is far larger than the model's context, run it in pieces and join the answers. Structured output is not parsed in this mode |
 | Chunk preamble | — | Text placed before each piece when chunking |
+
+**When a reply fails.** With tool calls on, a reply that fails — the model could
+not be loaded, or generation stopped with an error — is reported in the step's
+Steps block and in Logic Debug, and the same turn runs again a second later,
+until it succeeds or you press Stop. Nothing from the failed attempt is passed
+on, the step is not marked failed, and the retry does not count against Max Tool
+Iterations. With tool calls off, a failure still ends the step with an error.
+
+**When a reply is cut off.** A reply from a local model that stops because it
+reached the end of the context gets a note at the end of its output, with the
+tokens in and out, and Logic Debug shows an error. That output is incomplete; a
+larger Context Size on the [AI Config](ai-config.md) is the usual fix.
 
 ---
 
@@ -227,31 +238,31 @@ are for.
 
 ## Memory
 
-Gathers the [project memory](memory.md) that bears on a task, once, so that
-several Send To AI nodes can share it.
+Assembles the [project memory](memory.md) that bears on a task into a block of
+text, for a node that reads that text.
 
-Every Send To AI node assembles memory for itself before it runs: the memory AI
-looks at every rule row, file history and the session record next to the task,
-and picks what bears on it. In a graph with several of those nodes, that is one
-pick — one model call and one round trip to your editor — per node. A Memory node
-does it once. Wire its `Memory` output to an input pin named `Memory` on a Send
-To AI node, and that node uses the block it is given instead of assembling its
-own. An empty block is an answer too: it means nothing applied.
+A Send To AI node does not need it. Every Send To AI scans memory itself each
+time it runs, with its own prompt as the task: the memory AI looks at every rule
+row, file history and the session record next to that prompt, and picks what
+bears on it. That way a step inside a loop reads the previous attempt's report,
+and two nodes doing different work each read what fits their own.
 
-The session record is the exception. It changes with every step, so a node fed
-by a Memory node re-reads the latest record itself whenever the memory AI picked
-it — a step inside a loop needs the previous attempt's report, not the one from
-before the loop began.
+So a Memory node assembles its block only when something reads the text: a
+Compose node's `{{Memory}}`, a pin with any other name, a Send To AI whose
+template references `{{Memory}}`, a node running a modality config, or a Send To
+AI with project memory turned off. When every node it feeds is a Send To AI
+taking it on the `Memory` pin, it outputs an empty string and says so in Logic
+Debug, rather than make a pick nobody uses. Either way it uses the graph's
+Memory AI Config.
 
 | Pin | Type | Direction | Meaning |
 |---|---|---|---|
 | `Exec` | exec | in / out | |
 | `Input` | string | in | The task — usually Start's `PROMPT`. What the memory AI judges against |
-| `Memory` | string | out | The assembled memory block |
+| `Memory` | string | out | The assembled memory block, or an empty string when nothing reads it |
 
 | Setting | Default | Meaning |
 |---|---|---|
-| Memory AI Config | inherit | The model that chooses. Empty uses the graph's |
 | Token budget | 0 | Trim the block to this many tokens. `0` means no trimming. Rules are never dropped |
 | Keep top-N history | 0 | Keep only the N file histories closest to the task, by similarity under the graph's RAG embedding config. `0` keeps all of them |
 

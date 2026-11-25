@@ -80,7 +80,9 @@ context 的大小會影響其他所有東西：長的 context 會保留很大的
 | Split Mode | `layer` | 只在 Auto Fit 關閉時有效。`layer` 依層切分；`row` 是比較舊的列切分（支援的地方就是 tensor parallelism）；`tensor` 是比較新的 meta-device 切分（實驗性質，依架構而定）；`none` 把整個模型放在一張 GPU 上 |
 | CPU MoE Layers | 0 | 只在 Auto Fit 關閉時有效。mixture-of-experts 模型的專家權重留在 CPU：`0` 關閉，`N` 前 N 層，`-1` 全部。不是 MoE 的模型會忽略它 |
 
-**Auto Fit** 是預設值，也是建議的設定。你選擇可以用哪些 GPU，怎麼用由 server 決定。它把這些 GPU 依 NVLink 分成幾座島，估算權重、KV cache 和 compute buffer，然後：整個模型放得進一張卡 → 就放那張；只有一座島 → `graph` 切分，在每張卡之間做 tensor parallelism；好幾座一樣大的島 → 島內做 tensor parallelism、島與島之間串成 pipeline；其他情況 → `layer` 切分。放不下的部分，依 MoE 專家放到 CPU。
+**Auto Fit** 是預設值，也是建議的設定。你選擇可以用哪些 GPU，怎麼用由 server 決定。你選的每一張卡它都會用 —— 就算模型放得進其中一張，也照樣攤在全部的卡上，因為用哪幾張卡是你的決定。它把這些卡依 NVLink 分成幾座島，估算權重、KV cache 和 compute buffer，然後決定切法：只有一張卡 → 不切；只有一座島 → `graph` 切分，在每張卡之間做 tensor parallelism；好幾座一樣大的島 → 島內做 tensor parallelism、島與島之間串成 pipeline；其他情況 → `layer` 切分。放不下的部分，依 MoE 專家放到 CPU。
+
+**規劃時把每張卡都當成閒著的。**server 放得掉的模型 —— 不管閒著還是正在用 —— 佔的記憶體都算成空的；只有釘住的模型、embedding 模型，以及 CAGE 以外的程式用掉的，才算佔用。載入之前，server 會先騰出這些空間：那幾張卡上閒著的模型驅逐、在用的就等。只有卡上已經沒有東西可以騰、還是放不下時，模型的一部分才會移到 CPU。模型絕不會繞著當下剛好在卡上的東西擺。
 
 compute buffer 是在建立每個 context 時實際量出來的。某張卡放不下的話，卡上閒著的模型會被驅逐、在用的就等它做完；還是不行的話，模型就部分在 CPU 上計算，或是以比較少的部分放在 GPU 上重新載入。**不會因為 VRAM 不夠而拒絕**，Context Size 也絕不會被默默調小。Auto Fit 開啟時，GPU Layers、Split Mode 和 CPU MoE Layers 由 server 決定，在編輯器裡會隱藏起來。
 
@@ -109,7 +111,7 @@ compute buffer 是在建立每個 context 時實際量出來的。某張卡放�
 | Temperature | 隨機程度。越低越確定 |
 | Top K | 只從機率最高的 K 個 token 裡取樣 |
 | Top P | 從機率加總達到 P 的最小 token 集合裡取樣 |
-| Presence Penalty | 回覆裡已經出現過的 token，每一個都扣一次分數，不管出現幾次 —— 這是 OpenAI 的定義，範圍是到目前為止的整段回覆（包括推理），不含 prompt。`0`（預設值）表示關閉。推理模型用它來防止思考時無止境地重複。開啟 Lookahead Decoding 時會被忽略。遠端端點只有 OpenAI 系列會收到這個值 |
+| Presence Penalty | 回覆裡已經出現過的 token，每一個都扣一次分數，不管出現幾次 —— 這是 OpenAI 的定義，範圍是到目前為止的整段回覆（包括推理），不含 prompt。`0`（預設值）表示關閉。推理模型用它來防止思考時無止境地重複。遠端端點只有 OpenAI 系列會收到這個值 |
 
 用模型自己的 model card 建議的值 —— 不同模型的建議不一樣，思考與不思考時也不一樣。以 Qwen3.6 為例，它建議一般任務在思考模式下用 temperature 1.0、Top P 0.95、Top K 20、presence penalty 1.5，並說為了防止無止境的重複，penalty 可以調到 2，但可能出現語言混雜、回答稍微變差；Qwen3.8 建議同樣的值，presence penalty 則是 0。
 

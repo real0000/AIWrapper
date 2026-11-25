@@ -61,6 +61,9 @@ ones on the server you are allowed to use. **None ship with CAGE** — create on
 the [Logic Editor](logic-editor.md), or import one; the
 [worked example](example-graph.md) walks through a complete one. With no graph
 selected, a message is answered with an error rather than run some other way.
+When this workspace has no graph yet but the server has some, the first of them
+is selected and downloaded; if that fails, the selector shows *(pick a graph)*
+instead of looking as if one were chosen.
 
 Your selection travels with the message itself, so it is what the server
 executes for that message; there is no separate session binding that can drift
@@ -82,8 +85,12 @@ approval state.
 - **New Session** clears the conversation, resets session-level tool
   approvals (see [Tools](tools.md)) and starts a new
   [session record](memory.md#the-session-record-written-automatically).
-- A session outlives a server restart: the conversation keeps its session, and
-  only a new chat — or a server that has no record of it — starts another.
+- A session outlives a server restart: the conversation keeps its session. Only
+  a new chat, loading another conversation from History, or a server that has
+  no record of the session changes it.
+- **Loading a conversation from History continues it.** It becomes the current
+  conversation, in its own session, so the next message carries on where it
+  left off — its session record included.
 - Each completed exchange is saved to history automatically.
 - The history panel lists past conversations grouped by date, with search and
   import/export. Its title is the opening words of your first message.

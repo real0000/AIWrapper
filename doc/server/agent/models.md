@@ -43,6 +43,33 @@ entry's `<source_repo>`. An entry with no recorded source repo is listed rather
 than guessed at — a card from the wrong repo would give the model another
 model's limit — so confirm its source in the control plane first.
 
+The card is also where the licence comes from. A custom licence — `license:
+other` with a `license_name` and a `license_link` — is recorded under its own
+name and link, and classified when it is a known one: the Qwen Research License
+as non-commercial, the Qwen License as commercial with conditions. The entry
+records `<source_repo>` as well, which is what `--fetch-cards` reads.
+
+## Parts a model needs from other repositories
+
+Some models are published without everything they run with.
+
+- **Parts a model names.** TRELLIS.2, for one, points at a DINOv3 feature
+  extractor, a background remover and a decoder from TRELLIS v1. The downloader
+  fetches those along with the model, into `<model folder>/components/<name>/`,
+  where the loader finds them.
+- **Image models published as only the diffusion model.** Quantized GGUF repos
+  of image models often hold just the denoiser — Qwen-Image 2.1 Turbo's does.
+  When a repo has no `model_index.json` and its card's `base_model` is a
+  diffusers pipeline, the downloader also fetches that pipeline's
+  `model_index.json` and every part it lists except the denoiser — text encoder,
+  VAE, scheduler — into `<model folder>/components/<base model name>/`. A base
+  model that is not a pipeline, such as the original of a quantized language
+  model, brings nothing.
+
+When those parts are missing — the model was copied over by hand, say — the
+startup log says what is missing and that `cage-model-dl` fetches it, and
+loading the model stops with the same message before any weights are read.
+
 ## Models already on disk
 
 Weights that arrived by some other route — rsync, a manual download, a tool

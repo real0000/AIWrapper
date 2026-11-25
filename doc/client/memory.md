@@ -60,7 +60,9 @@ server writes as the graph runs:
   resuming it writes into the same section, which is condensed when it finishes.
 - **It follows the conversation, not the server.** The session id belongs to the
   conversation in your editor and survives a server restart, so the record does
-  too. Starting a new chat starts a new file; the old one stays.
+  too. Starting a new chat starts a new file; the old one stays. Loading an
+  earlier conversation from History switches back to its session, so the next
+  message continues that conversation's record.
 
 The point is loops. A graph that sends a step back to try again — a coder and a
 build check, say — used to start every attempt from nothing: in one test the
@@ -178,10 +180,12 @@ that silently does nothing is the failure this feature has to avoid.
 
 ## What gets read
 
-Before a step runs, the memory AI is given every candidate at once — every row
-of the routing table, every history file in the project, and this
-conversation's session record — together with the work the step is about to do,
-and picks the ones that bear on it. Only those are read.
+Every time a Send To AI step runs — each attempt in a loop, and a node wired to
+a [Memory](nodes.md#memory) node as well — the memory AI is given every
+candidate at once — every row of the routing table, every history file in the
+project, and this conversation's session record — together with the step's own
+prompt, and picks the ones that bear on it. Only those are read. A node that
+asks again with nothing changed reuses its previous pick.
 
 - **Rows with an empty `when` are always read**, whether or not the model picked
   them.
@@ -203,10 +207,14 @@ named no file, which is most steps inside a loop, read no history at all.
 ## The memory AI config
 
 Choosing what to read, condensing the session record and deciding what to write
-back are model calls, configured by **Memory AI Config** at graph level. Nodes
-inherit it and can override it. Leave it unset and every conditional row is
-treated as applying, no history or session record is read, the session record
-stays as written, and nothing is written to rule files automatically.
+back are model calls, configured by **Memory AI Config** at graph level. Every
+node uses that one; nodes have no setting of their own. Leave it unset and every
+conditional row is treated as applying, no history or session record is read,
+the session record stays as written, and nothing is written to rule files
+automatically.
+
+Send To AI and Memory nodes used to have a Memory AI Config of their own. A
+value left in an older graph is not read.
 
 A small fast model is the right choice — the judgement is short and it runs
 before the real work.

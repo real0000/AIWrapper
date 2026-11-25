@@ -42,7 +42,7 @@ chat panel 在活動列的 CAGE 容器裡。你在這裡跟 agent 對話，工�
 
 底部的兩個下拉選單，決定實際上要執行什麼。
 
-**Graph** 選擇要執行的邏輯圖：這個工作區裡的任何一張，加上 server 上你有權使用的。**CAGE 沒有附任何邏輯圖**：在 [Logic Editor](logic-editor.zh-TW.md) 裡建一張，或匯入一張；[完整範例](example-graph.zh-TW.md)完整走過一張。沒有選圖的話，訊息會得到一個錯誤，而不是用別的方式執行。
+**Graph** 選擇要執行的邏輯圖：這個工作區裡的任何一張，加上 server 上你有權使用的。**CAGE 沒有附任何邏輯圖**：在 [Logic Editor](logic-editor.zh-TW.md) 裡建一張，或匯入一張；[完整範例](example-graph.zh-TW.md)完整走過一張。沒有選圖的話，訊息會得到一個錯誤，而不是用別的方式執行。這個工作區還沒有任何一張圖、而 server 上有的時候，會選定其中第一張並下載下來；下載失敗的話，選單顯示 *(pick a graph)*，不會看起來像是已經選了。
 
 你的選擇會跟著訊息一起送出，所以 server 處理這則訊息時執行的就是它；沒有另外一份綁在 session 上、可能跟選單對不上的設定。
 
@@ -55,7 +55,8 @@ chat panel 在活動列的 CAGE 容器裡。你在這裡跟 agent 對話，工�
 一個 session 就是一段對話，有自己的訊息歷史和自己的核准狀態。
 
 - **New Session** 會清空對話、重設 session 層級的工具核准（見 [Tools](tools.zh-TW.md)），並開始一份新的 [session 紀錄](memory.zh-TW.md#自動寫下的-session-紀錄)。
-- session 撐得過 server 重新啟動：對話會沿用它的 session，只有開新的對話，或 server 那邊沒有這個 session 的紀錄時，才會開另一個。
+- session 撐得過 server 重新啟動：對話會沿用它的 session。只有開新的對話、從 History 載入另一段對話，或 server 那邊沒有這個 session 的紀錄時，才會換。
+- **從 History 載入一段對話，就是接著那段對話。** 它成為現在的對話、用它自己的 session，所以下一則訊息會從它停下的地方接下去 —— 連同它的 session 紀錄。
 - 每完成一來一回，就會自動存進歷史紀錄。
 - 歷史紀錄面板依日期分組列出過去的對話，可以搜尋、匯入與匯出。每段對話的標題是你第一則訊息開頭的幾個字。
 

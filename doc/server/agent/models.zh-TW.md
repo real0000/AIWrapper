@@ -35,6 +35,17 @@
 
 一個模型的 context 能延伸到多長，只寫在它的 model card 裡，而 server 只讀本機的檔案。所以下載時會連同權重一起帶回 card（`README.md`）。在那之前下載的模型沒有 card：`cage-model-dl --fetch-cards --config config.xml` 會從每個項目的 `<source_repo>` 把它抓回來。沒有記錄來源 repo 的項目會被列出來，而不是用猜的 —— 從錯的 repo 抓到的 card，會讓這個模型套用另一個模型的上限 —— 所以請先在控制台確認它的來源。
 
+授權也是從 card 來的。自訂的授權 —— `license: other` 加上 `license_name` 與 `license_link` —— 會照它自己的名稱和連結記下，認得的還會分類：Qwen Research License 是非商用，Qwen License 是有條件的商用。項目也會記下 `<source_repo>`，`--fetch-cards` 讀的就是它。
+
+## 模型需要的其他 repo 的部分
+
+有些模型發布時，沒有附上它執行時需要的全部東西。
+
+- **模型自己點名的部分。** 例如 TRELLIS.2，指名要一個 DINOv3 特徵擷取器、一個去背模型，和 TRELLIS v1 的一個解碼器。下載器會連同模型一起把它們抓下來，放進 `<模型目錄>/components/<名稱>/`，載入器就在那裡找。
+- **只發布擴散模型本體的生圖模型。** 生圖模型的量化 GGUF repo 常常只有 denoiser —— Qwen-Image 2.1 Turbo 的就是。repo 沒有 `model_index.json`、而它的 card 的 `base_model` 是一個 diffusers pipeline 時，下載器會另外抓那個 pipeline 的 `model_index.json`，以及它列出的每一個部分（denoiser 除外）—— 文字編碼器、VAE、scheduler —— 放進 `<模型目錄>/components/<base model 的名稱>/`。base model 不是 pipeline 的話（例如量化語言模型的原版），什麼都不抓。
+
+這些部分不在時 —— 例如模型是手動複製過來的 —— 開機的 log 會說少了什麼、用 `cage-model-dl` 下載就會一起抓，載入這個模型也會在讀任何權重之前，用同一句話停下來。
+
 ## 已經在磁碟上的模型
 
 經由別的途徑來的權重 —— rsync、手動下載、比這個工具還早的工具 —— 以前是看不見的：下載程式只會單向運作（repo id → API → 下載 → 寫 `config.xml`），所以唯一的辦法是手動打出整個項目，連授權也要自己填。

@@ -149,7 +149,6 @@
   "rag_embedding_config": "",      // rag_mode="custom" 時使用
   "memory_context": true,
   "memory_history_top_k": 0,       // 0 = 保留每一份檔案歷史
-  "memory_filter_config": "",
   "chunking": false,
   "chunk_desc": ""
 }
@@ -229,10 +228,10 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
 `in[Exec, Input]` → `out[Exec, Memory]`
 
 ```json
-"config": { "ai_config": "", "token_budget": 0, "history_top_k": 0 }
+"config": { "token_budget": 0, "history_top_k": 0 }
 ```
 
-一個 `Memory` 節點可以餵好幾個 `SendToAi` 節點，這正是它存在的意義。
+`SendToAi` 節點每次執行都自己掃記憶、不讀 `Memory` pin，所以這個節點是給要讀它文字的節點用的 —— `Compose` 的 `{{Memory}}`，或引用 `{{Memory}}` 的 prompt。挑選由整張圖的 `memoryAiConfig` 負責。
 
 ### `Dispatch`：拆分工作，一項一項執行
 `in[Exec, Input]` → `out[Step, Task, Index, Plan, End]`

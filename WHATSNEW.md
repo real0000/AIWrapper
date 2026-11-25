@@ -34,6 +34,13 @@ It is a **breaking release for backend packs and for `config.xml`**. See below.
 | The extension and the server exchange tool settings in a new way | **Update the extension to 0.2.0** together with the server. |
 | The installer is now `install.ps1`, a PowerShell script | **Install PowerShell 7.4 or newer and run `pwsh ./install.ps1`.** The options are the ones `install.sh` had. |
 | File history is read only when the memory AI picks it | **Set a Memory AI Config on your graphs** if you rely on file history. Without one, a file's history is no longer read just because the message names the file. |
+| Send To AI and Memory nodes no longer have a **Memory AI Config** of their own | Nothing, unless one of yours named a different model from the graph's: it is no longer read, so **set the graph's Memory AI Config** to the model you want. |
+| A `config.xml` with a `<mysql>` block **waits for that database** when it cannot connect, instead of starting without accounts | **Remove the whole `<mysql>` block** if you meant to run without a database — pointing it at nothing no longer does that. |
+| Requests from web pages are refused, and there is no CORS | Nothing, unless a tool of yours calls the API from a browser page: call it from a program instead. |
+| The file tools ask before touching anything outside the project | Nothing. To allow more, add paths under **Settings → File access**. The native command line refuses outside paths unless given `--file-access`, `--allow-path` or `--outside`. |
+| Server, approval and MCP settings in a workspace's `.vscode/settings.json` are no longer read | **Move them to your user settings.** |
+| A graph's modality `out_dir` is a path in your project; generated files are written there after you approve them | Graphs that pointed `out_dir` at an absolute path on the server now write into the project instead. |
+| Example passwords (`change-me…`, `CHANGE_ME`) are refused | **Set a real password.** The Docker entrypoint does not start with an example one. |
 | A session record is written to `.cage/sessions/` in your project | Add `.cage/sessions/` to `.gitignore` if you do not want it committed. |
 | Retrieval cuts files into chunks differently | Nothing — each project's index is rebuilt once, the first time the project is opened. For a large project that takes as long as its first indexing did. |
 | Send To AI has no **Role** field any more. It put a short persona — "Coder", "Reviewer" — in front of the prompt as a system message | Nothing, unless a role of yours carried real instructions: it is no longer read, so **move those into the Prompt Template**. The example graphs had only names there. |
@@ -187,19 +194,23 @@ it had found; that summary had nowhere to go.
   step's Summary to `.cage/sessions/<session id>.md` in your project, with the
   files it wrote. When the message's run ends, the memory AI condenses that part
   into a short list for the next message. Nothing is truncated.
-- **The memory AI chooses what to read.** Before a step runs it is shown every
-  rule row, every file history in the project and the session record, together
-  with the work at hand, and picks what bears on it. Whether the message happens
-  to name a file no longer decides whether its history is read.
-- **A conversation keeps its session across a server restart.** The session id
-  belongs to the conversation in your editor; only a new chat, or a server that
-  says it has no such session, starts a new one. The record follows it.
+- **The memory AI chooses what to read, every time a step runs.** Each Send To
+  AI step — each attempt in a loop, and a step wired to a Memory node as well —
+  shows it every rule row, every file history in the project and the session
+  record, together with the step's own prompt, and it picks what bears on it.
+  Whether the message happens to name a file no longer decides whether its
+  history is read.
+- **A conversation keeps its session** across a server restart, and loading it
+  from History later switches back to it, so the next message continues its
+  record. Only a new chat, or a server that says it has no such session, starts
+  a new one.
 
 **Tested** against the packaged server with a scripted model standing in for the
 LLM: a looping step reads its previous attempt's report, the record is condensed
 before the run reports done, a new chat is isolated, and a session is recalled
-from the database after a restart. **Not yet run** with a real model through a
-whole graph. See [Project memory](doc/client/memory.md).
+from the database after a restart. A run with local models through a whole
+coding graph found the problems listed under *Fixes* below; it has not been
+repeated since they were fixed. See [Project memory](doc/client/memory.md).
 
 ## Models that need someone else's weights
 
@@ -210,6 +221,92 @@ The downloader now fetches those along with the model, into the model's own
 config. One such part — TRELLIS's background remover, whose licence forbids
 commercial use — is replaced by an equivalent under MIT, and the reason is
 recorded with it.
+
+Image models published as only the diffusion model are handled the same way. A
+quantized GGUF repo often holds just the denoiser — Qwen-Image 2.1 Turbo's does —
+and names the full pipeline as its `base_model`; the downloader now fetches that
+pipeline's text encoder, VAE and scheduler into `components/` too. A copy made
+by hand without them says what is missing instead of failing deep inside the
+loader. Custom licences are recorded under their own name — Qwen-Image's is the
+Qwen Research License, non-commercial — where before every one was filed as an
+unnamed `other`. See [Models](doc/server/agent/models.md#parts-a-model-needs-from-other-repositories).
+
+## Placement plans as if the cards were idle
+
+Where a model's layers go no longer depends on what happens to be loaded at that
+moment.
+
+- **Every card you choose is used.** Auto Fit decides only how to split a model
+  across the cards you selected, and no longer picks a single card because the
+  model would fit on it. Image, speech, 3D and motion models do the same: they
+  run on exactly the cards chosen in the graph, split by layer.
+- **Room is made before anything moves to the CPU.** The plan counts each card
+  as if nothing that could be evicted were on it. Idle models are evicted and
+  busy ones waited for; only when the cards hold nothing more that could make
+  room does part of the model move to the CPU. A request that still has to wait
+  evicts nothing in the meantime.
+- **A context that does not fit is placed again**, with part of the model on the
+  CPU, instead of failing the request.
+
+Before, a large model loaded while another happened to sit on one of its cards
+was packed around it, and could then fail to fit its own context with nothing
+left to evict. See [AI configs → GPU placement](doc/client/ai-config.md#gpu-placement).
+
+**Verified** on the packaged build: a small model given two V100s in one NVLink
+group was split across both with tensor parallelism, and given two V100s in
+different groups was split by layer, both answering exactly as on one card. The
+rest — models evicted to make room before anything moves to the CPU — is
+covered by the ledger's unit tests, **not yet** by a run with several large
+models competing for the same cards.
+
+## Newer image, 3D, speech and motion engines
+
+The four engines behind generation — sd.cpp, trellis.cpp, audio.cpp and
+kimodo.cpp — are merged with their upstream projects, and audio.cpp's own
+additions to ggml are carried into the backend packs. audio.cpp alone brings
+about 70 more model families, among them further speech recognisers (Canary,
+Moonshine, GigaAM) and voices (Kokoro, Piper, XTTS-v2).
+
+**Measured** on one V100: an SD 3.5 Large image at 512², 4 steps, takes 7.7 s
+instead of 19.1 s, and a kimodo motion 14.2 s instead of 22.4 s. Images, meshes
+and motion otherwise match the previous engines, differing only where upstream
+changed the method. **Not verified:** the new speech families — only ACE-Step
+has been run end to end since the merge.
+
+## A security review
+
+The code was read against recent public incidents involving AI coding agents,
+MCP servers, editor extensions and local inference servers. Fourteen problems
+were found and fixed; sixteen more checks came out clean.
+
+- **The server cannot end up open by accident.** With no accounts and no
+  `<api_key>`, every request is treated as an administrator — handy for a first
+  try, and now stated at startup and in the docs. It no longer happens by
+  mistake: a `config.xml` with `<mysql>` waits for that database rather than
+  starting open, and creating an account while the server is open makes login
+  required from the next request on.
+- **Web pages cannot use the API.** A request the browser marks as coming from a
+  page is refused before its body is read, WebSocket handshakes and CORS
+  preflights included, so a page cannot try passwords or act on your behalf. The
+  node agent refuses them too. `<bind>` sets which address the server listens on.
+- **File tools stay in the project** unless you allow more under
+  [Settings → File access](doc/client/settings.md#file-access). Anything outside
+  is asked about, once; symbolic links are resolved one step at a time, so a link
+  inside the project that points out counts as outside.
+- **Generated files come to you.** A graph's image, audio or mesh output is
+  delivered to your editor and written into the project through the same
+  per-file approval as code, instead of being written on the server machine.
+- **A cloned repository cannot reconfigure your editor.** Server address, tool
+  approval, MCP and native-client settings are machine-wide, and the extension's
+  token lives in the operating system's keychain instead of settings.json.
+- **Network and files.** HTTPS calls check the host name; a remote endpoint
+  written into a graph reaches only public addresses unless an administrator
+  runs it; malformed GGUF files are refused instead of crashing the loader; and
+  everything the build downloads is checked against SHA-256.
+- **Project memory is guarded.** Invisible characters are removed and reported;
+  every line the AI writes says who wrote it and can be undone; and in a turn
+  that read content from outside the repository, a new memory is only proposed,
+  for you to approve.
 
 ---
 
@@ -386,6 +483,53 @@ recorded with it.
   showed image and 3D models as an unknown format; they now show the type the
   server's probe found. The Server tab's VRAM bar never showed anything — it read
   a field the server does not send — and now sums the cards the server drives.
+- **A model split across two NVLink groups answered with nothing but token 0.**
+  Copies between cards joined only by PCIe through the CPU arrived as zeros,
+  with no error. Only cards with a fast link between them — NVLink, AMD's XGMI —
+  now access each other directly; any other pair copies through host memory.
+- **Unloading a model split with `-sm graph` over an NVLink pair could leave the
+  cards unusable** until the server restarted: one card's memory was freed while
+  the other was still reading it. Freeing now waits for every card that can
+  reach that memory.
+- **Flash attention on V100s got some prompts wrong.** For sliding-window models
+  (Gemma 2, 3 and 4, gpt-oss) every query but the first read another row's mask;
+  attention sinks (gpt-oss) were ignored; and for the twelve architectures that
+  ask for full precision because half precision overflows (Qwen2, GLM4, Phi 2
+  and 3, Command-R and others) part of the sum was still kept in half precision.
+- **A reply that failed inside a tool loop left the step on old text.** Your
+  editor saw an error and stopped updating, while the server carried on with the
+  last good reply. The failure is now shown in the step, and that turn runs
+  again until it succeeds or you press Stop.
+- **Code in a model's thinking could end a step.** The tool-call grammar was
+  armed by text inside the reasoning: Qwen3.8 drafting `#include <functional>`
+  matched the trigger `<function`, and the step stopped with a grammar error.
+  Reasoning is now left alone, and a false trigger no longer stops generation.
+- **A local model could call only one tool per reply**, so a step could spend its
+  whole Max Tool Iterations reading one file at a time. A reply can now make
+  several calls, and the prompt tells the model how many rounds it has.
+- **A reply cut off because the context was full looked like a finished one.**
+  It now ends with a note giving the token counts, and Logic Debug shows an
+  error.
+- **Loading a conversation from History started a new session**, so the next
+  message could not read that conversation's session record.
+- **Steps wired to a Memory node used one block for the whole run.** When the
+  pick that made it came back empty, no step in the run had any memory.
+- **A queued request evicted idle models before it could use the room**, and
+  the ledger counted their memory as free while they were still loaded — another
+  model was then placed onto it. Eviction now happens at the moment the request
+  fits.
+- **The startup probe took some chat models for speech models**: a GGUF with a
+  vision projector for one speech family, a folder with a single safetensors
+  file for another. Those never appeared as chat models.
+- **The reason a model failed to load was cut off** just before the part that
+  mattered: the message had 512 bytes to fit in.
+- **A fresh install's Chat showed a graph it had not selected**, so the first
+  message went out with none and was refused. The graph shown is now the one
+  selected.
+- **Backend packs shipped without the licences of four of their components** —
+  sd.cpp, trellis.cpp, audio.cpp and kimodo.cpp — and two lists of changed files
+  had gone stale after upstream merges. Each pack now carries the notices for
+  exactly what is compiled into it, and the lists are computed from git.
 
 ## Known gaps
 
@@ -395,8 +539,22 @@ recorded with it.
   valid call. With no tools offered, the rest of that thinking is shown as part
   of the answer.
 - **The Pascal pack has never driven a Pascal card.** See above.
-- **The session record and the memory AI's choice** have been tested against a
-  scripted model, not yet in a real run through a whole graph.
+- **The memory AI's pick can go round in circles.** With Qwen3.6 as the memory
+  model, a pick was seen repeating the same check in its thinking until the
+  context filled — close to two hours — and then returning nothing usable. Two
+  causes were found: the pick runs at a temperature capped at 0.2 with none of
+  the config's other sampling settings, which Qwen3.6's own card warns leads to
+  endless repetition when thinking; and the step's own output instructions sit
+  inside what it is asked to judge. The fix has not been decided yet.
+- **Since this build's memory fixes**, the memory changes have run against a
+  scripted model only, not through a whole graph with real models.
+- **Several tool calls in one reply** have been seen from GLM only; Qwen's and
+  DeepSeek's templates have not been tried. Lookahead together with the
+  reasoning budget or presence penalty has not been run with a real model.
+- **sd.cpp lost two things in its merge:** INT8 tensorwise weights, and FP8
+  weights kept as FP8 — an FP8 checkpoint now loads as F16, at twice the memory.
+- **The new speech families have not been run**, other than ACE-Step; on the
+  Vulkan pack, audio.cpp's new operations have no kernels and run on the CPU.
 - **The Linux AMD packs have never run on AMD.** A Windows build of the gfx1150
   pack did, on a Radeon 890M — chat, images, speech, motion and 3D.
 - **Blackwell** (RTX 50xx) has never been tried.

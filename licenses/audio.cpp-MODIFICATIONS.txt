@@ -16,7 +16,7 @@ Every file changed relative to upstream is listed below.
 
 Upstream:  https://github.com/0xShug0/audio.cpp.git
 Based on:  upstream commit 60bb6dfcf3784c034c2b94268ac0486c1e61d73c (2026-11-12)
-This copy: 6b6571b5e708da4c20454b66b5b3a574c64bc485 plus uncommitted changes
+This copy: 5e8d5cb4e2da16e59a5aa3d07df3c34af1f6c010
 
 Files changed by the CAGE project relative to that upstream commit (379):
   M = modified, A = added, D = deleted, R = renamed (old -> new)

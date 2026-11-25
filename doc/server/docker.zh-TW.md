@@ -70,7 +70,7 @@ curl http://127.0.0.1:15963/health     # {"status":"ok"}
 | GPU 存取 | **NVIDIA**：主機上要有 nvidia-container-toolkit（`docker-compose.yml`）。**AMD**：要有 amdgpu 驅動，讓 `/dev/kfd` 存在（`docker-compose.amd.yml`）。兩者都沒有的話，全部在 CPU 上跑 |
 | 驅動 | 任何 CUDA 12.x 的驅動，525.60.13 或更新 |
 | GPU | 你的[後端包](server/backend-packs.zh-TW.md)涵蓋的都行 —— CUDA 從 compute capability 6.0（Pascal）起，AMD 用 HIP 後端包，其他的用 Vulkan |
-| 磁碟 | 不含後端包的映像檔，加上 CUDA 後端包解開後的 1.6–2.3 GB（Vulkan 和 CPU 後端包約 150 MB），再加上你的模型 |
+| 磁碟 | 不含後端包的映像檔，加上 CUDA 後端包解開後的 1.2–1.6 GB（Vulkan 和 CPU 後端包 130–160 MB），再加上你的模型 |
 
 基底映像檔是 `nvidia/cuda:12.6.3-runtime-ubuntu24.04`，前後兩半都有意義：
 

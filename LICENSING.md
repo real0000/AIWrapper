@@ -51,7 +51,11 @@ terms: <https://github.com/real0000>
 
 CAGE incorporates open-source components, all under permissive licences; they
 are listed with their copyright notices in
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Each backend pack also
+carries its own `THIRD-PARTY-NOTICES.md` and `licenses/` for what is compiled
+into it — ik_llama.cpp, the safetensors reader, and the image, 3D, speech and
+motion engines (sd.cpp, trellis.cpp, audio.cpp, kimodo.cpp) — with the list of
+files CAGE changed in each, as Apache-2.0 requires.
 
 ## Model weights
 

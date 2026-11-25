@@ -45,6 +45,18 @@ answers whether those weights are its own and what it can drive them for. The
 test lives in the code that understands the format, so there is no table here to
 fall out of date.
 
+**Language models answer first.** The language-model loader is asked before any
+adapter: a GGUF whose architecture it knows, or a Hugging Face folder whose
+`config.json` names one, becomes a chat model and goes no further. A folder with
+a `config.json` and one `model.safetensors` is exactly what dozens of speech
+models look like too; only the architecture tells them apart, and only the
+language-model loader knows the architectures. The speech adapter, for its part,
+accepts a folder only when every file its model spec names is there. Three kinds
+of folder fall outside that: weights under another file name than the spec's; a
+third-party GGUF the speech code reads directly (`nemotron_transcribe`, for one);
+and an any-to-any GGUF whose architecture is a language model's (LFM2.5-Audio,
+for one), which becomes a chat model.
+
 For most entries `<path>` and `<license>` are the whole thing.
 
 This is why the fields are gone rather than optional. A declared kind that is
@@ -72,10 +84,23 @@ needs the room.
 ## Which GPUs it may use
 
 Chosen in the graph, on the [modality config](../../client/modality-config.md),
-the same way an AI config picks cards: by GPU UUID. Leave it empty and the server
-picks a card with room. A modality model always sits on a single card; if none of
+the same way an AI config picks cards: by GPU UUID. The model runs on exactly the
+cards chosen — all of them, even when one would hold it. Leave it empty and it
+uses every card the backend can drive, the same rule as an AI config. If none of
 the chosen cards exists on this machine, the request fails rather than quietly
 landing somewhere else.
+
+With more than one card, the server splits the model by layer, as a pipeline.
+Tensor parallelism moves activations between the cards on every matrix multiply,
+and these models compute hundreds to thousands of positions at once, so for them
+it usually costs more than it saves: SD 3.5 Large measured 10% slower split by
+layer and 40% slower split by row than on one card. A model that one card could
+hold is therefore a little slower on several — choosing them is yours to decide.
+
+- If the chosen cards together cannot hold the model, the request fails at once
+  and says to choose more.
+- A model already loaded is reused only when the cards chosen this time are the
+  same ones; otherwise it is unloaded and placed again.
 
 Set it to keep generation off a card you want left alone — a display card, or one
 holding part of a large language model.

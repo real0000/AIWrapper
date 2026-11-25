@@ -74,7 +74,7 @@ prompt 由 **Prompt Template** 組成，`{{pin}}` 會插入從那個輸入 pin �
 |---|---|---|---|
 | `Exec` | exec | in / out | |
 | `Asset` | asset | in | 這次呼叫要用的檔案：來自 Start 的 `ASSET`，或其他節點的輸出 |
-| `Memory` | string | in | 選用，自己加的。從 [Memory](#memory) 節點接過來的值，會放在 prompt 之前當作記憶區塊，而不是變成 prompt 文字的一部分 |
+| `Memory` | string | in | 選用，自己加的。它的值不會被當成記憶區塊 —— 這個節點每次執行都自己掃記憶（見 [Memory](#memory)）。只有 template 引用 `{{Memory}}` 的地方，才會把它的值放進 prompt |
 | *user-defined* | string / asset | in | 範本裡 `{{placeholders}}` 的值，或更多檔案 |
 | `ALL` | string | out | 完整的回答。在 modality config 底下會變成圖片、音訊或網格的路徑清單 |
 | `Asset` | asset | out | 在 modality config 底下，產生出來的檔案 —— 可以直接接到另一個節點的 asset 輸入 |
@@ -88,14 +88,17 @@ prompt 由 **Prompt Template** 組成，`{{pin}}` 會插入從那個輸入 pin �
 | Prompt Template | — | prompt 本身。`{{pinName}}` 會插入一個輸入 pin 的值 |
 | Enable Tool Calls | on | 模型能不能呼叫你編輯器裡的工具 |
 | Allowed Tools | `*` | 以逗號分隔的允許清單；`*` 表示 client 提供的每一個工具 |
-| Max Tool Iterations | 0 | 工具來回幾次之後節點停止。`0` 表示沒有上限：節點會一直跑到模型不再呼叫工具 |
+| Max Tool Iterations | 0 | 幾則回覆可以呼叫工具，之後節點停止。一則回覆可以呼叫好幾個工具。有設時，prompt 會告訴模型這個上限。`0` 表示沒有上限：節點會一直跑到模型不再呼叫工具 |
 | RAG | Inherit | `Inherit` 用整張圖的設定，`Off` 在這裡關閉檢索，`Custom` 另外挑一個 embedding config。見 [RAG](rag.zh-TW.md) |
 | RAG Embedding | — | RAG 設為 Custom 時用的 config |
-| Use project memory | on | 這個節點到底要不要讀[專案記憶](memory.zh-TW.md) |
-| Memory AI Config | inherit | 負責挑選要讀哪些記憶的模型。空白就用整張圖的 |
+| Use project memory | on | 這個節點要不要讀[專案記憶](memory.zh-TW.md)。開著時，它每次執行都用整張圖的 Memory AI Config 掃一次記憶 |
 | Memory: keep top-N history | 0 | 依整張圖的 RAG embedding config 算相似度，只保留跟這項工作最接近的 N 份檔案歷史。`0` 全部保留 |
 | Split long input into chunks | off | prompt 遠大於模型的 context 時，分段執行，再把回答接起來。這個模式下不會解析結構化輸出 |
 | Chunk preamble | — | 分段時放在每一段前面的文字 |
+
+**一則回覆失敗時。**開著工具呼叫時，失敗的回覆 —— 模型載不起來，或生成途中出錯 —— 會顯示在這一步的 Steps 區塊和 Logic Debug，隔一秒用同樣的訊息重跑同一輪，直到成功或你按停止。失敗那一次的東西不會往下傳，這一步不會被標成失敗，重跑也不算進 Max Tool Iterations。關了工具呼叫時，失敗照舊以錯誤結束這一步。
+
+**回覆被切斷時。**本機模型的回覆寫到 context 的盡頭而停下時，輸出最後會加一句說明，附上這次的輸入與輸出 token 數，Logic Debug 也會顯示一行錯誤。這樣的輸出是不完整的；通常的解法是把 [AI Config](ai-config.zh-TW.md) 的 Context Size 調大。
 
 ---
 
@@ -190,21 +193,20 @@ JSON 的 case 可以指定一個 **path**，指向文件裡的某個值。字串
 
 ## Memory
 
-把跟一項工作有關的[專案記憶](memory.zh-TW.md)收集一次，讓好幾個 Send To AI 節點共用。
+把跟一項工作有關的[專案記憶](memory.zh-TW.md)組成一段文字，給要讀這段文字的節點用。
 
-每個 Send To AI 節點在執行前，都會自己組記憶：記憶 AI 把每一列規則、每份檔案歷史和 session 紀錄跟這項工作並排來看，挑出有關的。一張圖裡有好幾個這種節點時，每個節點就各挑一次 —— 各一次模型呼叫、各一次到你編輯器的來回。Memory 節點只做一次。把它的 `Memory` 輸出接到 Send To AI 節點上一個名為 `Memory` 的輸入 pin，那個節點就會用收到的區塊，而不是自己再組。空的區塊也是一種答案：表示沒有適用的。
+Send To AI 節點不需要它。每個 Send To AI 每次執行都會自己掃記憶，以它自己的 prompt 當這次的工作：記憶 AI 把每一列規則、每份檔案歷史和 session 紀錄跟那段 prompt 並排來看，挑出有關的。這樣迴圈裡的步驟讀得到上一次嘗試的報告，做不同事的兩個節點也各自讀到合用的。
 
-session 紀錄是例外。它每一步都在變，所以由 Memory 節點餵資料的節點，只要記憶 AI 挑中了 session 紀錄，就會自己重新讀一次最新的 —— 迴圈裡的步驟需要的是上一次嘗試的報告，不是迴圈開始之前那一份。
+所以 Memory 節點只在有人讀它的文字時才組：Compose 節點的 `{{Memory}}`、名字不是 `Memory` 的 pin、template 引用了 `{{Memory}}` 的 Send To AI、執行 modality config 的節點，或關了專案記憶的 Send To AI。它餵的每個節點都是從 `Memory` pin 接收的 Send To AI 時，它輸出空字串，並在 Logic Debug 說明 —— 沒有人用的挑選就不做，省下一次模型呼叫。不管哪一種，用的都是整張圖的 Memory AI Config。
 
 | Pin | 型別 | 方向 | 意思 |
 |---|---|---|---|
 | `Exec` | exec | in / out | |
 | `Input` | string | in | 這項工作，通常是 Start 的 `PROMPT`。記憶 AI 拿它來判斷 |
-| `Memory` | string | out | 組好的記憶區塊 |
+| `Memory` | string | out | 組好的記憶區塊；沒有人讀時是空字串 |
 
 | 設定 | 預設值 | 意思 |
 |---|---|---|
-| Memory AI Config | inherit | 負責挑選的模型。空白就用整張圖的 |
 | Token budget | 0 | 把區塊修剪到這麼多 token。`0` 表示不修剪。規則永遠不會被丟掉 |
 | Keep top-N history | 0 | 依整張圖的 RAG embedding config 算相似度，只保留跟這項工作最接近的 N 份檔案歷史。`0` 全部保留 |
 

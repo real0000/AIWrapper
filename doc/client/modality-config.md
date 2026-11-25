@@ -46,9 +46,10 @@ there is nothing to match up by hand.
 ## Local or remote
 
 Local modality models are on the server's **VRAM ledger** alongside every other
-model. A config can be limited to particular GPUs the same way a text config is;
-leave that empty and the server picks a card with room. A modality model always
-sits on a single card.
+model. A config can be limited to particular GPUs the same way a text config is,
+and the model then runs on exactly those cards, all of them; leave it empty and
+it uses every card the backend can drive. With several cards it is split by
+layer. See [Modalities → Which GPUs it may use](../server/server/modalities.md#which-gpus-it-may-use).
 
 **Local** configs name an alias from the server's `config.xml`. The server
 loads it in-process on first use, on the same backend the language models use.

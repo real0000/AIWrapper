@@ -108,12 +108,22 @@ This is where a model that "does not fit" usually becomes one that does.
 | CPU MoE Layers | 0 | Only with Auto Fit off. For mixture-of-experts models, keep expert weights on the CPU: `0` off, `N` for the first N layers, `-1` for all. Non-MoE models ignore it |
 
 **Auto Fit** is the default and the recommended setting. You choose which GPUs
-may be used; the server decides how. It groups those GPUs into NVLink islands,
-estimates the weights, KV cache and compute buffers, and then: the whole model
-fits one card → that card; one island → a `graph` split, tensor parallelism
-across every card; several equal-sized islands → tensor parallelism inside each
-island and a pipeline between them; otherwise → a `layer` split. Whatever does
-not fit is offloaded to the CPU by MoE expert.
+may be used; the server decides how. It uses every card you chose — a model that
+would fit on one of them is still spread over all of them, because which cards
+to use is your decision. It groups those cards into NVLink islands, estimates
+the weights, KV cache and compute buffers, and picks the split: one card → no
+split; one island → a `graph` split, tensor parallelism across every card;
+several equal-sized islands → tensor parallelism inside each island and a
+pipeline between them; otherwise → a `layer` split. Whatever does not fit is
+offloaded to the CPU by MoE expert.
+
+**The plan counts each card as if it were idle.** Memory held by models the
+server can evict, idle or in use, counts as free; only pinned models, embedding
+models and what is used outside CAGE count against it. Before loading, the
+server makes that room: idle models on those cards are evicted, and models in
+use are waited for. Part of the model moves to the CPU only when the cards hold
+nothing more that could make room and it still does not fit. A model is never
+placed around whatever happens to be on the cards at that moment.
 
 Compute buffers are measured when each context is created. If a card cannot hold
 one, idle models on it are evicted and busy ones are waited for; failing that,
@@ -162,7 +172,7 @@ positions at once runs different GPU kernels, and near-ties can flip.
 | Temperature | Randomness. Lower is more deterministic |
 | Top K | Sample only from the K most likely tokens |
 | Top P | Sample from the smallest set of tokens whose probability sums to P |
-| Presence Penalty | Lowers the score of every token that has already appeared in the reply, once, however often it appeared — the OpenAI definition, counted over the whole reply so far, reasoning included, not the prompt. `0` (the default) is off. Reasoning models use it against endless repetition in their thinking. Ignored while Lookahead Decoding is on. Remote endpoints only receive it on the OpenAI family |
+| Presence Penalty | Lowers the score of every token that has already appeared in the reply, once, however often it appeared — the OpenAI definition, counted over the whole reply so far, reasoning included, not the prompt. `0` (the default) is off. Reasoning models use it against endless repetition in their thinking. Remote endpoints only receive it on the OpenAI family |
 
 Use the values the model's own card recommends — they differ between models
 and between thinking and non-thinking use. Qwen3.6, for example, recommends

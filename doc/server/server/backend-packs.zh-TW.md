@@ -23,7 +23,7 @@ GPU kernel 的總量很大 —— 遠比 server 其餘的部分大 —— 而其
 - 新的 GPU 架構是一個新的後端包，不是一個新的 server；
 - 更新 server 不必重新下載 1 GB 的 kernel。
 
-server 是 **49 MB**，本身不依賴 CUDA。CUDA 後端包解開後是 1.2–1.5 GB —— 兩種架構的 kernel，加上它自帶的 CUDA 函式庫；Vulkan 和 CPU 後端包大約是 140 MB 和 120 MB。
+server 是 **54 MB**，本身不依賴 CUDA。CUDA 後端包解開後是 1.2–1.6 GB —— 兩種架構的 kernel，加上它自帶的 CUDA 函式庫；Vulkan 和 CPU 後端包大約是 160 MB 和 130 MB。
 
 ## 怎麼選
 
@@ -124,7 +124,7 @@ export CAGE_LLAMA_BACKEND_DIR=/opt/cage/backends
 /opt/cage/bin/cage-backend-probe
 ```
 
-不加參數時，它會在自己所在的資料夾（也就是後端包安裝進去的 `bin/`）和目前的資料夾裡找；給它一條路徑或一個資料夾，就檢查特定的後端包。它會為每一個 `.so` 回報：
+不加參數時，它會在自己所在的資料夾（也就是後端包安裝進去的 `bin/`）和目前的資料夾裡找；給它某個後端包的 `.so` 路徑，就只檢查那一個。它會為每一個 `.so` 回報：
 
 | | |
 |---|---|

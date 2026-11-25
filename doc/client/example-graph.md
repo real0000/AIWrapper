@@ -18,7 +18,7 @@ The machine-specific fields, so they are easy to spot as you read:
 | Field | Here | On your machine |
 |---|---|---|
 | `aiConfigs[].model` | `qwen-coder-next`, `nemotron-3-embed-1b` | Whatever aliases your server's `config.xml` defines. The AI Config panel lists them |
-| `aiConfigs[].cudaVisibleDevices` | placeholder UUIDs | Your own cards (`nvidia-smi --query-gpu=uuid --format=csv`), or empty to let the placer choose |
+| `aiConfigs[].cudaVisibleDevices` | placeholder UUIDs | Your own cards (`nvidia-smi --query-gpu=uuid --format=csv`), or empty to use every card the server sees |
 | `aiConfigs[].ctxSize` | `262144` | As much as your card and model allow — this graph needs headroom, see below |
 | `ragEmbeddingConfig` | `rag` | Only if you have an embedding model. Leave empty and retrieval is off, which costs this graph nothing structural |
 
@@ -198,7 +198,6 @@ to two nodes.
   "rag_embedding_config": "",
   "memory_context": true,
   "memory_history_top_k": 0,
-  "memory_filter_config": "",
   "memory_mode": "shared",
   "chunking": false,
   "chunk_desc": ""
@@ -472,9 +471,9 @@ The structure transfers; the AI configs do not. In order:
 3. **Retrieval is optional.** No embedding model, or no wish to index — leave
    `ragEmbeddingConfig` empty and every `rag_mode: "inherit"` becomes a no-op. Nothing
    structural depends on it. If you do enable it, keep the Filter at `"off"`.
-4. **GPU selection is optional too.** Leave `cudaVisibleDevices` empty and the placer
-   chooses. Set it when a card in the machine should be left alone — a display card, or
-   one another job is using.
+4. **GPU selection is optional too.** Leave `cudaVisibleDevices` empty and the model
+   uses every card the server sees, a display card included. Set it when a card in the
+   machine should be left alone — a display card, or one another job is using.
 
 Then the task goes in the chat message, not in the graph.
 

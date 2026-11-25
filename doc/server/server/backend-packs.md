@@ -40,9 +40,9 @@ Splitting it means:
 - a new GPU architecture is a new pack, not a new server;
 - updating the server does not re-download a gigabyte of kernels.
 
-The server is **49 MB** and has no CUDA dependency of its own. A CUDA pack is
-1.2–1.5 GB unpacked — two architectures' kernels plus the CUDA libraries it
-carries; the Vulkan and CPU packs are about 140 MB and 120 MB.
+The server is **54 MB** and has no CUDA dependency of its own. A CUDA pack is
+1.2–1.6 GB unpacked — two architectures' kernels plus the CUDA libraries it
+carries; the Vulkan and CPU packs are about 160 MB and 130 MB.
 
 ## Choosing one
 
@@ -198,8 +198,8 @@ path the server uses — what it reports is what the server will do.
 ```
 
 With no arguments it looks in its own directory — the `bin/` the packs are
-installed into — and in the current directory; give it a path or directory to
-check a specific pack. For each `.so` it reports:
+installed into — and in the current directory; give it the path of a pack's `.so`
+to check that one. For each `.so` it reports:
 
 | | |
 |---|---|
