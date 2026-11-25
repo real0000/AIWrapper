@@ -128,11 +128,14 @@ bin/cage-llama-fit      asks where a model would go, without loading it
                         (see server/server/backends.md)
 lib/                    runtime libraries the server needs
 sql/schema.sql          database schema
+sql/migrate-aiwrapper-to-cage.sql
+                        renames an AIWrapper 0.1.0 database (see WHATSNEW)
 config.example.xml      server configuration template
 control.example.xml     control-plane configuration template
 install.ps1             installer (PowerShell)
 LICENSE                 end user licence agreement
 THIRD-PARTY-NOTICES.md  open-source components and their licences
+licenses/               the full licence texts those notices refer to
 ```
 
 **No GPU code is in here.** Unpack your [backend pack](server/server/backend-packs.md)
@@ -232,6 +235,21 @@ CONFIG_FILE=/opt/cage/config.xml ./bin/cage-server
 All relative paths inside `config.xml` resolve against the directory the file
 lives in, not the process working directory.
 
+Edit **`control.xml`** next to it as well — the control plane's settings. Give
+its `<mysql>` the same values, and its `<admin>` a password of your own:
+
+```xml
+<admin>
+  <username>admin</username>
+  <password>a-real-password</password>
+</admin>
+```
+
+The example value, `CHANGE_ME`, is refused for sign-in. On the first start the
+control plane creates this account in the database; it is what you sign in to
+the web UI with, and where user accounts are made — see
+[Accounts](server/control/accounts.md).
+
 Models are normally added through the control-plane web UI or `cage-model-dl`,
 both of which rewrite the `<models>` section for you:
 
@@ -243,7 +261,15 @@ both of which rewrite the `<models>` section for you:
 
 ```bash
 mysql -u root -p < /opt/cage/sql/schema.sql
+mysql -u root -p -e "CREATE USER 'cage'@'127.0.0.1' IDENTIFIED BY 'your-password';
+                     GRANT ALL PRIVILEGES ON cage.* TO 'cage'@'127.0.0.1';"
 ```
+
+The schema creates the `cage` database and its tables. The account the server
+and the control plane connect as is yours to create — the `<user>` and
+`<password>` from their `<mysql>` blocks. Until it exists the server only logs
+`Waiting for the database` and serves nothing (§7). If MySQL runs on another
+machine, put the CAGE machine's address where `127.0.0.1` is.
 
 `<mysql>` in `config.xml` and in `control.xml` must point at the **same**
 database — the server and the control plane share the `users` / `api_keys` /
@@ -271,13 +297,26 @@ Verify:
 ```bash
 $ curl -s http://127.0.0.1:15963/health
 {"status":"ok"}
-
-$ curl -s http://127.0.0.1:15963/api/models
-{"models":[{"id":"my-coder","name":"my-coder","kind":"llm","type":"chat",
-"ctx_size":8192,"backend":"llama", ...}]}
 ```
 
-The web UI is at `http://<host>:8088/`.
+With a database, the rest of the API wants a token. Sign in as the admin from
+`control.xml` — the credentials go in an `Authorization: Basic` header, which is
+what `curl -u` sends:
+
+```bash
+$ curl -s -X POST -u admin:a-real-password http://127.0.0.1:15963/api/auth/login
+{"ok":true,"token":"…","user_id":"admin","role":"admin"}
+
+$ curl -s -H "Authorization: Bearer <token>" http://127.0.0.1:15963/api/models
+{"models":[{"id":"my-coder","name":"my-coder","kind":"llm","type":"chat", ...
+"backend":"llama", ...}]}
+```
+
+Without a database (§7) no token is needed.
+
+The web UI is at `http://127.0.0.1:8088/`, on that machine only: `control.xml`
+binds it to `127.0.0.1`, because it can start, stop and reconfigure the server.
+To reach it from elsewhere, change `<bind>` there and put it behind a TLS proxy.
 
 | Port | Set in | Purpose |
 |---|---|---|
@@ -345,6 +384,8 @@ localhost.
 | Symptom | Cause |
 |---|---|
 | `Fatal error: config.xml: cannot open file` | Started from a directory without `config.xml`. Use `CONFIG_FILE=…` or `cd` to the install directory first |
+| `Waiting for the database at …: Access denied for user 'cage'` | The account in `<mysql>` does not exist in MySQL, or has another password — see §5. Nothing is served until it can connect |
+| The web UI refuses the admin password; the control log says the password "is still the example value" | `control.xml` still has `CHANGE_ME` — set a real `<admin><password>` (§4) and restart `cage-control` |
 | `Model '…' scan failed: path does not exist` | `<path>` does not exist or the disk is not mounted. The model is skipped (`Model skipped: …`) and does not appear in the list |
 | `TLS disabled — traffic … is plaintext` | Expected when `<tls_cert>`/`<tls_key>` are empty |
 | A local model fails to load | No backend pack installed, or the wrong one. Run `bin/cage-backend-probe` — it names the backend and says which of your cards it can drive |

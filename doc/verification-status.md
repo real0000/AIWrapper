@@ -84,9 +84,19 @@ an earlier tree; **the Linux AMD packs in this release have not run on AMD.**
 
 | | Level | Detail |
 |---|---|---|
-| Native, with `install.ps1` | **Runs** | The server package and two CUDA packs from `dist/`, merged and installed exactly as the [install guide](server-install.md) says (`pwsh ./install.ps1 --prefix … --no-service`), then started the way the systemd unit starts it, `cage-launcher --agent`: the server it launched found the packs in `bin/` and answered a prompt on four V100s, and everything stopped within a second of SIGTERM to the agent. The systemd units themselves were not installed |
+| Native, with `install.ps1` | **Runs** | The [install guide](server-install.md) followed as written on a clean Ubuntu 24.04 machine with systemd, as an ordinary user with sudo, against a fresh MySQL holding only its root account: the server package and the `cuda-sm70_sm75` pack unpacked and merged, `pwsh ./install.ps1` to `/opt/cage` with both systemd units, `config.xml` and `control.xml` edited, the schema loaded and the database account created, `systemctl start`. The control plane created its admin, the server answered on V100s, and the extension signed in with an account made in the control plane. Earlier, the same packages installed with `--prefix … --no-service` and started by the agent answered on four V100s and stopped within a second of SIGTERM |
 | The extension, from `cage-0.2.0.vsix` | **Runs** | Installed into a fresh VS Code profile and connected to the native install above: the token in settings.json moved into VS Code's secret storage at startup, the server's only graph was selected and downloaded without a click, a local model answered on a V100, and loading an earlier conversation from History continued its session record |
-| Docker | **Runs** | The quick start in [Docker](server/docker.md), with the 0.2.0 server package and the `cuda-sm70_sm75` pack: MySQL and the server come up, the server finds the pack, signing in the way the docs describe works (`Authorization: Basic`), a model answers on four V100s, HTTPS works from inside the container, a request carrying a web page's `Origin` is refused, the web UI serves, the config survives `down` and `up` |
+| Docker | **Runs** | The quick start in [Docker](server/docker.md), followed word for word from `cp .env.example .env`, with the 0.2.0 server package and the `cuda-sm70_sm75` pack: MySQL and the server come up, the server finds the pack, signing in the way the docs describe works (`Authorization: Basic`), a model answers on four V100s, HTTPS works from inside the container, a request carrying a web page's `Origin` is refused, the web UI serves, the config survives `down` and `up` |
+
+**Following the guide exactly as written found three gaps (2026-11-26), now
+fixed in it.** It never mentioned `control.xml`: left at `CHANGE_ME`, the control
+plane could not reach the database and refused its own admin password, so no
+account could be made to sign in with. It loaded the schema but never created
+the database account `config.xml` connects as, so the server waited for the
+database indefinitely. And its check of `/api/models` without a token answers
+`401` once the control plane has created its admin. Importing a graph in the
+Logic Editor also left the chat's graph selector empty until the view was
+switched; that is fixed in the extension.
 
 Before these runs, neither route could run a local model. Natively, the
 installer did not copy `lib/`, and a server started by the agent looked for packs

@@ -106,11 +106,14 @@ bin/cage-llama-fit      不載入模型，先問它會被放在哪裡
                         （見 server/server/backends.zh-TW.md）
 lib/                    server 執行時需要的函式庫
 sql/schema.sql          資料庫 schema
+sql/migrate-aiwrapper-to-cage.sql
+                        把 AIWrapper 0.1.0 的資料庫改名（見 WHATSNEW）
 config.example.xml      server 設定範本
 control.example.xml     控制台設定範本
 install.ps1             安裝程式（PowerShell）
 LICENSE                 最終使用者授權合約
 THIRD-PARTY-NOTICES.md  開放原始碼元件與它們的授權
+licenses/               那些聲明提到的授權全文
 ```
 
 **這裡面沒有 GPU 程式碼。** 安裝之前，先把你的[後端包](server/server/backend-packs.zh-TW.md)解壓到同一個目錄，安裝程式才會一起裝進去：
@@ -193,6 +196,17 @@ CONFIG_FILE=/opt/cage/config.xml ./bin/cage-server
 
 `config.xml` 裡所有的相對路徑，都相對於這個檔案所在的目錄，而不是行程的工作目錄。
 
+旁邊的 **`control.xml`** 也要改 —— 那是控制台的設定。它的 `<mysql>` 填一樣的值，`<admin>` 設一個你自己的密碼：
+
+```xml
+<admin>
+  <username>admin</username>
+  <password>a-real-password</password>
+</admin>
+```
+
+範例值 `CHANGE_ME` 會被拒絕登入。第一次啟動時，控制台會在資料庫裡建立這個帳號；你用它登入網頁介面，使用者帳號也是在那裡建立的 —— 見[帳號](server/control/accounts.zh-TW.md)。
+
 模型通常透過控制台的網頁介面或 `cage-model-dl` 加入，兩者都會替你改寫 `<models>` 這一段：
 
 ```bash
@@ -203,7 +217,11 @@ CONFIG_FILE=/opt/cage/config.xml ./bin/cage-server
 
 ```bash
 mysql -u root -p < /opt/cage/sql/schema.sql
+mysql -u root -p -e "CREATE USER 'cage'@'127.0.0.1' IDENTIFIED BY 'your-password';
+                     GRANT ALL PRIVILEGES ON cage.* TO 'cage'@'127.0.0.1';"
 ```
+
+schema 會建立 `cage` 資料庫和它的表。server 和控制台用來連線的帳號要你自己建 —— 就是它們 `<mysql>` 裡的 `<user>` 和 `<password>`。這個帳號建好之前，server 只會在 log 裡寫 `Waiting for the database`，什麼都不服務（§7）。MySQL 在另一台機器上的話，把 `127.0.0.1` 換成 CAGE 那台機器的位址。
 
 `config.xml` 和 `control.xml` 裡的 `<mysql>` 必須指向**同一個**資料庫：server 和控制台共用 `users`／`api_keys`／`sessions` 這幾張表。兩邊不一樣的話，在網頁介面建立的帳號 server 會看不到，client 就無法登入。
 
@@ -227,13 +245,22 @@ cd /opt/cage && ./bin/cage-launcher --all
 ```bash
 $ curl -s http://127.0.0.1:15963/health
 {"status":"ok"}
-
-$ curl -s http://127.0.0.1:15963/api/models
-{"models":[{"id":"my-coder","name":"my-coder","kind":"llm","type":"chat",
-"ctx_size":8192,"backend":"llama", ...}]}
 ```
 
-網頁介面在 `http://<host>:8088/`。
+有資料庫時，API 的其他部分要帶 token。用 `control.xml` 裡的 admin 登入 —— 帳密放在 `Authorization: Basic` header 裡，也就是 `curl -u` 送的那個：
+
+```bash
+$ curl -s -X POST -u admin:a-real-password http://127.0.0.1:15963/api/auth/login
+{"ok":true,"token":"…","user_id":"admin","role":"admin"}
+
+$ curl -s -H "Authorization: Bearer <token>" http://127.0.0.1:15963/api/models
+{"models":[{"id":"my-coder","name":"my-coder","kind":"llm","type":"chat", ...
+"backend":"llama", ...}]}
+```
+
+沒有資料庫時（§7）不需要 token。
+
+網頁介面在 `http://127.0.0.1:8088/`，只有那台機器連得到：`control.xml` 把它綁在 `127.0.0.1`，因為它能啟動、停止、重新設定 server。要從別的地方連，改那裡的 `<bind>`，並放在 TLS proxy 後面。
 
 | Port | 在哪裡設定 | 用途 |
 |---|---|---|
@@ -287,6 +314,8 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
 | 症狀 | 原因 |
 |---|---|
 | `Fatal error: config.xml: cannot open file` | 從沒有 `config.xml` 的目錄啟動。用 `CONFIG_FILE=…`，或先 `cd` 到安裝目錄 |
+| `Waiting for the database at …: Access denied for user 'cage'` | `<mysql>` 裡的帳號在 MySQL 裡不存在，或密碼不同 —— 見 §5。連得上之前什麼都不服務 |
+| 網頁介面不接受 admin 密碼；控制台的 log 說密碼「is still the example value」 | `control.xml` 還是 `CHANGE_ME` —— 設一個真正的 `<admin><password>`（§4），再重啟 `cage-control` |
 | `Model '…' scan failed: path does not exist` | `<path>` 不存在，或磁碟沒有掛載。這個模型會被略過（`Model skipped: …`），不會出現在清單上 |
 | `TLS disabled — traffic … is plaintext` | `<tls_cert>`／`<tls_key>` 是空的時候本來就會這樣 |
 | 本機模型載入失敗 | 沒有裝後端包，或裝錯了。執行 `bin/cage-backend-probe`：它會說出是哪個後端，以及它驅動得了你的哪幾張卡 |

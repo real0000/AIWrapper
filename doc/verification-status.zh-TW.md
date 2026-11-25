@@ -45,9 +45,11 @@ CAGE 0.2.0 是評估版。這一頁明確說明每個部分測試到什麼程度
 
 | | 等級 | 細節 |
 |---|---|---|
-| 原生安裝，用 `install.ps1` | **能執行** | `dist/` 裡的 server 套件和兩個 CUDA 後端包，完全照[安裝指南](server-install.zh-TW.md)合併、安裝（`pwsh ./install.ps1 --prefix … --no-service`），再照 systemd unit 啟動它的方式 `cage-launcher --agent` 啟動：它啟動的 server 在 `bin/` 找到了後端包，並在四張 V100 上回答了 prompt；對節點代理送 SIGTERM 之後，一秒內全部結束。systemd unit 本身沒有安裝 |
+| 原生安裝，用 `install.ps1` | **能執行** | 在一台乾淨、有 systemd 的 Ubuntu 24.04 上，以有 sudo 的一般使用者，對著一個只有 root 帳號的全新 MySQL，照[安裝指南](server-install.zh-TW.md)寫的做：解開 server 套件、合入 `cuda-sm70_sm75` 後端包，`pwsh ./install.ps1` 裝到 `/opt/cage` 並裝好兩個 systemd unit，改 `config.xml` 和 `control.xml`，載入 schema 並建立資料庫帳號，`systemctl start`。控制台建立了它的 admin，server 在 V100 上回答，extension 用在控制台建立的帳號登入。先前同一批套件以 `--prefix … --no-service` 安裝、由節點代理啟動，也在四張 V100 上回答過，對節點代理送 SIGTERM 後一秒內全部結束 |
 | extension，從 `cage-0.2.0.vsix` 安裝 | **能執行** | 裝進全新的 VS Code 設定檔，連上上面那套原生安裝：settings.json 裡的權杖一啟動就搬進 VS Code 的 secret storage，server 上唯一的一張圖不用點就被選定並下載，本機模型在一張 V100 上回答，從 History 載入以前的對話之後，接著寫它的 session 紀錄 |
-| Docker | **能執行** | [Docker](server/docker.zh-TW.md) 裡的快速開始，用 0.2.0 的 server 套件和 `cuda-sm70_sm75` 後端包：MySQL 和 server 都起得來、server 找得到後端包、照文件的方式登入（`Authorization: Basic`）可以用、模型在四張 V100 上回答、容器裡的 HTTPS 正常、帶著網頁 `Origin` 的請求被拒絕、網頁介面有回應，設定在 `down` 再 `up` 之後還在 |
+| Docker | **能執行** | [Docker](server/docker.zh-TW.md) 裡的快速開始，從 `cp .env.example .env` 起逐字照做，用 0.2.0 的 server 套件和 `cuda-sm70_sm75` 後端包：MySQL 和 server 都起得來、server 找得到後端包、照文件的方式登入（`Authorization: Basic`）可以用、模型在四張 V100 上回答、容器裡的 HTTPS 正常、帶著網頁 `Origin` 的請求被拒絕、網頁介面有回應，設定在 `down` 再 `up` 之後還在 |
+
+**完全照指南寫的做，找到三個缺口（2026-11-26），都已補進指南。**它沒有提到 `control.xml`：留著 `CHANGE_ME` 的話，控制台連不上資料庫，而且拒絕自己的 admin 密碼，所以建不了任何可以登入的帳號。它載入了 schema，卻沒有建立 `config.xml` 用來連線的資料庫帳號，所以 server 一直在等資料庫。還有，它不帶 token 檢查 `/api/models`，控制台建立 admin 之後就會回 `401`。另外，在 Logic Editor 匯入一張圖之後，Chat 的圖選單在切換畫面之前都是空的；這個在 extension 裡修好了。
 
 在這幾輪測試之前，兩條路都跑不了本機模型。原生安裝時，安裝程式沒有複製 `lib/`，而由節點代理啟動的 server 會在安裝目錄找後端包，而不是在 `bin/`。Docker 則是映像檔建置不起來，產生出來的 `config.xml` 也解析不了。之前的測試都是在 `bin/` 裡面啟動 server，原生安裝的問題在那裡就不會出現。
 
