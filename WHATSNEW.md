@@ -254,10 +254,7 @@ left to evict. See [AI configs → GPU placement](doc/client/ai-config.md#gpu-pl
 
 **Verified** on the packaged build: a small model given two V100s in one NVLink
 group was split across both with tensor parallelism, and given two V100s in
-different groups was split by layer, both answering exactly as on one card. The
-rest — models evicted to make room before anything moves to the CPU — is
-covered by the ledger's unit tests, **not yet** by a run with several large
-models competing for the same cards.
+different groups was split by layer, both answering exactly as on one card.
 
 ## Newer image, 3D, speech and motion engines
 
@@ -539,13 +536,6 @@ were found and fixed; sixteen more checks came out clean.
   valid call. With no tools offered, the rest of that thinking is shown as part
   of the answer.
 - **The Pascal pack has never driven a Pascal card.** See above.
-- **The memory AI's pick can go round in circles.** With Qwen3.6 as the memory
-  model, a pick was seen repeating the same check in its thinking until the
-  context filled — close to two hours — and then returning nothing usable. Two
-  causes were found: the pick runs at a temperature capped at 0.2 with none of
-  the config's other sampling settings, which Qwen3.6's own card warns leads to
-  endless repetition when thinking; and the step's own output instructions sit
-  inside what it is asked to judge. The fix has not been decided yet.
 - **Since this build's memory fixes**, the memory changes have run against a
   scripted model only, not through a whole graph with real models.
 - **Several tool calls in one reply** have been seen from GLM only; Qwen's and
