@@ -28,13 +28,15 @@ It is a **breaking release for backend packs and for `config.xml`**. See below.
 | Backend packs are rebuilt for this server | **Re-download the backend pack(s) for your GPUs.** A 0.1.x pack is refused at load time. |
 | Each pack's library is now named after the pack (`libcage-backend-cuda-sm70_sm75.so`) | **Delete `bin/libcage-backend-cuda.so` and `bin/libcage-backend-hip.so`** if they are left from 0.1.x. The new pack no longer overwrites them. They are refused anyway, but they stay in the probe's report until removed. |
 | `<modalities>` merged into `<models>` | **Move every `<modality>` entry into `<models>` as a `<model>`, and rename `<model_path>` to `<path>`.** The server refuses to start while a `<modalities>` block is present, and says so. |
-| `<type>`, `<family>`, the `backend=` attribute, `<ai><default_backend>`, `<ai><cuda_visible_devices>`, `<ai><default_vision_model>`, `<vision handler="…">`, `<task_planning_enabled>`, and `<compressor>`'s `base_url`, `model` and `*_compress_tokens` are no longer read | Nothing — they are ignored. Delete them when convenient. |
+| `<type>`, `<family>`, the `backend=` attribute, `<ai><default_backend>`, `<ai><cuda_visible_devices>`, `<ai><default_vision_model>`, `<vision handler="…">`, `<task_planning_enabled>`, and `<compressor>` are no longer read | Nothing — they are ignored. Delete them when convenient. |
 | Python is not used | Nothing. Any `<vllm>` or `<convert>` block is ignored, and the Python environments of 0.1.x can be deleted. |
 | One new database table (`runs`, for resuming interrupted runs) | Nothing — the server creates it at startup. |
 | The extension and the server exchange tool settings in a new way | **Update the extension to 0.2.0** together with the server. |
 | The installer is now `install.ps1`, a PowerShell script | **Install PowerShell 7.4 or newer and run `pwsh ./install.ps1`.** The options are the ones `install.sh` had. |
 | File history is read only when the memory AI picks it | **Set a Memory AI Config on your graphs** if you rely on file history. Without one, a file's history is no longer read just because the message names the file. |
 | Send To AI and Memory nodes no longer have a **Memory AI Config** of their own | Nothing, unless one of yours named a different model from the graph's: it is no longer read, so **set the graph's Memory AI Config** to the model you want. |
+| Send To AI's `memory_mode` is gone: nodes no longer share a conversation | Nothing, unless a graph of yours set `memory_mode: "shared"` (the worked example did): it is no longer read. **Set the graph's Memory AI Config** — a node that runs again then learns what the last round did from the session record, when the memory AI picks it. |
+| The memory AI uses its AI config's sampling as set. Before, its temperature was held at 0.2 or lower, and Top K, Top P, Reasoning Budget and Presence Penalty were not applied | **Check the temperature of the AI config you use as the memory AI** — it is now used as it is. With a model that thinks before it answers, a Reasoning Budget keeps each pick short. |
 | A `config.xml` with a `<mysql>` block **waits for that database** when it cannot connect, instead of starting without accounts | **Remove the whole `<mysql>` block** if you meant to run without a database — pointing it at nothing no longer does that. |
 | Requests from web pages are refused, and there is no CORS | Nothing, unless a tool of yours calls the API from a browser page: call it from a program instead. |
 | The file tools ask before touching anything outside the project | Nothing. To allow more, add paths under **Settings → File access**. The native command line refuses outside paths unless given `--file-access`, `--allow-path` or `--outside`. |
@@ -200,6 +202,9 @@ it had found; that summary had nowhere to go.
   record, together with the step's own prompt, and it picks what bears on it.
   Whether the message happens to name a file no longer decides whether its
   history is read.
+- **Nodes never see the conversation itself.** What a node knows about earlier
+  work is what the memory AI picks for it. The shared conversation that
+  `memory_mode: "shared"` used to put in front of a node's prompt is gone.
 - **A conversation keeps its session** across a server restart, and loading it
   from History later switches back to it, so the next message continues its
   record. Only a new chat, or a server that says it has no such session, starts
@@ -528,8 +533,28 @@ were found and fixed; sixteen more checks came out clean.
   had gone stale after upstream merges. Each pack now carries the notices for
   exactly what is compiled into it, and the lists are computed from git.
 
+- **Split Mode is the four modes the backend has.** The VS Code extension turned
+  `graph` and `attn` into `layer` whenever it loaded a graph, and sent that back
+  to the server with the next message, so a graph written with `graph` ran as
+  `layer` after one use. Both editors now offer `layer`, `graph`, `attn` and
+  `none`; `row` and `tensor`, from older graphs, run as `graph` as they always did.
+- **Remote AI configs have an API Family** — OpenAI-compatible, Anthropic or
+  Gemini. The server has spoken all three for some time, but no editor offered
+  the choice, the extension dropped it when it downloaded a graph, and the Test
+  button tried the OpenAI way on every endpoint, so Anthropic and Gemini configs
+  always failed it.
+- **Renaming a config keeps the graph pointing at it.** Renaming an AI config
+  left the graph's Memory AI Config and RAG embedding setting on the old name;
+  the graph then ran without a memory AI while the debug pane said none was set.
+  Renaming a modality config broke every node that used it, and the native
+  editor updated nothing. Both editors now update every reference, and a Memory
+  AI Config that names nothing is reported by that name.
+
 ## Known gaps
 
+- **`muse-glimmer-30b` on four cards of one NVLink group, with Auto Fit, stops
+  the server** at its first answer: the split of every layer across the cards
+  hits an internal check in the backend. Not yet investigated.
 - **A model that only mentions `<tool_call>` while thinking.** Following upstream,
   the tag ends the reasoning wherever it appears. When tools are offered this
   cannot happen — the moment the model writes the tag it is held to a complete,

@@ -55,6 +55,17 @@ exactly the result its row states. The `cuda-sm70_sm75` row, the install and
 Docker rows below, and the test suites further down were re-run on these
 packages.
 
+**The server and the extension again on 2026-11-27**, at the same ik commit and
+on the same base, for the changes in [What's new](../WHATSNEW.md): nodes no
+longer share a conversation, the memory AI takes its sampling from its AI
+config, Split Mode offers the four modes the backend has, and remote AI configs
+choose an API family. The packs did not change and were not rebuilt; the new
+server's probe loads them and their ABI fingerprint matches. The new server asks
+for at most `GLIBC_2.28`, like the last. Re-run on the new server package: the
+scripted test suites further down. Not re-run on it: the install, extension and
+Docker rows below and every row that ran a real model — those describe the
+2026-11-25 server and extension.
+
 **Older and newer distributions, without a CUDA toolkit.** The machine above
 has CUDA installed system-wide, which hides a missing library. So the server and
 all twelve packs were also checked in clean AlmaLinux 8 (glibc 2.28), Ubuntu
@@ -116,7 +127,7 @@ from inside `bin/`, where the native problems disappear.
 | A hybrid Mamba2 model | **Runs** | **New in 0.2.0.** NVIDIA-Nemotron-3-Ultra-550B-A55B: 12 attention, 48 MoE and 48 Mamba2 layers. Correct answers at temperature 0, on four V100s with the experts in host memory, 2.8 tok/s. Checked on a development build at ik `86e53daf5`; the packs carry `60d899d9b`, which adds a HIP header fix that CUDA builds do not compile and the Qwen3-Coder chat parser — neither touches the computation |
 | Image and 3D | **Runs** | SD 3.5 Large images and TRELLIS.2 meshes (the mesh on a V100), in-process, on development builds during this release. TRELLIS's three borrowed components were found from the model's own `components/` folder with no paths in the config. On the packaged build, TRELLIS.2 registered with `cage-model-dl --scan` was recognised as a 3D model at startup and turned an SD 3.5 picture into a textured `.glb` on a V100 (351 s). Two earlier attempts, with SD 3.5 still resident on a second V100, were cut off by a driver lock-up on this machine |
 | Retrieval | **Runs** | `nemotron-3-embed-1b`, read in-process from safetensors, matched the reference scores its model card lists. On the packaged build it indexed real projects across four V100s: an index saved by the previous build was rebuilt when its project was opened (17 chunks, among them one per line of `CMakeLists.txt` and the session record, became 7, without `.cage/`), and **CAGE: Rebuild Index** re-embedded a project from scratch. The new chunking itself is covered by tests |
-| Multi-model logic graph with a feedback loop | **Runs** | As in 0.1.2 — DemoCoder converged on the first iteration. On the packaged 0.2.0 build, with Qwen3.8 across four V100s, the planner wrote checks that agree with each other and the coder wrote `packer.cpp` and a `Makefile` — the run behind the chat panel image — but each of the last three attempts was cut off by a driver lock-up on this machine before the verifier step, so the full loop has not been re-run |
+| Multi-model logic graph with a feedback loop | **Runs** | As in 0.1.2 — DemoCoder converged on the first iteration. On the packaged 0.2.0 build, with Qwen3.8 across four V100s, the planner wrote checks that agree with each other and the coder wrote `packer.cpp` and a `Makefile` — the run behind the chat panel image — but each of the last three attempts was cut off by a driver lock-up on this machine before the verifier step, so the full loop has not been re-run. The current version of the graph — no shared conversation, the coder doubling as the memory AI — has not completed a real-model run either |
 
 ### New in 0.2.0, tested against a scripted model
 
@@ -126,14 +137,14 @@ what reaches the model, what is written and read, and in what order.
 
 | | Checks | What |
 |---|---|---|
-| Session record | 49 | A step re-run in a loop reads its previous attempt's report; the record is condensed before the run reports done; the next message reads the condensed version; a new chat is isolated; without a memory AI config it is written but not read; a step wired to a Memory node scans for itself and sees its own previous report |
-| What memory is read | 170 | The whole memory suite, including: with a memory AI, whether history is read does not depend on the message naming the file; without one, only rules are read; two Send To AI nodes wired to one Memory node each make their own pick; a Memory node assembles its block only when something reads the text; a node-level memory config left in a graph is ignored; the prompt states the limit on tool rounds |
-| A session across a server restart | 20 | Three server restarts: the session is recalled from the database; an unknown id is refused with 404; without a database the client's id is taken |
-| Tool calls in two sessions | 10 | Stop or a disconnect in one session leaves the other's waiting calls alone; two sessions with the same call id each get their own result; a reply from the wrong session is refused |
-| Client tools end to end | 32 | The native client, headless, with a real MCP subprocess. `run_code` runs on the client, in the workspace root, in the group that switches it on — and not at all where it is off. A step that ran a command is not told its verification is unconfirmed. A Send To AI with tool calls on whose model does not exist reports the failure and runs the turn again until stopped, then ends with one `done`; with tool calls off it fails with exactly one error |
-| Unanswered messages | 11 | A message whose run had no shared node, was stopped, failed, or never started gets one answer in the shared conversation — the run's final result, or what happened to it; a shared node's own answer is not doubled |
+| Session record | 48 | A step re-run in a loop reads its previous attempt's report; the record is condensed before the run reports done; the next message reads the condensed version; a new chat is isolated; without a memory AI config it is written but not read; a step wired to a Memory node scans for itself and sees its own previous report |
+| What memory is read | 169 | The whole memory suite, including: with a memory AI, whether history is read does not depend on the message naming the file; without one, only rules are read; two Send To AI nodes wired to one Memory node each make their own pick; a Memory node assembles its block only when something reads the text; a node-level memory config left in a graph is ignored; the prompt states the limit on tool rounds |
+| A session across a server restart | 19 | Three server restarts: the session is recalled from the database; an unknown id is refused with 404; without a database the client's id is taken |
+| Tool calls in two sessions | 9 | Stop or a disconnect in one session leaves the other's waiting calls alone; two sessions with the same call id each get their own result; a reply from the wrong session is refused |
+| Client tools end to end | 31 | The native client, headless, with a real MCP subprocess. `run_code` runs on the client, in the workspace root, in the group that switches it on — and not at all where it is off. A step that ran a command is not told its verification is unconfirmed. A Send To AI with tool calls on whose model does not exist reports the failure and runs the turn again until stopped, then ends with one `done`; with tool calls off it fails with exactly one error |
+| No shared conversation | 17 | The second message of a session carries nothing of the first in what reaches the model, even with `memory_mode: "shared"` left in the graph; a stopped run, a failed node and a graph that does not exist leave nothing in the next request. The 2026-11-25 server fails 11 of these |
 | Resuming an interrupted run | 39 | Stop pressed in the middle of a step: the run resumes from that node, and steps already done are not sent to the model again. Variables, the branch an If chose and a sub-graph survive the interruption. After the server is killed with `kill -9` and started again, the same session is offered the run, from the database |
-| One graph handing work to another | 26 | Send Prompt runs another graph with the prompt it is given and returns that graph's result; the inner graph finishing does not end the outer turn |
+| One graph handing work to another | 25 | Send Prompt runs another graph with the prompt it is given and returns that graph's result; the inner graph finishing does not end the outer turn |
 
 **Not yet:** a real model through a whole graph since this build's memory
 fixes — an earlier run with local models is what found them — and the installed

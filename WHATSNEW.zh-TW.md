@@ -20,13 +20,15 @@
 | 後端包為這個 server 重新建置了 | **為你的 GPU 重新下載後端包。** 0.1.x 的後端包會在載入時被拒絕。 |
 | 每個後端包的函式庫現在以後端包命名（`libcage-backend-cuda-sm70_sm75.so`） | 如果 0.1.x 留下了 **`bin/libcage-backend-cuda.so` 和 `bin/libcage-backend-hip.so`，把它們刪掉**。新的後端包不會再覆蓋它們。它們反正會被拒絕，但刪掉之前會一直留在探測的報告裡。 |
 | `<modalities>` 併入了 `<models>` | **把每個 `<modality>` 項目以 `<model>` 的形式搬進 `<models>`，並把 `<model_path>` 改名成 `<path>`。** 只要還有 `<modalities>` 區塊，server 就會拒絕啟動，並說明原因。 |
-| `<type>`、`<family>`、`backend=` 屬性、`<ai><default_backend>`、`<ai><cuda_visible_devices>`、`<ai><default_vision_model>`、`<vision handler="…">`、`<task_planning_enabled>`，以及 `<compressor>` 的 `base_url`、`model` 和 `*_compress_tokens` 都不再被讀取 | 什麼都不用做 —— 它們會被忽略。方便的時候再刪掉。 |
+| `<type>`、`<family>`、`backend=` 屬性、`<ai><default_backend>`、`<ai><cuda_visible_devices>`、`<ai><default_vision_model>`、`<vision handler="…">`、`<task_planning_enabled>`，以及 `<compressor>` 都不再被讀取 | 什麼都不用做 —— 它們會被忽略。方便的時候再刪掉。 |
 | 不再使用 Python | 什麼都不用做。任何 `<vllm>` 或 `<convert>` 區塊都會被忽略，0.1.x 的 Python 環境可以刪掉。 |
 | 多了一張資料表（`runs`，用來接續被中斷的執行） | 什麼都不用做 —— server 會在啟動時建立它。 |
 | extension 和 server 交換工具設定的方式改了 | **把 extension 一起更新到 0.2.0**。 |
 | 安裝程式現在是 PowerShell 腳本 `install.ps1` | **安裝 PowerShell 7.4 或更新的版本，然後執行 `pwsh ./install.ps1`。** 選項跟以前的 `install.sh` 一樣。 |
 | 檔案歷史只在記憶 AI 挑中時才會讀 | 如果你依賴檔案歷史，**在你的圖上設定 Memory AI Config**。沒有設定的話，檔案的歷史不會再因為訊息提到那個檔案就被讀取。 |
 | Send To AI 與 Memory 節點不再有自己的 **Memory AI Config** | 什麼都不用做，除非你的某個節點指定了跟圖不同的模型：那個值不會再被讀，所以請**把圖的 Memory AI Config** 設成你要的模型。 |
+| Send To AI 的 `memory_mode` 拿掉了：節點之間不再共用一段對話 | 什麼都不用做，除非你的圖設了 `memory_mode: "shared"`（完整範例就有）：它不再被讀。**設定圖的 Memory AI Config** —— 重新執行的節點就會在記憶 AI 挑中時，從 session 紀錄知道上一輪做了什麼。 |
+| 記憶 AI 照它的 AI config 原樣取樣。以前它的溫度被壓在 0.2 以下，Top K、Top P、Reasoning Budget、Presence Penalty 都沒套用 | **檢查你當記憶 AI 用的那個 AI config 的溫度** —— 現在照原樣用。會先思考再回答的模型，設一個 Reasoning Budget 就能讓每次挑選保持簡短。 |
 | 有 `<mysql>` 區塊的 `config.xml`，連不上時會**等那個資料庫**，而不是在沒有帳號的狀態下啟動 | 如果你本來就打算不用資料庫，**把整個 `<mysql>` 區塊拿掉** —— 讓它指向不存在的地方，已經不再有這個效果。 |
 | 來自網頁的請求會被拒絕，也沒有 CORS | 什麼都不用做，除非你有工具是從瀏覽器的網頁呼叫 API：改成從程式呼叫。 |
 | 檔案工具要碰專案以外的東西之前，會先問 | 什麼都不用做。要開放更多，在 **Settings → File access** 加上路徑。原生的命令列預設拒絕專案以外的路徑，除非給了 `--file-access`、`--allow-path` 或 `--outside`。 |
@@ -106,6 +108,7 @@ MCP 頁面變成了 **Tools**：一張表，收錄模型能呼叫的所有東西
 
 - **session 紀錄。** 每個 Send To AI 步驟之後，server 會把那一步的 Summary，連同它寫了哪些檔案，附加到你專案裡的 `.cage/sessions/<session id>.md`。這則訊息的執行結束時，記憶 AI 會把那一部分濃縮成一份簡短的清單，給下一則訊息用。什麼都不截斷。
 - **讀什麼由記憶 AI 選，每個步驟每次執行都選。** 每個 Send To AI 步驟 —— 迴圈裡的每一次嘗試，接在 Memory 節點上的也一樣 —— 都會讓記憶 AI 看到每一列規則、專案裡的每一份檔案歷史，以及 session 紀錄，連同這個步驟自己的 prompt，挑出跟它有關的。訊息有沒有剛好提到某個檔案，不再決定要不要讀它的歷史。
+- **節點看不到對話本身。** 一個節點對之前的事知道多少，就是記憶 AI 替它挑了什麼。以前 `memory_mode: "shared"` 放在節點 prompt 前面的那段共用對話，已經拿掉了。
 - **對話保有它的 session**：跨過 server 重新啟動也一樣，之後從 History 載入它，也會換回它的 session，下一則訊息就接著它的紀錄。只有新的 chat，或 server 說它沒有這個 session，才會開始一個新的。
 
 用打包好的 server、以腳本模型代替 LLM **測試過**：迴圈裡的步驟會讀到上一次嘗試的報告，紀錄在執行回報完成之前濃縮，新的 chat 是隔離的，server 重新啟動後也能從資料庫找回 session。用本機模型跑完一整張 coding 圖的那一次，找出了下面「修正」裡列的問題；修好之後還沒有再跑一次。見[專案記憶](doc/client/memory.zh-TW.md)。
@@ -193,8 +196,13 @@ MCP 頁面變成了 **Tools**：一張表，收錄模型能呼叫的所有東西
 - **全新安裝時，Chat 顯示了一張沒有選定的圖**，所以第一則訊息送出時沒帶任何圖，被拒絕。現在顯示的那張就是選定的那張。
 - **後端包出貨時，少了其中四個元件的授權** —— sd.cpp、trellis.cpp、audio.cpp 和 kimodo.cpp —— 兩份改過的檔案清單也在合併上游之後過期了。現在每個後端包只附上編進它的那些元件的聲明，清單由 git 算出來。
 
+- **Split Mode 改成後端實際有的四種。** VS Code extension 每次載入圖都把 `graph` 和 `attn` 改成 `layer`，下一則訊息再把它送回 server，所以照 `graph` 寫的圖用過一次就以 `layer` 跑。兩個編輯器現在提供 `layer`、`graph`、`attn` 和 `none`；舊圖裡的 `row` 和 `tensor` 照舊當成 `graph` 跑。
+- **遠端 AI config 有了 API Family** —— OpenAI-compatible、Anthropic 或 Gemini。server 早就三種都會，但兩個編輯器都沒得選，extension 下載圖時還會把它丟掉，Test 按鈕對每個端點都用 OpenAI 的方式測，所以 Anthropic 和 Gemini 的 config 一律測失敗。
+- **config 改名時，圖還是指著它。** 改名 AI config 時，整張圖的 Memory AI Config 和 RAG embedding 設定還是舊名字；圖就在沒有記憶 AI 的情況下跑，debug 面板卻說沒設。改名 modality config 會讓每個用到它的節點都斷掉，native 編輯器則什麼都不更新。現在兩個編輯器都會更新每一個引用，指向不存在名字的 Memory AI Config 也會照那個名字報出來。
+
 ## 已知的不足
 
+- **`muse-glimmer-30b` 擺在同一個 NVLink 群組的四張卡、開 Auto Fit 時，會讓 server 停掉**：第一次回答時，把每一層切到各張卡的做法撞上後端內部的檢查。還沒查原因。
 - **只是在思考時提到 `<tool_call>` 的模型。** 跟上游一樣，這個標籤不管出現在哪裡都會結束推理。有提供工具時這不會發生 —— 模型一寫出這個標籤，就必須寫出一個完整、有效的呼叫。沒有提供工具時，剩下的思考內容會被當成回答的一部分顯示。
 - **Pascal 後端包從來沒有驅動過 Pascal 卡。** 見上方。
 - **這個版本的記憶修正之後**，記憶相關的改動只用腳本模型跑過，還沒有用真實的模型跑完整張圖。
