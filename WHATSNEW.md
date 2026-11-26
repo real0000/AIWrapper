@@ -550,11 +550,20 @@ were found and fixed; sixteen more checks came out clean.
   editor updated nothing. Both editors now update every reference, and a Memory
   AI Config that names nothing is reported by that name.
 
+- **A model with fewer KV heads than cards no longer stops the server.** With
+  Auto Fit on one NVLink group, every layer is split across the cards, and the
+  attention part goes by KV head — Muse-Glimmer has two, so on four cards two of
+  them get none. Those cards were skipped where they still had to keep their copy
+  of the model's running state in step, and the first answer ended the server on
+  an internal check. Fixed in the backend packs; on four V100s Muse-Glimmer now
+  answers, at about three and a half times the speed of a layer split.
+- **Downloading a graph from the server keeps everything.** A graph the
+  extension did not have yet came down with every asset, image and audio pin
+  turned into plain text, Auto Fit off when the file did not say, and a version
+  of 0 — so the first change afterwards was refused by the server as out of date.
+
 ## Known gaps
 
-- **`muse-glimmer-30b` on four cards of one NVLink group, with Auto Fit, stops
-  the server** at its first answer: the split of every layer across the cards
-  hits an internal check in the backend. Not yet investigated.
 - **A model that only mentions `<tool_call>` while thinking.** Following upstream,
   the tag ends the reasoning wherever it appears. When tools are offered this
   cannot happen — the moment the model writes the tag it is held to a complete,

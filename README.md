@@ -171,7 +171,7 @@ conversation.*
 
 > **Releases on GitHub are evaluation builds**, for trying CAGE out and reporting
 > what breaks. They are not the licensed product and are not for production use;
-> how to buy it is on the [Licensing](LICENSING.md) page.
+> buy it on [Gumroad](https://howler43274.gumroad.com/l/ckljoo), terms on the [Licensing](LICENSING.md) page.
 
 **The server package contains no GPU code.** Every local model needs a backend
 pack as well — a second download carrying the compiled kernels for your cards.

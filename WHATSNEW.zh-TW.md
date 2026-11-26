@@ -200,9 +200,11 @@ MCP 頁面變成了 **Tools**：一張表，收錄模型能呼叫的所有東西
 - **遠端 AI config 有了 API Family** —— OpenAI-compatible、Anthropic 或 Gemini。server 早就三種都會，但兩個編輯器都沒得選，extension 下載圖時還會把它丟掉，Test 按鈕對每個端點都用 OpenAI 的方式測，所以 Anthropic 和 Gemini 的 config 一律測失敗。
 - **config 改名時，圖還是指著它。** 改名 AI config 時，整張圖的 Memory AI Config 和 RAG embedding 設定還是舊名字；圖就在沒有記憶 AI 的情況下跑，debug 面板卻說沒設。改名 modality config 會讓每個用到它的節點都斷掉，native 編輯器則什麼都不更新。現在兩個編輯器都會更新每一個引用，指向不存在名字的 Memory AI Config 也會照那個名字報出來。
 
+- **KV head 比卡少的模型，不再讓 server 停掉。** 在一個 NVLink 群組上開 Auto Fit，每一層都會切到各張卡，其中 attention 是以 KV head 為單位分的 —— Muse-Glimmer 只有兩個，擺四張卡就有兩張分不到。這兩張卡被整個跳過，可是它們還得讓自己那份模型的中間狀態跟上；第一次回答就撞上內部檢查，server 停掉。修在後端包裡；在四張 V100 上，Muse-Glimmer 現在會回答，速度大約是依層切分的三倍半。
+- **從 server 下載圖，什麼都不會少。** extension 還沒有的圖下載下來時，每個 asset、image、audio pin 都變成純文字，檔案沒寫 Auto Fit 時當成關，version 還變成 0 —— 所以之後的第一次修改，會被 server 當成過期拒收。
+
 ## 已知的不足
 
-- **`muse-glimmer-30b` 擺在同一個 NVLink 群組的四張卡、開 Auto Fit 時，會讓 server 停掉**：第一次回答時，把每一層切到各張卡的做法撞上後端內部的檢查。還沒查原因。
 - **只是在思考時提到 `<tool_call>` 的模型。** 跟上游一樣，這個標籤不管出現在哪裡都會結束推理。有提供工具時這不會發生 —— 模型一寫出這個標籤，就必須寫出一個完整、有效的呼叫。沒有提供工具時，剩下的思考內容會被當成回答的一部分顯示。
 - **Pascal 後端包從來沒有驅動過 Pascal 卡。** 見上方。
 - **這個版本的記憶修正之後**，記憶相關的改動只用腳本模型跑過，還沒有用真實的模型跑完整張圖。

@@ -29,7 +29,7 @@ GitHub 上的是評估版。這裡的 Releases 放的是預覽與評估用的套
 
 ## 購買
 
-購買透過 Gumroad（由它擔任登記商家），授權版本也從那裡交付。購買附帶該產品的永久更新；這個 repository 不是它的更新管道。
+購買透過 Gumroad（由它擔任登記商家），授權版本也從那裡交付：**<https://howler43274.gumroad.com/l/ckljoo>**。購買附帶該產品的永久更新；這個 repository 不是它的更新管道。
 
 完整條款：**[LICENSE](LICENSE)**。洽詢（包括代管服務與 OEM 條款）：<https://github.com/real0000>
 

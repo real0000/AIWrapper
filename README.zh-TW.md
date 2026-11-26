@@ -120,7 +120,7 @@
 | `cage-backend-*-0.2.0-linux-x64.tar.gz` | Linux x86-64 | **GPU 支援：依你的硬體挑一包。** 見下方 | [Releases](../../releases) |
 | [`cage-0.2.0.vsix`](dist/cage-0.2.0.vsix) | VSCode ≥ 1.85 | 編輯器 client | 這個 repository 的 `dist/` |
 
-> **GitHub 上的 Releases 是評估版**，用來試用 CAGE、回報哪裡壞了。它們不是授權產品，也不能用在正式環境；怎麼購買，見[授權](LICENSING.zh-TW.md)那一頁。
+> **GitHub 上的 Releases 是評估版**，用來試用 CAGE、回報哪裡壞了。它們不是授權產品，也不能用在正式環境；到 [Gumroad](https://howler43274.gumroad.com/l/ckljoo) 購買，條款見[授權](LICENSING.zh-TW.md)那一頁。
 
 **server 套件裡沒有任何 GPU 程式碼。** 每個本機模型都還需要一個後端包：另一個下載檔，裡面是替你的顯示卡編譯好的 kernel。依 compute capability 挑選：
 

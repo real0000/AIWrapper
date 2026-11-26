@@ -41,8 +41,8 @@ the licensed product and are not for production use.
 ## Buying
 
 Purchases go through Gumroad, which acts as merchant of record, and a licensed
-copy is delivered from there. A purchase carries perpetual updates for that
-product; this repository is not the update channel for it.
+copy is delivered from there: **<https://howler43274.gumroad.com/l/ckljoo>**. A purchase carries perpetual updates
+for that product; this repository is not the update channel for it.
 
 Full terms: **[LICENSE](LICENSE)**. Enquiries, including hosted-service and OEM
 terms: <https://github.com/real0000>
