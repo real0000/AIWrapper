@@ -55,16 +55,22 @@ exactly the result its row states. The `cuda-sm70_sm75` row, the install and
 Docker rows below, and the test suites further down were re-run on these
 packages.
 
-**The server and the extension again on 2026-11-27**, at the same ik commit and
-on the same base, for the changes in [What's new](../WHATSNEW.md): nodes no
-longer share a conversation, the memory AI takes its sampling from its AI
-config, Split Mode offers the four modes the backend has, and remote AI configs
-choose an API family. The packs did not change and were not rebuilt; the new
-server's probe loads them and their ABI fingerprint matches. The new server asks
-for at most `GLIBC_2.28`, like the last. Re-run on the new server package: the
-scripted test suites further down. Not re-run on it: the install, extension and
-Docker rows below and every row that ran a real model — those describe the
-2026-11-25 server and extension.
+**Everything again on 2026-11-27**, at ik `896b8a77c` and on the same base, for
+the changes in [What's new](../WHATSNEW.md): nodes no longer share a
+conversation, the memory AI takes its sampling from its AI config, Split Mode
+offers the four modes the backend has, remote AI configs choose an API family,
+and a model with fewer KV heads than cards no longer stops the server. That last
+fix is in the backend, so the server and all twelve packs were rebuilt. They
+still ask for at most `GLIBC_2.28` (the server) and `GLIBC_2.27` (the packs),
+and every pack reports `896b8a77c`. Re-run on these packages: the
+clean-distribution check below, the scripted test suites further down, and
+`muse-glimmer-30b` on four V100s of one NVLink group with the `cuda-sm70_sm75`
+pack — it answered under a `graph` split at 46 tok/s, where the previous build
+stopped the server. Not re-run on them: the rows that need the 4070 and the
+refusals by this machine's cards (the change is in graph building on the host,
+not in any kernel), the packs side by side, the install, extension and Docker
+rows below, and every other row that ran a real model — those describe the
+2026-11-25 packages.
 
 **Older and newer distributions, without a CUDA toolkit.** The machine above
 has CUDA installed system-wide, which hides a missing library. So the server and
