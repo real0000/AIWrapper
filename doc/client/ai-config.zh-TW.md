@@ -46,15 +46,24 @@ config 放在 Logic Editor 側欄的 **AI CONFIGS** 區塊裡 —— 一份清�
 
 ## 遠端端點
 
-把 config 切換成 **remote**，就會改呼叫一個 OpenAI 相容的端點，而不是本機模型。
+把 config 切換成 **remote**，就會改呼叫一個代管的端點，而不是本機模型。
 
 | 欄位 | 意思 |
 |---|---|
-| Remote URL | 基底 URL，結尾不要加斜線，例如 `https://api.openai.com` 或 `http://localhost:11434/v1` |
-| API Key | 有填的話，以 `Authorization: Bearer …` 送出 |
+| API Family | 這個端點說的是哪一種 API：**OpenAI-compatible**（預設）、**Anthropic** 或 **Gemini** |
+| Remote URL | 基底 URL，結尾不要加斜線，例如 `https://api.openai.com`、`http://localhost:11434/v1`、`https://api.anthropic.com` 或 `https://generativelanguage.googleapis.com` |
+| API Key | 照那一家的方式送出：`Authorization: Bearer …`、`x-api-key`，或 Gemini 的 `key=` 查詢參數 |
 | Model | 遠端的模型 ID，自由輸入的字串 |
 
-在 remote 模式下，server 不會在本機載入任何東西，下面所有載入時的參數都會被忽略。測試按鈕檢查的是 `/v1/models`；推論則送到 `/v1/chat/completions`。
+在 remote 模式下，server 不會在本機載入任何東西，下面所有載入時的參數都會被忽略。
+
+| API Family | 測試按鈕 | 推論 |
+|---|---|---|
+| OpenAI-compatible | `GET /v1/models` | `POST /v1/chat/completions` |
+| Anthropic | `GET /v1/models` | `POST /v1/messages` |
+| Gemini | `GET /v1beta/models` | `POST /v1beta/models/<model>:streamGenerateContent` |
+
+結構化輸出、Reasoning Budget 和 Presence Penalty 只有 OpenAI 那一家會收到。
 
 ## Context 與批次
 
@@ -77,7 +86,7 @@ context 的大小會影響其他所有東西：長的 context 會保留很大的
 | Auto Fit | on | 讓 server 決定擺放，見下方 |
 | GPU Visibility | 空白 | 這個 config 可以用哪些 GPU，在拓樸選擇器裡勾選，存成 GPU UUID。空白表示 server 看得到的每一張 GPU |
 | GPU Layers | -1 | 只在 Auto Fit 關閉時有效。要放到 GPU 上的層數：`-1` 放得下多少就放多少、其餘放到 CPU，`0` 是純 CPU |
-| Split Mode | `layer` | 只在 Auto Fit 關閉時有效。`layer` 依層切分；`row` 和 `tensor` 都是把每一層的運算分到各張卡上 —— tensor parallelism，server 以它的 `graph` 切分執行；`none` 把整個模型放在一張 GPU 上 |
+| Split Mode | `layer` | 只在 Auto Fit 關閉時有效。`layer` 整層整層分到各張卡；`graph` 把每一層 —— attention 和 feed-forward —— 都分到各張卡上（tensor parallelism）；`attn` 只把 attention 分到各張卡，feed-forward 照層分；`none` 把整個模型放在一張 GPU 上。舊設定裡的 `row` 或 `tensor` 會當成 `graph` 跑，一直都是這樣 |
 | CPU MoE Layers | 0 | 只在 Auto Fit 關閉時有效。mixture-of-experts 模型的專家權重留在 CPU：`0` 關閉，`N` 前 N 層，`-1` 全部。不是 MoE 的模型會忽略它 |
 
 **Auto Fit** 是預設值，也是建議的設定。你選擇可以用哪些 GPU，怎麼用由 server 決定。你選的每一張卡它都會用 —— 就算模型放得進其中一張，也照樣攤在全部的卡上，因為用哪幾張卡是你的決定。它把這些卡依 NVLink 分成幾座島，估算權重、KV cache 和 compute buffer，然後決定切法：只有一張卡 → 不切；只有一座島 → `graph` 切分，在每張卡之間做 tensor parallelism；好幾座一樣大的島 → 島內做 tensor parallelism、島與島之間串成 pipeline；其他情況 → `layer` 切分。放不下的部分，依 MoE 專家放到 CPU。

@@ -177,21 +177,21 @@ structured output to have them split out for you.
   "max_tool_iters": 0,             // 0 = no limit
   "rag_mode": "inherit",           // inherit | off | custom
   "rag_embedding_config": "",      // with rag_mode="custom"
-  "memory_context": true,
+  "memory_context": true,         // the memory AI picks what this step reads — see below
   "memory_history_top_k": 0,       // 0 = keep every file history
-  "memory_mode": "isolated",       // isolated | shared — see below
   "chunking": false,
   "chunk_desc": ""
 }
 ```
 
-`memory_mode: "shared"` puts the node in the conversation that the session's
-shared nodes have in common: before its prompt it sees the user's messages and
-what earlier shared nodes answered, and its own answer is added for the next
-one. That is how a node that runs again in a loop remembers its last round.
-`"isolated"`, the default, sees only its own prompt. Neither editor has a field
-for this setting — write it into the file. The
-[worked example](example-graph.md) uses both.
+A node does not see the conversation, and nodes do not share one. What a node
+knows about earlier work comes from [memory](memory.md#what-gets-read): with
+`memory_context` on — the default — the graph's memory AI picks, from every rule,
+every file history and this conversation's session record, what bears on this
+step, and that goes before the prompt. A node that runs again in a loop learns
+what its last round did the same way: the session record holds each step's
+reply. Set `memory_context` to `false` on a node that should judge only what it
+is given. The [worked example](example-graph.md) does both.
 
 The model's load and sampling values come from the named AI config every time
 the node runs. Keys such as `ai_model` or `temperature` written into a node's
@@ -400,9 +400,9 @@ then ignored while the sampling ones still apply.
 `autoFit: true`, the default, decides split mode, device order and expert
 offload from the machine's actual topology. With it off, `splitMode` chooses:
 `layer` splits the model by layer, `graph` splits every layer's computation
-across the cards (tensor parallelism), `attn` splits the self-attention
-computation across them, and `none` keeps the model on one card. `row` and
-`tensor`, the names older graphs use, run as `graph`.
+across the cards (tensor parallelism), `attn` splits only the attention across
+them and places feed-forward by layer, and `none` keeps the model on one card.
+`row` and `tensor`, names from older graphs, run as `graph`.
 
 ### `variableConfigs`
 

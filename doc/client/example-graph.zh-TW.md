@@ -10,7 +10,7 @@
 
 | 欄位 | 這裡 | 在你的機器上 |
 |---|---|---|
-| `aiConfigs[].model` | `qwen-coder-next`、`nemotron-3-embed-1b` | 你的 server 在 `config.xml` 裡定義的 alias。AI Config 面板會列出來 |
+| `aiConfigs[].model` | `qwen3.8-27b`、`nemotron-3-embed-1b` | 你的 server 在 `config.xml` 裡定義的 alias。AI Config 面板會列出來 |
 | `aiConfigs[].cudaVisibleDevices` | 預留位置的 UUID | 你自己的卡（`nvidia-smi --query-gpu=uuid --format=csv`），或留空，用 server 看得到的每一張卡 |
 | `aiConfigs[].ctxSize` | `262144` | 你的卡和模型允許多少就給多少 —— 這張圖需要餘裕，見下方 |
 | `ragEmbeddingConfig` | `rag` | 有 embedding 模型才需要。留空就是關閉檢索，對這張圖的結構毫無影響 |
@@ -49,8 +49,8 @@ Start ──Exec──▶ Planner ──Exec──▶ Coder ──Exec──▶ 
   "projectId": "",
   "owner": "",
   "ragEmbeddingConfig": "rag",
-  "memoryAiConfig": "",
-  "version": 3,
+  "memoryAiConfig": "coder",
+  "version": 4,
   "updatedAt": 0,
   "modalityConfigs": [],
   "variableConfigs": [],
@@ -63,7 +63,7 @@ Start ──Exec──▶ Planner ──Exec──▶ Coder ──Exec──▶ 
 | 欄位 | 為什麼 |
 |---|---|
 | `ragEmbeddingConfig: "rag"` | 指定用來做 embedding 的 AI config。**空的表示 RAG 關閉，不是「用預設值」** —— 建索引和查詢兩邊讀的都是這一個欄位，所以兩邊永遠不會落在不同的向量空間 |
-| `memoryAiConfig: ""` | 沒有記憶 AI。有條件的規則全部適用，也不讀任何檔案歷史或 [session 紀錄](memory.zh-TW.md#自動寫下的-session-紀錄) —— 紀錄還是照寫。這張圖改用共用記憶（下面的 `memory_mode`），在各輪之間帶著 coder 需要的東西 |
+| `memoryAiConfig: "coder"` | 記憶 AI。每一步執行之前，它會從每一條規則、每一份檔案歷史、這個對話的 [session 紀錄](memory.zh-TW.md#自動寫下的-session-紀錄)裡，挑出跟那一步有關的 —— 重新進入的 coder 就是這樣知道上一輪做了什麼（見下面[三個不明顯的設定](#三個不明顯的設定)的第二個）。這裡由 coder 的模型兼任，整張圖只需要一個模型；有更小、更快的模型就用它比較好 |
 | `variableConfigs: []` | 沒有整張圖的狀態。跨過節點邊界的東西全部走 pin |
 
 ---
@@ -75,7 +75,7 @@ Start ──Exec──▶ Planner ──Exec──▶ Coder ──Exec──▶ 
 ```json
 {
   "name": "coder",
-  "model": "qwen-coder-next",
+  "model": "qwen3.8-27b",
   "quantization": "",
   "isRemote": false,
   "remoteUrl": "", "remoteApiKey": "", "remoteFamily": "",
@@ -97,7 +97,7 @@ Start ──Exec──▶ Planner ──Exec──▶ Coder ──Exec──▶ 
 
 | 欄位 | 為什麼是這個值 |
 |---|---|
-| `ctxSize: 262144` | 每個節點共用一段對話（見下面的 `memory_mode`），所以 context 每一輪都會變長。先試過 16K 和 80K，兩個都爆了 —— 爆的時候會明確報出 `Input tokens (…) exceed` 錯誤，不會默默截斷 |
+| `ctxSize: 262144` | Coder 和 Verifier 的工具迴圈會把讀過的檔、改過的地方和建置輸出都留在自己的對話裡，直到這一步結束；後面幾輪記憶 AI 還會加上 session 紀錄。這張圖較早的版本讓各節點共用一段對話，16K 和 80K 都爆過；這一版還沒量過。爆的時候會明確報出 `Input tokens (…) exceed` 錯誤，不會默默截斷 |
 | `cudaVisibleDevices` | **你自己的卡的 UUID** —— `nvidia-smi --query-gpu=uuid --format=csv`。上面的是預留位置，不是真的：載入這張圖的機器上，列出的卡一張都不在的話，請求會失敗並說明原因 —— 絕不會改用其他卡。這個範例取自的那張圖列了四張運算卡，刻意排除顯示卡，這通常也是會去設這個欄位的原因 |
 | `autoFit: false` | 這裡的擺放是手動設定的：在列出的四張卡上依層切分。開著 Auto Fit（預設值）的話，卡片清單一樣有效，切分方式則由 server 自己選 |
 | `splitMode: "layer"` | 在四張卡之間依層切分。卡片之間全部有 NVLink 相連時，Auto Fit 會選 `graph`（tensor parallelism） |
@@ -111,12 +111,12 @@ Start ──Exec──▶ Planner ──Exec──▶ Coder ──Exec──▶ 
   "ctxSize": 65536,
   "autoFit": true,
   "nGpuLayers": -1,
-  "cudaVisibleDevices": "GPU-<uuid-1>,GPU-<uuid-2>,GPU-<uuid-3>,GPU-<uuid-4>",
+  "cudaVisibleDevices": "GPU-<uuid-5>,GPU-<uuid-6>,GPU-<uuid-7>,GPU-<uuid-8>",
   "…": "remaining fields as above"
 }
 ```
 
-embedder 自成一個 config，只是因為它是另一個模型；指定它的是 `ragEmbeddingConfig`，不是任何節點。它跟其他模型一樣遵守 `cudaVisibleDevices` —— 要設，不然 embedder 會載入在排第一的那張卡上，而在混用不同卡的機器上，那通常是顯示卡。
+embedder 自成一個 config，只是因為它是另一個模型；指定它的是 `ragEmbeddingConfig`，不是任何節點。它跟其他模型一樣遵守 `cudaVisibleDevices` —— 要設，不然 embedder 會載入在排第一的那張卡上，而在混用不同卡的機器上，那通常是顯示卡。這裡它有自己的四張卡，所以建索引和 coder 不會搶空間。
 
 `nemotron-3-embed-1b` 以 safetensors 發布，進程內的後端直接讀它 —— 沒有轉檔這一步，量化在載入時做。
 
@@ -172,7 +172,6 @@ embedder 自成一個 config，只是因為它是另一個模型；指定它的�
   "rag_embedding_config": "",
   "memory_context": true,
   "memory_history_top_k": 0,
-  "memory_mode": "shared",
   "chunking": false,
   "chunk_desc": ""
 }
@@ -194,7 +193,7 @@ prompt 要求三份清單 —— WORK、DELIVERABLES、CHECKS。會有 DELIVERAB
 |---|---|---|
 | `tools_enabled` | `true` | 它要寫檔 |
 | `max_tool_iters` | `20` | 當時的預設值是 5，不夠寫完一支小程式：迴圈提早結束，節點什麼都沒回傳。現在的預設值是 `0`，沒有上限 |
-| `memory_mode` | `"shared"` | 第二輪以後，它需要知道自己已經寫了什麼 |
+| `memory_context` | `true`（預設值） | 後面幾輪它就是這樣知道自己已經寫了什麼：session 紀錄記著計畫、它自己上一輪的回覆和 verifier 的報告，跟這一步有關時，記憶 AI 會交給它 |
 
 兩個有名字的輸入 pin，範本都有引用：`{{Request}}`（原本的要求，讓後面幾輪不會偏掉）和 `{{Errors}}`（filter 抽出來的錯誤）。第一輪時 `Errors` 沒有值，會展開成空字串 —— 這是刻意的放行，見[三個不明顯的設定](#三個不明顯的設定)裡的說明。
 
@@ -206,7 +205,7 @@ prompt 裡的每一條規則，都是某一次失敗留下來的：*一件工作
 
 `in[Exec, Asset]` → `out[Exec, ALL, Asset]`
 
-`tools_enabled: true`、`max_tool_iters: 20`、`memory_mode: "shared"`，沒有有名字的輸入 pin —— 它直接讀工作區，不靠別人遞東西給它。
+`tools_enabled: true`、`max_tool_iters: 20`，沒有有名字的輸入 pin —— 它直接讀工作區，不靠別人遞東西給它。
 
 它的 prompt 是整張圖裡最長的，每一條都是某次執行打破過的規則：
 
@@ -228,7 +227,7 @@ prompt 裡的每一條規則，都是某一次失敗留下來的：*一件工作
   "tools_enabled": false,
   "max_tool_iters": 5,
   "rag_mode": "off",
-  "memory_context": true,
+  "memory_context": false,
   "memory_history_top_k": 0,
   "chunking": false
 }
@@ -236,7 +235,7 @@ prompt 裡的每一條規則，都是某一次失敗留下來的：*一件工作
 
 `Pass` 和 `Errors` 是以格式的鍵命名的**輸出** pin，所以結構化的回覆會替你拆好，兩半可以各自接到不同的地方。
 
-沒有工具，也沒有共用記憶：它的輸入就只有 `{{Transcript}}`，它的工作就只是把 verifier 寫的一整頁文字，變成一個布林值和一份簡短的錯誤清單。`rag_mode` 是 `off`，這是下面三個不明顯的設定裡的第三個。
+沒有工具，也沒有記憶：它的輸入就只有 `{{Transcript}}`，它的工作就只是把 verifier 寫的一整頁文字，變成一個布林值和一份簡短的錯誤清單。`memory_context` 和 `rag_mode` 都關掉 —— 下面三個不明顯的設定裡的第二和第三個。
 
 ### Shape（`CheckFormat`）
 
@@ -314,17 +313,15 @@ prompt 裡的每一條規則，都是某一次失敗留下來的：*一件工作
 
 **迴圈不收斂時，數一數每個節點跑了幾次。** 執行次數是零的節點，是接線的問題，不是模型的問題。
 
-### 2. `memory_mode` —— 執行者共用，評判者隔離
+### 2. 記憶 —— 執行者交給記憶 AI，評判者不讀
 
-Planner、Coder 和 Verifier 用 `"shared"`。每一個的最終回答都會附加到 session 層級的同一段對話裡，每一個在自己的 prompt 之前都會看到這段對話的投影。所以重新進入的 `Coder` 知道自己上一輪寫了什麼、verifier 怎麼說，這些都不用經過 pin 傳遞。
+Planner、Coder 和 Verifier 讓 `memory_context` 維持開著（預設值）。它們每一個執行之前，記憶 AI —— `memoryAiConfig`，這裡就是 coder 的模型 —— 會拿到所有記憶候選和這一步的 prompt：路由表的規則、每一份檔案歷史，以及這個對話的 [session 紀錄](memory.zh-TW.md#自動寫下的-session-紀錄)，裡面記著到目前為止每一步的回覆。它挑出跟這一步有關的，只讀那些。重新進入的 `Coder` 就是這樣拿到計畫、自己上一輪寫的東西和 verifier 的報告，這些都不用經過 pin 傳遞。
 
-`Filter` 維持 `"isolated"`（預設值）。它的輸入是一份紀錄，輸出是一個判決；把對話給它，等於讓它兩輪前做的判決影響現在這一個 —— 跟評判者該做的事正好相反。
+`Filter` 把 `memory_context` 關掉。它的輸入是一份 verifier 的報告，輸出是一個判決；讓它讀 session 紀錄，等於讓它兩輪前做的判決影響現在這一個 —— 跟評判者該做的事正好相反。
 
-從 log 看得到效果：`memory=shared: seeded N messages`，N 每一輪每個節點加一。
+debug 面板裡每一步的 `Active memory:` 那一行會寫出讀了什麼，結尾是 `session record read`（記憶 AI 選了它）或 `session record not picked`（沒選）。
 
-兩個編輯器都沒有 `memory_mode` 的欄位。要在檔案裡節點的 `config` 設定它 —— **Export**、修改、再 **Import** —— 或照 [graph-format.zh-TW.md](graph-format.zh-TW.md) 整張手寫；這一頁其他的設定都能在編輯器裡設。
-
-你的訊息一送達就加入那段對話。如果這次執行結束時，沒有任何共用節點回答過它 —— 執行被停下、失敗、根本沒開始，或只由隔離的節點回答 —— server 會自己補上回答：這次執行的最終結果，或一行說明它發生了什麼事。下一則訊息的節點，絕不會看到你連續兩則訊息中間什麼都沒有。
+節點從來看不到對話本身。沒有記憶 AI 的 config 時，沒有任何一步會讀 session 紀錄，重新進入的節點只剩 pin 上的東西。為舊版寫的圖，節點上可能還有 `memory_mode: "shared"`；這個鍵已經沒有人讀了 —— 改設 `memoryAiConfig`。
 
 ### 3. Filter 的 `rag_mode: "off"` —— 檢索會污染判斷
 
@@ -345,7 +342,7 @@ packer.cpp:248-341: missing code after line 341
 
 ## 它做出了什麼
 
-實際量過的一次執行，數字才有意義：
+實際量過的一次執行，數字才有意義。這是用這張圖較早的版本量的 —— 模型是 `qwen-coder-next`，節點之間共用一段對話，而不是用記憶 AI；現在這一版還沒有實測過。
 
 | | |
 |---|---|
@@ -365,8 +362,8 @@ packer.cpp:248-341: missing code after line 341
 
 結構可以照搬，AI config 不行。依序：
 
-1. **一開始一個 AI config 就夠了。** 取個名字，選一個你的 server 真的有的模型，四個 `SendToAi` 節點都指向它。每個角色用不同的模型是之後的改進，不是必要條件。
-2. **context 盡量給大。** 用 `memory_mode: "shared"` 時，對話每一輪每個節點多一則訊息，所以會跑好幾輪的迴圈需要餘裕。你的卡挪不出來的話，把三個執行者設成 `"isolated"`，改用 pin 傳遞它們需要的東西 —— 圖一樣能用，只是各輪之間記得的比較少。溢出時會明確報出 `Input tokens (…) exceed` 錯誤，不會默默截斷，所以你會知道。
+1. **一開始一個 AI config 就夠了。** 取個名字，選一個你的 server 真的有的模型，四個 `SendToAi` 節點和整張圖的 **Memory AI Config** 都指向它。每個角色用不同的模型是之後的改進，不是必要條件。
+2. **context 盡量給大。** 工具迴圈，以及後面幾輪的 session 紀錄，都會佔空間，所以會跑好幾輪的迴圈需要餘裕。溢出時會明確報出 `Input tokens (…) exceed` 錯誤，不會默默截斷，所以你會知道。
 3. **檢索可有可無。** 沒有 embedding 模型，或不想建索引 —— `ragEmbeddingConfig` 留空，每個 `rag_mode: "inherit"` 就什麼都不做。結構上沒有任何東西依賴它。如果要開，Filter 維持 `"off"`。
 4. **選 GPU 也可有可無。** `cudaVisibleDevices` 留空，模型就用 server 看得到的每一張卡，連顯示卡也算在內。機器裡有某張卡不該碰時才設 —— 顯示卡，或另一個工作正在用的卡。
 
@@ -379,6 +376,7 @@ packer.cpp:248-341: missing code after line 341
 | 每個角色用不同的模型 | 加幾個 AI config，讓每個節點的 `ai_config` 各指向一個。其他都不用改 |
 | 迭代次數上限 | 在回頭的連線上遞增一個 `Variable` 計數器，再在 `Coder` 前面加一個 `If` |
 | 便宜一點的評判者 | 把 `Filter.ai_config` 指向小模型。它只負責分類文字 |
+| 更快的記憶 AI | 替小模型加一個 AI config，選它當整張圖的 Memory AI Config。除了 Filter，每一步之前都會跑它，所以它的速度會累積起來 |
 | 少跑幾輪 | 加強 planner 裡 CHECKS 那一段。多出來的輪數，大多來自第一次弱到不會失敗的檢查 |
 | 不同形狀的流程 | 四個 prompt 跟接線無關。把「verifier」換成「test runner」或「security reviewer」，是改 prompt，不是改圖 |
 

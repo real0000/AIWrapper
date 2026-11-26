@@ -69,18 +69,26 @@ Leave it empty to use the model's default — the one named in the server's
 
 ## Remote endpoints
 
-Switch a config to **remote** to call an OpenAI-compatible endpoint instead of a
-local model.
+Switch a config to **remote** to call a hosted endpoint instead of a local model.
 
 | Field | Meaning |
 |---|---|
-| Remote URL | Base URL with no trailing slash, e.g. `https://api.openai.com` or `http://localhost:11434/v1` |
-| API Key | Sent as `Authorization: Bearer …` when set |
+| API Family | Which API the endpoint speaks: **OpenAI-compatible** (the default), **Anthropic** or **Gemini** |
+| Remote URL | Base URL with no trailing slash, e.g. `https://api.openai.com`, `http://localhost:11434/v1`, `https://api.anthropic.com` or `https://generativelanguage.googleapis.com` |
+| API Key | Sent the way the family expects: `Authorization: Bearer …`, `x-api-key`, or Gemini's `key=` query parameter |
 | Model | The remote model ID, as a free string |
 
 In remote mode the server loads nothing locally and every load-time parameter
-below is ignored. The test button checks `/v1/models`; inference posts to
-`/v1/chat/completions`.
+below is ignored.
+
+| API Family | Test button | Inference |
+|---|---|---|
+| OpenAI-compatible | `GET /v1/models` | `POST /v1/chat/completions` |
+| Anthropic | `GET /v1/models` | `POST /v1/messages` |
+| Gemini | `GET /v1beta/models` | `POST /v1beta/models/<model>:streamGenerateContent` |
+
+Structured output, Reasoning Budget and Presence Penalty are sent to the
+OpenAI family only.
 
 ## Context and batching
 
@@ -104,7 +112,7 @@ This is where a model that "does not fit" usually becomes one that does.
 | Auto Fit | on | Let the server decide placement — see below |
 | GPU Visibility | empty | Which GPUs this config may use, ticked in the topology picker and stored as GPU UUIDs. Empty means every GPU the server sees |
 | GPU Layers | -1 | Only with Auto Fit off. Layers to put on the GPUs: `-1` places as many as fit and offloads the rest to the CPU, `0` is CPU-only |
-| Split Mode | `layer` | Only with Auto Fit off. `layer` splits by layer; `row` and `tensor` both split every layer's computation across the cards — tensor parallelism, which the server runs as its `graph` split; `none` keeps the whole model on one GPU |
+| Split Mode | `layer` | Only with Auto Fit off. `layer` puts whole layers on each card; `graph` splits every layer — attention and feed-forward — across the cards (tensor parallelism); `attn` splits only the attention across the cards and places feed-forward by layer; `none` keeps the whole model on one GPU. A config saved with the older `row` or `tensor` runs as `graph`, as it always has |
 | CPU MoE Layers | 0 | Only with Auto Fit off. For mixture-of-experts models, keep expert weights on the CPU: `0` off, `N` for the first N layers, `-1` for all. Non-MoE models ignore it |
 
 **Auto Fit** is the default and the recommended setting. You choose which GPUs

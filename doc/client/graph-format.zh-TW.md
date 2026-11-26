@@ -147,15 +147,14 @@
   "max_tool_iters": 0,             // 0 = 沒有上限
   "rag_mode": "inherit",           // inherit | off | custom
   "rag_embedding_config": "",      // rag_mode="custom" 時使用
-  "memory_context": true,
+  "memory_context": true,         // 由記憶 AI 挑這一步要讀什麼 —— 見下面
   "memory_history_top_k": 0,       // 0 = 保留每一份檔案歷史
-  "memory_mode": "isolated",       // isolated | shared —— 見下面
   "chunking": false,
   "chunk_desc": ""
 }
 ```
 
-`memory_mode: "shared"` 讓節點加入這個 session 裡共用節點共有的那段對話：在自己的 prompt 之前，它會看到使用者的訊息與前面共用節點的回答，它自己的回答也會加進去給下一個。迴圈裡重新執行的節點就是這樣記得上一輪的。`"isolated"` 是預設值，只看得到自己的 prompt。兩個編輯器都沒有這個設定的欄位 —— 直接寫進檔案。[完整範例](example-graph.zh-TW.md)兩種都有用到。
+節點看不到對話，節點之間也沒有共用的對話。一個節點對之前的事知道多少，全看[記憶](memory.zh-TW.md#讀哪些記憶)：`memory_context` 開著（預設）時，圖的記憶 AI 會從每一條規則、每一份檔案歷史、這個對話的 session 紀錄裡，挑出跟這一步有關的，放在 prompt 前面。迴圈裡重新執行的節點也是這樣知道上一輪做了什麼：session 紀錄記著每一步的回覆。只該評判手上那份內容的節點，把 `memory_context` 設成 `false`。[完整範例](example-graph.zh-TW.md)兩種都有。
 
 模型的載入與取樣參數，每次節點執行時都從指定的 AI config 取得。寫進節點 `config` 的 `ai_model`、`temperature` 這類鍵不是個別節點的覆寫 —— server 會用 AI config 的值蓋掉它們。要讓某個節點用不同的值，就給它一個自己的 AI config。
 
@@ -332,7 +331,7 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
 
 代管的端點則設 `"isRemote": true`，加上 `remoteUrl`、`remoteApiKey` 和 `remoteFamily`（`openai` | `anthropic` | `gemini`）；這時載入參數會被忽略，取樣參數仍然有效。
 
-`autoFit: true` 是預設值，會依機器實際的拓樸決定切分方式、裝置順序與專家層放到 CPU 的方式。關閉時由 `splitMode` 決定：`layer` 依層切分模型，`graph` 把每一層的運算分到各張卡上（tensor parallelism），`attn` 把 self-attention 的運算分到各張卡上，`none` 整個模型放在一張卡。舊的圖用的名字 `row` 和 `tensor` 會當成 `graph` 執行。
+`autoFit: true` 是預設值，會依機器實際的拓樸決定切分方式、裝置順序與專家層放到 CPU 的方式。關閉時由 `splitMode` 決定：`layer` 依層切分模型，`graph` 把每一層的運算分到各張卡上（tensor parallelism），`attn` 只把 attention 分到各張卡、feed-forward 照層分，`none` 整個模型放在一張卡。舊的圖用的名字 `row` 和 `tensor` 會當成 `graph` 執行。
 
 ### `variableConfigs`
 

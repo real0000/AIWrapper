@@ -17,7 +17,7 @@ The machine-specific fields, so they are easy to spot as you read:
 
 | Field | Here | On your machine |
 |---|---|---|
-| `aiConfigs[].model` | `qwen-coder-next`, `nemotron-3-embed-1b` | Whatever aliases your server's `config.xml` defines. The AI Config panel lists them |
+| `aiConfigs[].model` | `qwen3.8-27b`, `nemotron-3-embed-1b` | Whatever aliases your server's `config.xml` defines. The AI Config panel lists them |
 | `aiConfigs[].cudaVisibleDevices` | placeholder UUIDs | Your own cards (`nvidia-smi --query-gpu=uuid --format=csv`), or empty to use every card the server sees |
 | `aiConfigs[].ctxSize` | `262144` | As much as your card and model allow — this graph needs headroom, see below |
 | `ragEmbeddingConfig` | `rag` | Only if you have an embedding model. Leave empty and retrieval is off, which costs this graph nothing structural |
@@ -66,8 +66,8 @@ not, so that a run either converges or is stopped by you.
   "projectId": "",
   "owner": "",
   "ragEmbeddingConfig": "rag",
-  "memoryAiConfig": "",
-  "version": 3,
+  "memoryAiConfig": "coder",
+  "version": 4,
   "updatedAt": 0,
   "modalityConfigs": [],
   "variableConfigs": [],
@@ -81,7 +81,7 @@ that saved it and when.
 | Field | Why |
 |---|---|
 | `ragEmbeddingConfig: "rag"` | Names the AI config used to embed. **Empty means RAG is off, not "use a default"** — both the indexing side and the query side read this one field, so they can never end up in different vector spaces |
-| `memoryAiConfig: ""` | No memory AI. Conditional rules all apply, and no file history or [session record](memory.md#the-session-record-written-automatically) is read — the record is still written. The graph carries what the coder needs between rounds through shared memory instead (`memory_mode` below) |
+| `memoryAiConfig: "coder"` | The memory AI. Before each step runs it picks, from every rule, every file history and this conversation's [session record](memory.md#the-session-record-written-automatically), what bears on that step — this is how a re-entered coder learns what the last round did (see the second of the [three settings below](#three-settings-that-are-not-obvious)). The coder model does it here so the graph needs only one model; a smaller, faster one is better if you have it |
 | `variableConfigs: []` | No graph state. Everything that crosses a node boundary does so on a pin |
 
 ---
@@ -95,7 +95,7 @@ which field matters and why, not as settings to copy. What to do instead is in
 ```json
 {
   "name": "coder",
-  "model": "qwen-coder-next",
+  "model": "qwen3.8-27b",
   "quantization": "",
   "isRemote": false,
   "remoteUrl": "", "remoteApiKey": "", "remoteFamily": "",
@@ -117,7 +117,7 @@ which field matters and why, not as settings to copy. What to do instead is in
 
 | Field | Why this value |
 |---|---|
-| `ctxSize: 262144` | Every node shares one conversation (see `memory_mode` below), so the context grows with each round. 16K and 80K were both tried first and both overflowed — the failure is an explicit `Input tokens (…) exceed` error, not a silent truncation |
+| `ctxSize: 262144` | The Coder's and Verifier's tool loops keep every file read, edit and build log in their own conversation until the step ends, and on later rounds the memory AI adds the session record. The earlier version of this graph, whose nodes shared one conversation, overflowed at 16K and at 80K; this version has not been measured. Overflow is an explicit `Input tokens (…) exceed` error, not a silent truncation |
 | `cudaVisibleDevices` | **Your own card UUIDs** — `nvidia-smi --query-gpu=uuid --format=csv`. The placeholders above are not real: if none of the listed cards is on the machine loading the graph, the request fails and says so — other cards are never used in their place. The graph this example came from listed four compute cards and left out the display card on purpose, which is the usual reason to set this field at all |
 | `autoFit: false` | Placement is set by hand here: a layer split across the four listed cards. With Auto Fit on — the default — the same card list would stand and the server would choose the split itself |
 | `splitMode: "layer"` | Layer-split across the four cards. Auto Fit would pick `graph` (tensor parallelism) across a fully NVLink-connected set of cards |
@@ -131,7 +131,7 @@ which field matters and why, not as settings to copy. What to do instead is in
   "ctxSize": 65536,
   "autoFit": true,
   "nGpuLayers": -1,
-  "cudaVisibleDevices": "GPU-<uuid-1>,GPU-<uuid-2>,GPU-<uuid-3>,GPU-<uuid-4>",
+  "cudaVisibleDevices": "GPU-<uuid-5>,GPU-<uuid-6>,GPU-<uuid-7>,GPU-<uuid-8>",
   "…": "remaining fields as above"
 }
 ```
@@ -139,7 +139,8 @@ which field matters and why, not as settings to copy. What to do instead is in
 The embedder is a separate config only because it is a separate model; it is named by
 `ragEmbeddingConfig`, not by any node. It honours `cudaVisibleDevices` like every other
 model — set it, or the embedder loads on whatever card comes first, which on a mixed
-machine is usually the display card.
+machine is usually the display card. Here it has four cards of its own, so indexing and
+the coder never compete for room.
 
 `nemotron-3-embed-1b` ships as safetensors, which the in-process backend reads
 directly — no conversion step, and the quantization is applied as it loads.
@@ -200,7 +201,6 @@ to two nodes.
   "rag_embedding_config": "",
   "memory_context": true,
   "memory_history_top_k": 0,
-  "memory_mode": "shared",
   "chunking": false,
   "chunk_desc": ""
 }
@@ -231,7 +231,7 @@ Same config shape, with:
 |---|---|---|
 | `tools_enabled` | `true` | It writes files |
 | `max_tool_iters` | `20` | Set when the default was 5, which is not enough to write a small program: the loop ended early and the node returned nothing. The default is now `0`, no limit |
-| `memory_mode` | `"shared"` | On the second and later rounds it needs to know what it already wrote |
+| `memory_context` | `true` (the default) | On a later round this is how it learns what it already wrote: the session record holds the plan, its own last reply and the verifier's report, and the memory AI hands them over when they bear on the step |
 
 Two named input pins, both referenced in the template: `{{Request}}` (the original ask,
 so a later round does not drift) and `{{Errors}}` (what the filter extracted). On the
@@ -257,8 +257,8 @@ times in four tries; with the rule added, it started work at once in both tries 
 
 `in[Exec, Asset]` → `out[Exec, ALL, Asset]`
 
-`tools_enabled: true`, `max_tool_iters: 20`, `memory_mode: "shared"`, no named input
-pins — it reads the workspace directly rather than being handed anything.
+`tools_enabled: true`, `max_tool_iters: 20`, no named input pins — it reads the
+workspace directly rather than being handed anything.
 
 Its prompt is the longest in the graph, and every bullet is a rule that a run broke:
 
@@ -286,7 +286,7 @@ Its prompt is the longest in the graph, and every bullet is a rule that a run br
   "tools_enabled": false,
   "max_tool_iters": 5,
   "rag_mode": "off",
-  "memory_context": true,
+  "memory_context": false,
   "memory_history_top_k": 0,
   "chunking": false
 }
@@ -295,9 +295,10 @@ Its prompt is the longest in the graph, and every bullet is a rule that a run br
 `Pass` and `Errors` are **output** pins named after the format's keys, so the structured
 reply is split for you and each half can be wired somewhere different.
 
-No tools and no shared memory: its whole input is `{{Transcript}}`, and its whole job is
-to turn a page of verifier prose into one boolean and a short error list. `rag_mode` is
-`off`, which is the third of the three non-obvious settings below.
+No tools and no memory: its whole input is `{{Transcript}}`, and its whole job is to
+turn a page of verifier prose into one boolean and a short error list. `memory_context`
+and `rag_mode` are both off — the second and third of the three non-obvious settings
+below.
 
 ### Shape — `CheckFormat`
 
@@ -390,29 +391,28 @@ particular mistake silent.
 **When a loop will not converge, count how many times each node ran.** A node with zero
 executions is a wiring fault, not a model problem.
 
-### 2. `memory_mode` — shared for the actors, isolated for the judge
+### 2. Memory — the memory AI for the actors, none for the judge
 
-Planner, Coder and Verifier use `"shared"`. Each one's final answer is appended to one
-session-level conversation, and each sees the projection of it before its own prompt. A
-re-entered `Coder` therefore knows what it wrote last round and what the verifier said
-about it, without any of that being threaded through pins.
+Planner, Coder and Verifier keep `memory_context` on, the default. Before each of them
+runs, the memory AI — `memoryAiConfig`, the coder model here — is given every memory
+candidate together with the step's prompt: the routing table's rules, every file history,
+and this conversation's [session record](memory.md#the-session-record-written-automatically),
+which holds every step's reply so far. It picks what bears on the step, and only that is
+read. A re-entered `Coder` gets the plan, what it wrote last round and the verifier's
+report this way, without any of it being threaded through pins.
 
-The `Filter` stays `"isolated"` (the default). Its input is one transcript and its output
-is one verdict; giving it the conversation would let a verdict it produced two rounds ago
-influence the one it is producing now — the opposite of what a judge should do.
+The `Filter` has `memory_context` off. Its input is one transcript and its output is one
+verdict; reading the record would let a verdict it produced two rounds ago influence the
+one it is producing now — the opposite of what a judge should do.
 
-The observable effect is in the log: `memory=shared: seeded N messages`, with N growing
-by one per node per round.
+Each step's `Active memory:` line in the debug pane says what was read, ending in
+`session record read` when the memory AI picked it and `session record not picked` when
+it did not.
 
-Neither editor has a field for `memory_mode`. Set it in the node's `config` in the file —
-**Export**, edit, **Import** — or write the whole graph by hand from
-[graph-format.md](graph-format.md); everything else on this page can be set in the editor.
-
-Your message joins that conversation as soon as it arrives. When the run ends without
-a shared node having answered it — the run was stopped, failed, never started, or
-answered from isolated nodes only — the server adds the answer itself: the run's final
-result, or a line saying what happened to it. The next message's nodes never see two of
-your messages in a row with nothing in between.
+Nodes never see the conversation itself. Without a memory AI config no step reads the
+session record, and a re-entered node starts from its pins alone. A graph written for an
+older build may carry `memory_mode: "shared"` on its nodes; nothing reads that key any
+more — set `memoryAiConfig` instead.
 
 ### 3. `rag_mode: "off"` on the Filter — retrieval poisons a judge
 
@@ -443,7 +443,9 @@ what retrieval is for.
 
 ## What it produced
 
-One measured run, so the numbers mean something:
+One measured run, so the numbers mean something. It was made with the earlier version of
+this graph — `qwen-coder-next`, with the nodes sharing one conversation instead of the
+memory AI; the current version has not had a measured run yet.
 
 | | |
 |---|---|
@@ -466,14 +468,12 @@ header flag was outside what anyone thought to check.
 The structure transfers; the AI configs do not. In order:
 
 1. **One AI config is enough to start.** Name it, pick a model your server actually
-   serves, and point all four `SendToAi` nodes at it. Different models per role is a
-   refinement, not a requirement.
-2. **Give it as much context as you can.** With `memory_mode: "shared"` the conversation
-   grows by one message per node per round, so a loop that runs several times needs
-   headroom. If your card cannot spare it, set the three actors to `"isolated"` and pass
-   what they need through pins instead — the graph still works, it just forgets more
-   between rounds. Overflow is an explicit `Input tokens (…) exceed` error, not silent
-   truncation, so you will know.
+   serves, and point all four `SendToAi` nodes and the graph's **Memory AI Config** at it.
+   Different models per role is a refinement, not a requirement.
+2. **Give it as much context as you can.** The tool loops and, on later rounds, the
+   session record both take room, so a loop that runs several times needs headroom.
+   Overflow is an explicit `Input tokens (…) exceed` error, not silent truncation, so you
+   will know.
 3. **Retrieval is optional.** No embedding model, or no wish to index — leave
    `ragEmbeddingConfig` empty and every `rag_mode: "inherit"` becomes a no-op. Nothing
    structural depends on it. If you do enable it, keep the Filter at `"off"`.
@@ -490,6 +490,7 @@ Then the task goes in the chat message, not in the graph.
 | A different model per role | Add AI configs and point each node's `ai_config` at one. Nothing else has to change |
 | An iteration cap | A `Variable` counter incremented on the back edge, plus an `If` before `Coder` |
 | A cheaper judge | Point `Filter.ai_config` at a small model. It only classifies text |
+| A faster memory AI | Add an AI config for a small model and choose it as the graph's Memory AI Config. It runs before every step except the Filter, so its speed adds up |
 | Fewer rounds | Strengthen the CHECKS paragraph in the planner. Most extra rounds come from checks that were too weak to fail the first time |
 | A different pipeline shape | The four prompts are independent of the wiring. Swapping "verifier" for "test runner" or "security reviewer" is a prompt change, not a graph change |
 

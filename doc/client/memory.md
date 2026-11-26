@@ -216,6 +216,15 @@ automatically.
 Send To AI and Memory nodes used to have a Memory AI Config of their own. A
 value left in an older graph is not read.
 
+The memory AI uses its AI config as it stands — load settings and sampling
+alike: temperature, Top K, Top P, Reasoning Budget and Presence Penalty. Nothing
+is fixed on top of them. With a model that thinks before it answers, a Reasoning
+Budget keeps each pick short.
+
+If the name it gives is not one of the graph's AI configs — renamed, deleted,
+or with no model — the graph runs as if none were set, and the debug pane says
+which name was not found.
+
 A small fast model is the right choice — the judgement is short and it runs
 before the real work.
 

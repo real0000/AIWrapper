@@ -29,7 +29,8 @@ Open it with **CAGE: Open Logic Editor**.
 ## The sidebar sections
 
 Each section is a list of named, reusable definitions. Nodes reference them **by
-name**, so renaming one updates every node that uses it.
+name**, so renaming one updates every node that uses it — and, for an AI config,
+the graph's Memory AI Config and RAG embedding setting too.
 
 | Section | What it defines | Detail |
 |---|---|---|

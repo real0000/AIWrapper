@@ -118,7 +118,7 @@ not supported by any CUDA pack. The Vulkan pack may still drive them.
 ### Pascal, and the P40 in particular
 
 A Tesla P40 is 24 GB for very little money, and its natural job here is **the
-embedding model behind retrieval, or the model that summarises shared memory** —
+embedding model behind retrieval, or a small memory AI** —
 not the chat model. Two properties of the card decide that:
 
 - **FP16 runs at 1/64 of FP32.** The kernels know this and keep a P40 on its FP32

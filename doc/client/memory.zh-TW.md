@@ -114,6 +114,10 @@ server 不得不略過的列會被回報，而不是悄悄丟掉 —— 一列�
 
 Send To AI 與 Memory 節點以前各有自己的 Memory AI Config。舊圖裡留著的值不會被讀。
 
+記憶 AI 照它的 AI config 原樣使用 —— 載入設定和取樣都是：temperature、Top K、Top P、Reasoning Budget、Presence Penalty。上面沒有另外固定任何值。會先思考再回答的模型，設一個 Reasoning Budget 就能讓每次挑選保持簡短。
+
+如果它指定的名字不在這張圖的 AI config 裡 —— 改了名、刪掉了，或沒有選模型 —— 這張圖會照沒設來跑，debug 面板會寫出是哪個名字找不到。
+
 小而快的模型才是對的選擇 —— 判斷很短，而且是在真正的工作之前跑。
 
 ---
