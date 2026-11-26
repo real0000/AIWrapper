@@ -19,7 +19,7 @@
 | 檔名 | `<name>.json`。圖的 `name` 就是它的身分：唯一、比較時不分大小寫，也是它的檔名。檔名跟 `name` 不一樣的檔案，會在 server 啟動時改名成跟 `name` 一致 |
 | 怎麼放進去 | 寫好檔案後重新啟動 server、用 `PUT` 送到 `/api/logic-graph`，或在 Logic Editor 裡用 **Import** |
 
-編輯器的 **Export** 寫出來的就是這個格式，所以這一頁沒講清楚的地方，現有的圖就是最好的參考。
+編輯器的 **Export** 寫出來的也是這個格式，另外多幾個只給編輯器排版用的欄位（例如連線的 `waypoints`），所以這一頁沒講清楚的地方，現有的圖就是最好的參考。
 
 > 下面有些範例用 `//` 註解來說明欄位。**JSON 沒有註解** —— 寫檔之前要先刪掉。最後那張[完整的最小圖](#一張完整的最小圖)沒有註解，可以直接複製使用。
 
@@ -48,16 +48,16 @@
 
 | 欄位 | 意思 |
 |---|---|
-| `name` | 圖的身分與檔名，顯示在 graph 選單裡。不分大小寫的唯一值。不能有 `/`、`..`，結尾不能是空格或句點。改名是另一個獨立的操作（`POST /api/logic-graph/rename`）：用新名字存檔會變成第二張圖 |
+| `name` | 圖的身分與檔名，顯示在 graph 選單裡。不分大小寫的唯一值。UTF-8 最多 250 bytes；不能含 `/` `\` `:` `*` `?` `"` `<` `>` `\|` 或控制字元；頭尾不能是空格、結尾不能是句點，也不能整個是 `.` 或 `..`。改名是另一個獨立的操作（`POST /api/logic-graph/rename`）：用新名字存檔會變成第二張圖 |
 | `projectId` | 這張圖所屬的專案資料夾。空的也可以 |
-| `owner` | 擁有者的使用者 id。**空的表示沒有擁有者 —— 任何人都能讀寫。** server 有帳號的話就要設定 |
+| `owner` | 擁有這張圖的帳號。**由 server 填：** 用 `PUT` 或 **Import** 上傳的圖屬於上傳它的帳號，之後再存檔也不會改。只有直接放進資料夾的檔案會照檔案裡寫的值，這時空的表示沒有擁有者 —— 任何人都能讀寫 |
 | `ragEmbeddingConfig` | `aiConfigs` 裡某個項目的名字，用於自動檢索。空的表示關閉 |
 | `memoryAiConfig` | `aiConfigs` 裡某個項目的名字：記憶 AI，負責挑選每一步要讀哪些記憶、濃縮 session 紀錄、決定要寫回什麼。空的話，每一條有條件的規則都視為適用，也不讀任何檔案歷史或 session 紀錄，見[專案記憶](memory.zh-TW.md) |
 | `version` | 編輯器每次存檔都會加一；server 會拒絕版本比它自己那份舊的更新。**從 1 開始** |
 | `updatedAt` | Unix 毫秒。`0` 也接受 |
 | `groups` | 視覺上的分組。除非你要重現編輯器的版面，否則填 `[]` |
 
-八個清單欄位都必須存在，即使是空的。
+七個清單欄位都寫出來，即使是空的。少了的會當成空的讀。
 
 ---
 
@@ -86,14 +86,14 @@
 | `position` | 是 | 編輯器座標。什麼數字都可以；圖由左往右排、間隔約 250 px，不然會疊在一起 |
 | `inputs` / `outputs` | 是 | pin 陣列，見各類型。每個 pin 需要 `name`、`type`、`direction`；`id` 可以省略 |
 | `config` | 是 | 各類型的設定。這種類型沒有設定的話就填 `{}` |
-| `singleton` | 否 | `Start` 和 `End` 上是 `true`。只是給編輯器的提示 |
+| `singleton` | 否 | `End` 與命名為 `Default` 的 `Start` 上是 `true` —— 編輯器不讓你刪的那兩個節點。只是給編輯器的提示 |
 | `groupId` | 否 | 只有節點在群組裡時才有 |
 
 ### Pin 型別
 
 `exec` 是控制流程。其他都是資料：`string` 最常見，`asset`／`image`／`audio`／`tts`／`music`／`mesh`／`motion` 帶的是一個產生出來的檔案的參照，而不是文字。
 
-**這個區別很重要。** `exec` 連線會轉移控制權 —— 它會把下游節點排進執行佇列。資料連線只會把一個值複製到下游的輸入欄位，**不會**讓它執行。沒有任何 `exec` 連線進來的節點，不管有多少資料連線，都永遠不會執行。
+**這個區別很重要。** `exec` 連線會轉移控制權 —— 它會把下游節點排進執行佇列。資料連線只會把一個值複製到下游的輸入欄位，**不會**讓它執行。沒有任何 `exec` 連線進來的節點，不管有多少資料連線，都永遠不會執行。唯一的例外是 `Variable` 節點的 getter pin，它是在需要時被讀取的 —— 見下面的 `Variable`。
 
 ---
 
@@ -135,7 +135,7 @@
 ### `SendToAi`：呼叫模型
 `in[Exec, Asset]` → `out[Exec, ALL, Asset]`
 
-**每個 prompt 變數加一個 `string` 輸入 pin**，再在範本裡以 `{{pinName}}` 引用。`ALL` 是完整的回覆。加上以結構化輸出的鍵命名的 `string` 輸出 pin，它們就會替你拆出來。
+**每個 prompt 變數加一個 `string` 輸入 pin**，再在範本裡以 `{{pinName}}` 引用。對不上任何 pin 的 `{{name}}` 會改用同名的整張圖變數；兩者都對不上就展開成空字串。`ALL` 是完整的回覆。加上以結構化輸出的鍵命名的 `string` 輸出 pin，它們就會替你拆出來。
 
 ```json
 "config": {
@@ -149,14 +149,17 @@
   "rag_embedding_config": "",      // rag_mode="custom" 時使用
   "memory_context": true,
   "memory_history_top_k": 0,       // 0 = 保留每一份檔案歷史
+  "memory_mode": "isolated",       // isolated | shared —— 見下面
   "chunking": false,
   "chunk_desc": ""
 }
 ```
 
-載入與取樣參數可以在個別節點上用這些鍵覆寫：`ai_model`、`ai_ctx_size`、`ai_quantization`、`ai_n_gpu_layers`、`ai_split_mode`、`ai_kv_cache_type`、`ai_flash_attn`、`ai_auto_fit`、`ai_n_cpu_moe`、`ai_n_batch`、`ai_threads`、`ai_lookahead`、`ai_mtp`、`ai_cuda_visible_devices`、`temperature`、`top_k`、`top_p`、`reasoning_budget`。省略就用 AI config 的值。
+`memory_mode: "shared"` 讓節點加入這個 session 裡共用節點共有的那段對話：在自己的 prompt 之前，它會看到使用者的訊息與前面共用節點的回答，它自己的回答也會加進去給下一個。迴圈裡重新執行的節點就是這樣記得上一輪的。`"isolated"` 是預設值，只看得到自己的 prompt。兩個編輯器都沒有這個設定的欄位 —— 直接寫進檔案。[完整範例](example-graph.zh-TW.md)兩種都有用到。
 
-> 把 `ai_config` 改指向 `modalityConfigs` 裡的名字，節點就會變成生成呼叫 —— 圖片、語音等等。回覆是 `Asset` pin 上的檔案參照，不是文字。
+模型的載入與取樣參數，每次節點執行時都從指定的 AI config 取得。寫進節點 `config` 的 `ai_model`、`temperature` 這類鍵不是個別節點的覆寫 —— server 會用 AI config 的值蓋掉它們。要讓某個節點用不同的值，就給它一個自己的 AI config。
+
+> 把 `ai_config` 改指向 `modalityConfigs` 裡的名字，節點就會變成生成呼叫 —— 圖片、語音等等。範本會變成生成用的 prompt，範本沒有引用的輸入 pin 則當作生成參數送出。產生的檔案從 `Asset` 出來，也以 server 上的路徑出現在 `ALL`（語音辨識與語音偵測在那裡放的是文字）。有固定意思的 pin 名稱 —— `image`、`audio`、`out_dir`、`OutputFile` —— 列在 [Modality Configs](modality-config.zh-TW.md#在圖裡使用)。
 
 ### `CheckFormat`：驗證字串
 `in[Exec, Input]` → `out[True, False, Output]`
@@ -214,6 +217,10 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
 ```
 
 `add` 依變數宣告的 `type`，分別是數字相加、字串串接或邏輯 OR。
+
+`source_value` 的意思看 `source_type`：`"constant"` 時就是值本身，`"variable"` 時是另一個變數的名字，`"node"` 時是這個節點上某個 `string` 輸入 pin 的名字 —— 把那個 pin 加上去，送到它的值就是要存的值。
+
+**Getter pin** 是反方向。加一個以變數命名的 `string` 輸出 pin，接到它的節點就會收到那個變數當下的值，在它們執行的那一刻讀取。只拿來當 getter 的 `Variable` 節點，不需要 `exec` 連線。
 
 ### `Compose`：組出一個字串
 `in[Exec]` → `out[Exec, Output]`
@@ -289,7 +296,7 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
 "config": { "result_keys": [] }
 ```
 
-把結果回傳給使用者，並結束這一輪。**只能從主路徑走到** —— 絕不能從 `Dispatch` 的分支走到。
+把結果回傳給使用者，並結束這一輪：送到 `Result` 的就是回答。`result_keys` 留空。**只能從主路徑走到** —— 絕不能從 `Dispatch` 的分支走到。
 
 ---
 
@@ -309,7 +316,7 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
   "flashAttn": true,
   "nGpuLayers": -1,      // -1 = 自動
   "kvCacheType": "f16",
-  "splitMode": "layer",  // layer | row | tensor | none —— 只在 autoFit 關閉時使用
+  "splitMode": "layer",  // layer | graph | attn | none —— 只在 autoFit 關閉時使用
   "nCpuMoe": 0,
   "autoFit": true,
   "lookahead": false,
@@ -325,7 +332,7 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
 
 代管的端點則設 `"isRemote": true`，加上 `remoteUrl`、`remoteApiKey` 和 `remoteFamily`（`openai` | `anthropic` | `gemini`）；這時載入參數會被忽略，取樣參數仍然有效。
 
-`autoFit: true` 是預設值，會依機器實際的拓樸決定切分方式、裝置順序與專家層放到 CPU 的方式。
+`autoFit: true` 是預設值，會依機器實際的拓樸決定切分方式、裝置順序與專家層放到 CPU 的方式。關閉時由 `splitMode` 決定：`layer` 依層切分模型，`graph` 把每一層的運算分到各張卡上（tensor parallelism），`attn` 把 self-attention 的運算分到各張卡上，`none` 整個模型放在一張卡。舊的圖用的名字 `row` 和 `tensor` 會當成 `graph` 執行。
 
 ### `variableConfigs`
 
@@ -349,19 +356,22 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
 ### `modalityConfigs`
 
 ```json
-{ "name": "sd35", "type": "image",      // image | tts | audio | music | mesh
+{ "name": "sd35", "type": "image",
   "isRemote": false,
   "modalityAlias": "sd35",              // server 設定裡的 <model alias>
   "cudaVisibleDevices": "",
+  "remoteFamily": "openai", "remoteUrl": "", "remoteApiKey": "", "remoteModel": "",
   "defaults": {} }
 ```
+
+`type` 是 `image`、`tts`、`audio`、`music`、`mesh`、`motion`、`asr`、`vad`、`separation` 其中之一。本機模型以那個 alias 註冊時的類型為準，這個欄位只是後備。遠端的設定要設 `"isRemote": true`，加上 `remoteFamily`（`openai` | `stability` | `elevenlabs` | `replicate` | `fal`）、`remoteUrl`、`remoteApiKey` 和 `remoteModel`；遠端只有 `image` 和 `tts` 能用。`defaults` 放模型的生成參數 —— 步數、尺寸等等 —— 節點可以用 pin 覆寫。見 [Modality Configs](modality-config.zh-TW.md)。
 
 ---
 
 ## 決定一張圖能不能執行的規則
 
 1. **每個入口剛好一個 `Start`**，其中一個命名為 `Default`。
-2. **每個節點都需要有 `exec` 連線進來**，直接或經過一連串節點都可以。只有資料連線，永遠不會讓節點執行。
+2. **每個節點都需要有 `exec` 連線進來**，直接或經過一連串節點都可以。只有資料連線，永遠不會讓節點執行。只拿來當 getter 的 `Variable` 節點是例外：它是被讀取，不是被執行。
 3. **`End` 結束整輪。** 從 `Dispatch` 分出去的分支以 `Return` 結束。
 4. **名字就是參照。** 節點 `config` 裡的每一個 `ai_config`、`format_config`、變數與 modality 名字，都必須存在於對應的清單裡。拼錯會在執行時才失敗，不是載入時。
 5. **連線裡的 pin 名字必須存在**於兩端的節點上，拼法完全一致。
@@ -458,7 +468,7 @@ case 依序嘗試；第一個符合的勝出，都不符合就走 `Else`。
 - **存在一個命名為 `Default` 的 `Start`。**
 - **每一條連線的節點和 pin 都存在** —— `fromNodeId`／`toNodeId` 指的是檔案裡的節點，`fromPinId`／`toPinId` 指的是那個節點的某個 pin（用 `name` 或 `id`）。編輯時留下來、指向已經不存在的節點或 pin 的連線，執行時不會有任何訊息：值就是永遠不會送到。
 - **每一個 `ai_config`、`splitter_ai_config` 和 `format_config` 都指向**存在於 `aiConfigs`（或 `modalityConfigs`）與 `formatConfigs` 的項目。
-- **除了 `Start` 以外的每個節點，都有一條從 `exec` pin 進來的連線。** 沒有的話它永遠不會執行。
+- **除了 `Start` 以外的每個節點，都有一條從 `exec` pin 進來的連線。** 沒有的話它永遠不會執行。唯一的例外是只拿來當 getter 的 `Variable`。
 
 有一類默默失敗的錯誤能通過上面每一項檢查，因為它在結構上是有效的：一個存在、只是從來沒接上的 pin。`Input` 沒有接任何連線的 `CheckFormat` 會驗證空字串，每次都失敗；沒有任何東西產生值的 `{{placeholder}}` 會展開成空的。從外面看起來是什麼樣子，見[完整範例](example-graph.zh-TW.md#三個不明顯的設定)。
 

@@ -22,8 +22,9 @@ writes).
 | Filename | `<name>.json`. A graph's `name` is its identity: unique, compared without regard to case, and its file name. A file named anything else is renamed to match its `name` when the server starts |
 | Getting one in | Write the file and restart the server, `PUT` it to `/api/logic-graph`, or use **Import** in the Logic Editor |
 
-The editor's **Export** writes exactly this format, so an existing graph is the
-best reference for anything this page leaves ambiguous.
+The editor's **Export** writes this format too, plus a few editor-only layout
+fields such as connection `waypoints`, so an existing graph is the best reference
+for anything this page leaves ambiguous.
 
 > Some examples below carry `//` comments to explain a field. **JSON has no
 > comments** — strip them before writing a file. The
@@ -55,16 +56,16 @@ best reference for anything this page leaves ambiguous.
 
 | Field | Meaning |
 |---|---|
-| `name` | The graph's identity and file name, shown in the graph selector. Unique without regard to case. No `/`, no `..`, no trailing space or dot. Renaming is its own operation (`POST /api/logic-graph/rename`): saving under a new name creates a second graph |
+| `name` | The graph's identity and file name, shown in the graph selector. Unique without regard to case. At most 250 bytes of UTF-8; none of `/` `\` `:` `*` `?` `"` `<` `>` `\|` or control characters; no space at either end, no trailing dot, and not `.` or `..`. Renaming is its own operation (`POST /api/logic-graph/rename`): saving under a new name creates a second graph |
 | `projectId` | Project folder this graph belongs to. Empty is fine |
-| `owner` | Owning user id. **Empty means unowned — readable and writable by anyone.** Set it if the server runs with accounts |
+| `owner` | The account that owns the graph. **The server fills it in:** a graph uploaded with `PUT` or **Import** belongs to the account that uploaded it, and later saves never change it. Only a file placed straight into the folder keeps the value written in it, and there empty means unowned — readable and writable by anyone |
 | `ragEmbeddingConfig` | Name of an entry in `aiConfigs` to use for automatic retrieval. Empty disables it |
 | `memoryAiConfig` | Name of an entry in `aiConfigs`: the memory AI, which chooses what memory each step reads, condenses the session record and decides what to write back. Empty treats every conditional rule as applying and reads no file history or session record — see [Project Memory](memory.md) |
 | `version` | Incremented by the editor on every save; the server rejects an update carrying a version older than its own. **Start at 1** |
 | `updatedAt` | Unix milliseconds. `0` is accepted |
 | `groups` | Visual grouping. `[]` unless you are reproducing an editor layout |
 
-All eight list fields must be present, even when empty.
+Write all seven lists, even when empty. A missing one is read as empty.
 
 ---
 
@@ -93,7 +94,7 @@ All eight list fields must be present, even when empty.
 | `position` | yes | Editor coordinates. Any numbers work; lay graphs out left to right, ~250 px apart, or they overlap |
 | `inputs` / `outputs` | yes | Pin arrays — see each type. Each pin needs `name`, `type`, `direction`; `id` is optional |
 | `config` | yes | Per-type settings. `{}` if the type has none |
-| `singleton` | no | `true` on `Start` and `End`. Editor-only hint |
+| `singleton` | no | `true` on `End` and on the `Start` named `Default` — the two nodes the editor will not delete. Editor-only hint |
 | `groupId` | no | Only when the node is inside a group |
 
 ### Pin types
@@ -105,7 +106,9 @@ reference to a produced file rather than text.
 **The distinction matters.** An `exec` connection transfers control — it queues
 the downstream node to run. A data connection only copies a value into the
 downstream input slot and does **not** cause it to run. A node with no incoming
-`exec` connection never executes, however many data connections it has.
+`exec` connection never executes, however many data connections it has. The one
+exception is a `Variable` node's getter pins, which are read when needed — see
+`Variable` below.
 
 ---
 
@@ -159,8 +162,10 @@ chat panel's Start selector chooses among them. One must be named `Default`.
 `in[Exec, Asset]` → `out[Exec, ALL, Asset]`
 
 **Add one `string` input pin per prompt variable**, then reference it in the
-template as `{{pinName}}`. `ALL` is the full reply. Add `string` output pins
-named after keys of the structured output to have them split out for you.
+template as `{{pinName}}`. A `{{name}}` that matches no pin falls back to the
+graph variable of that name; one that matches neither becomes an empty string.
+`ALL` is the full reply. Add `string` output pins named after keys of the
+structured output to have them split out for you.
 
 ```json
 "config": {
@@ -174,21 +179,33 @@ named after keys of the structured output to have them split out for you.
   "rag_embedding_config": "",      // with rag_mode="custom"
   "memory_context": true,
   "memory_history_top_k": 0,       // 0 = keep every file history
+  "memory_mode": "isolated",       // isolated | shared — see below
   "chunking": false,
   "chunk_desc": ""
 }
 ```
 
-Load and sampling parameters may be overridden per node with `ai_model`,
-`ai_ctx_size`, `ai_quantization`, `ai_n_gpu_layers`, `ai_split_mode`,
-`ai_kv_cache_type`, `ai_flash_attn`, `ai_auto_fit`, `ai_n_cpu_moe`,
-`ai_n_batch`, `ai_threads`, `ai_lookahead`, `ai_mtp`, `ai_cuda_visible_devices`,
-`temperature`, `top_k`, `top_p`, `reasoning_budget`. Omit them to use the AI
-config.
+`memory_mode: "shared"` puts the node in the conversation that the session's
+shared nodes have in common: before its prompt it sees the user's messages and
+what earlier shared nodes answered, and its own answer is added for the next
+one. That is how a node that runs again in a loop remembers its last round.
+`"isolated"`, the default, sees only its own prompt. Neither editor has a field
+for this setting — write it into the file. The
+[worked example](example-graph.md) uses both.
+
+The model's load and sampling values come from the named AI config every time
+the node runs. Keys such as `ai_model` or `temperature` written into a node's
+`config` are not a per-node override — the server replaces them with the AI
+config's values. To vary them for one node, give it an AI config of its own.
 
 > Pointing `ai_config` at a `modalityConfigs` name instead turns the node into a
-> generation call — image, speech and so on. The reply is a file reference on the
-> `Asset` pin, not text.
+> generation call — image, speech and so on. The template becomes the
+> generation prompt, and input pins it does not reference are passed as
+> generation parameters. The produced files come out on `Asset`, and as
+> server-side paths on `ALL` (speech recognition and voice detection put their
+> text there instead). Pin names with a fixed meaning — `image`, `audio`,
+> `out_dir`, `OutputFile` — are listed in
+> [Modality Configs](modality-config.md#using-one-in-a-graph).
 
 ### `CheckFormat` — validate a string
 `in[Exec, Input]` → `out[True, False, Output]`
@@ -249,6 +266,16 @@ Cases are tried in order; the first match wins, otherwise `Else`.
 
 `add` means numeric addition, string concatenation, or logical OR depending on
 the variable's declared `type`.
+
+`source_value` depends on `source_type`: with `"constant"` it is the value
+itself, with `"variable"` the name of another variable, and with `"node"` the
+name of a `string` input pin on this node — add that pin, and the value arriving
+on it is what gets stored.
+
+**Getter pins** go the other way. Add a `string` output pin named after a
+variable, and nodes wired to it receive the variable's current value, read at
+the moment they run. A `Variable` node used only for its getter pins needs no
+`exec` connection.
 
 ### `Compose` — build a string
 `in[Exec]` → `out[Exec, Output]`
@@ -330,8 +357,9 @@ not close the run.
 "config": { "result_keys": [] }
 ```
 
-Returns the result to the user and ends the run. **Reachable from the main path
-only** — never from a `Dispatch` branch.
+Returns the result to the user and ends the run: what arrives on `Result` is the
+answer. Leave `result_keys` empty. **Reachable from the main path only** — never
+from a `Dispatch` branch.
 
 ---
 
@@ -351,7 +379,7 @@ only** — never from a `Dispatch` branch.
   "flashAttn": true,
   "nGpuLayers": -1,      // -1 = auto
   "kvCacheType": "f16",
-  "splitMode": "layer",  // layer | row | tensor | none — used only with autoFit off
+  "splitMode": "layer",  // layer | graph | attn | none — used only with autoFit off
   "nCpuMoe": 0,
   "autoFit": true,
   "lookahead": false,
@@ -370,7 +398,11 @@ and `remoteFamily` (`openai` | `anthropic` | `gemini`); the load parameters are
 then ignored while the sampling ones still apply.
 
 `autoFit: true`, the default, decides split mode, device order and expert
-offload from the machine's actual topology.
+offload from the machine's actual topology. With it off, `splitMode` chooses:
+`layer` splits the model by layer, `graph` splits every layer's computation
+across the cards (tensor parallelism), `attn` splits the self-attention
+computation across them, and `none` keeps the model on one card. `row` and
+`tensor`, the names older graphs use, run as `graph`.
 
 ### `variableConfigs`
 
@@ -395,12 +427,22 @@ output, so `fields` is worth filling in.
 ### `modalityConfigs`
 
 ```json
-{ "name": "sd35", "type": "image",      // image | tts | audio | music | mesh
+{ "name": "sd35", "type": "image",
   "isRemote": false,
   "modalityAlias": "sd35",              // <model alias> in the server config
   "cudaVisibleDevices": "",
+  "remoteFamily": "openai", "remoteUrl": "", "remoteApiKey": "", "remoteModel": "",
   "defaults": {} }
 ```
+
+`type` is one of `image`, `tts`, `audio`, `music`, `mesh`, `motion`, `asr`, `vad`
+and `separation`. For a local model the server goes by what the alias is
+registered as, and this field is only a fallback. A remote config sets
+`"isRemote": true` with `remoteFamily` (`openai` | `stability` | `elevenlabs` |
+`replicate` | `fal`), `remoteUrl`, `remoteApiKey` and `remoteModel`; only `image`
+and `tts` work remotely. `defaults` holds the model's generation parameters —
+steps, size and so on — which a node can override through its pins. See
+[Modality Configs](modality-config.md).
 
 ---
 
@@ -408,7 +450,8 @@ output, so `fields` is worth filling in.
 
 1. **Exactly one `Start` per entry point**, one of them named `Default`.
 2. **Every node needs an incoming `exec` connection**, directly or through the
-   chain. Data connections alone never make a node run.
+   chain. Data connections alone never make a node run. A `Variable` node used
+   only for its getter pins is the exception: it is read, not run.
 3. **`End` finishes the whole run.** Branches from `Dispatch` end with `Return`.
 4. **Names are references.** Every `ai_config`, `format_config`, variable and
    modality name in a node's `config` must exist in the matching list. A
@@ -526,7 +569,8 @@ nothing:
 - **Every `ai_config`, `splitter_ai_config` and `format_config` names an entry**
   of `aiConfigs` (or `modalityConfigs`) and `formatConfigs`.
 - **Every node except `Start` has an incoming connection from an `exec` pin.**
-  Without one it never runs.
+  Without one it never runs. The only exception is a `Variable` used just for
+  its getter pins.
 
 One silent class passes every check above, because it is structurally valid: a
 pin that exists and is simply never connected. `CheckFormat` with no edge into

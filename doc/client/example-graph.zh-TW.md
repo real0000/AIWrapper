@@ -88,8 +88,10 @@ Start ──Exec──▶ Planner ──Exec──▶ Coder ──Exec──▶ 
   "nCpuMoe": 0,
   "autoFit": false,
   "lookahead": false,
+  "mtp": false,
   "cudaVisibleDevices": "GPU-<uuid-1>,GPU-<uuid-2>,GPU-<uuid-3>,GPU-<uuid-4>",
-  "temperature": 0.7, "topK": 40, "topP": 0.9
+  "temperature": 0.7, "topK": 40, "topP": 0.9,
+  "reasoningBudget": -1, "presencePenalty": 0
 }
 ```
 
@@ -319,6 +321,8 @@ Planner、Coder 和 Verifier 用 `"shared"`。每一個的最終回答都會附�
 `Filter` 維持 `"isolated"`（預設值）。它的輸入是一份紀錄，輸出是一個判決；把對話給它，等於讓它兩輪前做的判決影響現在這一個 —— 跟評判者該做的事正好相反。
 
 從 log 看得到效果：`memory=shared: seeded N messages`，N 每一輪每個節點加一。
+
+兩個編輯器都沒有 `memory_mode` 的欄位。要在檔案裡節點的 `config` 設定它 —— **Export**、修改、再 **Import** —— 或照 [graph-format.zh-TW.md](graph-format.zh-TW.md) 整張手寫；這一頁其他的設定都能在編輯器裡設。
 
 你的訊息一送達就加入那段對話。如果這次執行結束時，沒有任何共用節點回答過它 —— 執行被停下、失敗、根本沒開始，或只由隔離的節點回答 —— server 會自己補上回答：這次執行的最終結果，或一行說明它發生了什麼事。下一則訊息的節點，絕不會看到你連續兩則訊息中間什麼都沒有。
 

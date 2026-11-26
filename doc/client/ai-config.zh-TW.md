@@ -77,7 +77,7 @@ context 的大小會影響其他所有東西：長的 context 會保留很大的
 | Auto Fit | on | 讓 server 決定擺放，見下方 |
 | GPU Visibility | 空白 | 這個 config 可以用哪些 GPU，在拓樸選擇器裡勾選，存成 GPU UUID。空白表示 server 看得到的每一張 GPU |
 | GPU Layers | -1 | 只在 Auto Fit 關閉時有效。要放到 GPU 上的層數：`-1` 放得下多少就放多少、其餘放到 CPU，`0` 是純 CPU |
-| Split Mode | `layer` | 只在 Auto Fit 關閉時有效。`layer` 依層切分；`row` 是比較舊的列切分（支援的地方就是 tensor parallelism）；`tensor` 是比較新的 meta-device 切分（實驗性質，依架構而定）；`none` 把整個模型放在一張 GPU 上 |
+| Split Mode | `layer` | 只在 Auto Fit 關閉時有效。`layer` 依層切分；`row` 和 `tensor` 都是把每一層的運算分到各張卡上 —— tensor parallelism，server 以它的 `graph` 切分執行；`none` 把整個模型放在一張 GPU 上 |
 | CPU MoE Layers | 0 | 只在 Auto Fit 關閉時有效。mixture-of-experts 模型的專家權重留在 CPU：`0` 關閉，`N` 前 N 層，`-1` 全部。不是 MoE 的模型會忽略它 |
 
 **Auto Fit** 是預設值，也是建議的設定。你選擇可以用哪些 GPU，怎麼用由 server 決定。你選的每一張卡它都會用 —— 就算模型放得進其中一張，也照樣攤在全部的卡上，因為用哪幾張卡是你的決定。它把這些卡依 NVLink 分成幾座島，估算權重、KV cache 和 compute buffer，然後決定切法：只有一張卡 → 不切；只有一座島 → `graph` 切分，在每張卡之間做 tensor parallelism；好幾座一樣大的島 → 島內做 tensor parallelism、島與島之間串成 pipeline；其他情況 → `layer` 切分。放不下的部分，依 MoE 專家放到 CPU。

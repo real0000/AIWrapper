@@ -62,7 +62,7 @@ of the graph keeps working in plain text.
 
 | Setting | Meaning |
 |---|---|
-| Start Name | The name shown in the chat panel's Start selector. Empty on the `Default` node |
+| Start Name | The name shown in the chat panel's Start selector. Always `Default` on the fixed Start |
 
 ---
 
@@ -72,7 +72,8 @@ Calls a model and streams the answer back. Most graphs are mostly these.
 
 The prompt is built from **Prompt Template**, where `{{pin}}` inserts the value
 arriving on that input pin. Add input pins for whatever the prompt needs — a
-plan, a file, a previous answer — and reference them by name.
+plan, a file, a previous answer — and reference them by name. A name that no pin
+has inserts the graph [variable](variables.md) of that name instead.
 
 If the node's **AI Config** names a [Modality Config](modality-config.md)
 instead of an [AI Config](ai-config.md), the node generates an image, speech,
@@ -107,7 +108,7 @@ list, never to the raw reference.
 |---|---|---|
 | AI Config | — | Which [AI Config](ai-config.md) or [Modality Config](modality-config.md) runs this node |
 | Format | — | A [Format Config](format-config.md). Turns on structured output, so the model must answer in that shape |
-| Prompt Template | — | The prompt. `{{pinName}}` inserts an input pin's value |
+| Prompt Template | — | The prompt. `{{pinName}}` inserts an input pin's value, or a graph variable's when no pin has that name |
 | Enable Tool Calls | on | Whether the model may call tools in your editor |
 | Allowed Tools | `*` | Comma-separated allow-list; `*` means every tool the client offers |
 | Max Tool Iterations | 0 | How many replies may call tools before the node stops. One reply can make several calls. When set, the prompt tells the model the limit. `0` means no limit: the node runs until the model stops calling tools |
@@ -408,9 +409,7 @@ node and it cannot be deleted.
 | `Exec` | exec | in | |
 | `Result` | string | in | What to return |
 
-| Setting | Meaning |
-|---|---|
-| Result Keys | Which keys go back to the client. Empty returns everything |
+End has no settings: what arrives on `Result` is the answer the chat panel shows.
 
 ---
 

@@ -50,7 +50,7 @@
 
 | 設定 | 意思 |
 |---|---|
-| Start Name | 顯示在 chat panel Start 選單裡的名字。`Default` 節點的這一欄是空的 |
+| Start Name | 顯示在 chat panel Start 選單裡的名字。固定的那個 Start 一律是 `Default` |
 
 ---
 
@@ -58,7 +58,7 @@
 
 呼叫模型，把回答串流回來。大部分的圖，大部分都是這種節點。
 
-prompt 由 **Prompt Template** 組成，`{{pin}}` 會插入從那個輸入 pin 進來的值。prompt 需要什麼（一份計畫、一個檔案、上一次的回答），就加對應的輸入 pin，再用名字引用。
+prompt 由 **Prompt Template** 組成，`{{pin}}` 會插入從那個輸入 pin 進來的值。prompt 需要什麼（一份計畫、一個檔案、上一次的回答），就加對應的輸入 pin，再用名字引用。沒有 pin 叫這個名字時，插入的是同名的整張圖[變數](variables.zh-TW.md)。
 
 如果節點的 **AI Config** 指定的是 [Modality Config](modality-config.zh-TW.md) 而不是 [AI Config](ai-config.zh-TW.md)，這個節點產生的就是圖片、語音、音訊、音樂或 3D 網格，而不是文字。在這個模式下，工具呼叫、檢索和結構化輸出全部略過，`ALL` 帶的是檔案路徑。
 
@@ -85,7 +85,7 @@ prompt 由 **Prompt Template** 組成，`{{pin}}` 會插入從那個輸入 pin �
 |---|---|---|
 | AI Config | — | 由哪一個 [AI Config](ai-config.zh-TW.md) 或 [Modality Config](modality-config.zh-TW.md) 執行這個節點 |
 | Format | — | 一個 [Format Config](format-config.zh-TW.md)。會開啟結構化輸出，模型必須照那個形狀回答 |
-| Prompt Template | — | prompt 本身。`{{pinName}}` 會插入一個輸入 pin 的值 |
+| Prompt Template | — | prompt 本身。`{{pinName}}` 會插入一個輸入 pin 的值；沒有 pin 叫這個名字時，插入同名整張圖變數的值 |
 | Enable Tool Calls | on | 模型能不能呼叫你編輯器裡的工具 |
 | Allowed Tools | `*` | 以逗號分隔的允許清單；`*` 表示 client 提供的每一個工具 |
 | Max Tool Iterations | 0 | 幾則回覆可以呼叫工具，之後節點停止。一則回覆可以呼叫好幾個工具。有設時，prompt 會告訴模型這個上限。`0` 表示沒有上限：節點會一直跑到模型不再呼叫工具 |
@@ -323,9 +323,7 @@ Dispatch 是每項任務跑一次*這張*圖的一部分。Send Prompt 是跑一
 | `Exec` | exec | in | |
 | `Result` | string | in | 要回傳的內容 |
 
-| 設定 | 意思 |
-|---|---|
-| Result Keys | 哪些鍵要送回 client。空白就全部送回 |
+End 沒有設定：送到 `Result` 的就是 chat panel 顯示的回答。
 
 ---
 

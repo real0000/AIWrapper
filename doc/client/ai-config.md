@@ -104,7 +104,7 @@ This is where a model that "does not fit" usually becomes one that does.
 | Auto Fit | on | Let the server decide placement — see below |
 | GPU Visibility | empty | Which GPUs this config may use, ticked in the topology picker and stored as GPU UUIDs. Empty means every GPU the server sees |
 | GPU Layers | -1 | Only with Auto Fit off. Layers to put on the GPUs: `-1` places as many as fit and offloads the rest to the CPU, `0` is CPU-only |
-| Split Mode | `layer` | Only with Auto Fit off. `layer` splits by layer, `row` is the older row split (tensor parallelism where supported), `tensor` is the newer meta-device split (experimental, architecture-dependent), `none` keeps the whole model on one GPU |
+| Split Mode | `layer` | Only with Auto Fit off. `layer` splits by layer; `row` and `tensor` both split every layer's computation across the cards — tensor parallelism, which the server runs as its `graph` split; `none` keeps the whole model on one GPU |
 | CPU MoE Layers | 0 | Only with Auto Fit off. For mixture-of-experts models, keep expert weights on the CPU: `0` off, `N` for the first N layers, `-1` for all. Non-MoE models ignore it |
 
 **Auto Fit** is the default and the recommended setting. You choose which GPUs

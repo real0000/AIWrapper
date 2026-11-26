@@ -108,8 +108,10 @@ which field matters and why, not as settings to copy. What to do instead is in
   "nCpuMoe": 0,
   "autoFit": false,
   "lookahead": false,
+  "mtp": false,
   "cudaVisibleDevices": "GPU-<uuid-1>,GPU-<uuid-2>,GPU-<uuid-3>,GPU-<uuid-4>",
-  "temperature": 0.7, "topK": 40, "topP": 0.9
+  "temperature": 0.7, "topK": 40, "topP": 0.9,
+  "reasoningBudget": -1, "presencePenalty": 0
 }
 ```
 
@@ -401,6 +403,10 @@ influence the one it is producing now — the opposite of what a judge should do
 
 The observable effect is in the log: `memory=shared: seeded N messages`, with N growing
 by one per node per round.
+
+Neither editor has a field for `memory_mode`. Set it in the node's `config` in the file —
+**Export**, edit, **Import** — or write the whole graph by hand from
+[graph-format.md](graph-format.md); everything else on this page can be set in the editor.
 
 Your message joins that conversation as soon as it arrives. When the run ends without
 a shared node having answered it — the run was stopped, failed, never started, or
